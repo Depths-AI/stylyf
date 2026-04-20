@@ -14,6 +14,7 @@ const clusterPreviewLoaders: Record<string, () => Promise<PreviewModule>> = {
   "tier-1-feedback-display": () => import("../components/registry/tier-1/feedback-display/demos"),
   "tier-1-form-inputs": () => import("../components/registry/tier-1/form-inputs/demos"),
   "tier-2-form-systems": () => import("../components/registry/tier-2/form-systems/demos"),
+  "tier-2-data-views": () => import("../components/registry/tier-2/data-views/demos"),
   "tier-2-information-states": () => import("../components/registry/tier-2/information-states/demos"),
 };
 

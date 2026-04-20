@@ -21,7 +21,7 @@ Stylyf is being implemented cluster by cluster. Each cluster should land as a co
   FieldRow, FieldsetCard, FormSection, SearchField, FilterToolbar, SortMenu, InlineEditableField, SettingsRow, SettingsPanel, FileUploader, MediaUploader, AuthCardShell
 - [x] Information & States
   PageHeader, SectionHeader, StatCard, StatGrid, EmptyState, ErrorState, LoadingState
-- [ ] Data Views
+- [x] Data Views
   DataList, DataTableShell, ColumnVisibilityMenu, BulkActionBar, DetailPanel, ActivityFeed, Timeline, NotificationList, CommentThread
 - [ ] Navigation & Workflow
   Stepper, WizardShell, SidebarNav, TopNavBar, AppHeader
