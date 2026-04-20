@@ -23,7 +23,7 @@ Stylyf is being implemented cluster by cluster. Each cluster should land as a co
   PageHeader, SectionHeader, StatCard, StatGrid, EmptyState, ErrorState, LoadingState
 - [x] Data Views
   DataList, DataTableShell, ColumnVisibilityMenu, BulkActionBar, DetailPanel, ActivityFeed, Timeline, NotificationList, CommentThread
-- [ ] Navigation & Workflow
+- [x] Navigation & Workflow
   Stepper, WizardShell, SidebarNav, TopNavBar, AppHeader
 - [ ] Commercial & Content
   PricingCard, FeatureCard, TestimonialCard, FAQList
