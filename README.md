@@ -1,32 +1,42 @@
-# SolidStart
+# Stylyf
 
-Everything you need to build a Solid project, powered by [`solid-start`](https://start.solidjs.com);
+Stylyf is a source-owned SolidJS component registry project for building a
+serious application and marketing UI system on top of SolidStart and Tailwind
+CSS v4. The repo is meant to produce open code artifacts, not a sealed package
+library. Every primitive, composition, and route-ready block should remain
+inspectable, editable, and directly owned by the product team that adopts it.
 
-## Creating a project
+The project is organized around a three-tier registry model:
 
-```bash
-# create a new project in the current directory
-npm init solid@latest
+1. Tier 1 establishes the foundational primitives. These are the most stable
+   pieces in the system and define interaction, accessibility, and override
+   contracts.
+2. Tier 2 assembles those primitives into product-agnostic compositions such as
+   field systems, navigation shells, data views, and workflow containers.
+3. Tier 3 turns the lower tiers into opinionated blocks and route-ready modules
+   for authentication, app workspaces, settings, marketing, docs, and trust
+   surfaces.
 
-# create a new project in my-app
-npm init solid@latest my-app
-```
+The registry is intended to follow a few hard principles:
 
-## Developing
+1. Styling is controlled globally through Tailwind CSS v4 theme variables and
+   CSS custom properties so the entire registry can shift brand, density, tone,
+   and surface language from a central system.
+2. Component APIs should favor slot and anatomy composition over oversized prop
+   bags. State should be explicit, inspectable, and styleable through semantic
+   attributes and data-state hooks.
+3. Solid-specific ergonomics matter. Prop forwarding, hydration-safe IDs,
+   explicit portals, and disciplined state control are part of the design of
+   the registry, not implementation details to bolt on later.
+4. Tier 3 blocks are templates with a point of view. They should be strong
+   enough to drop into real routes while still being composed from the lower
+   tiers instead of bypassing them.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The canonical handoff specification for the registry lives in
+[solidjs_registry_handoff_spec.md](./solidjs_registry_handoff_spec.md). That
+document defines the intended scope, component catalog, design standards, and
+implementation waves for the project.
 
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-Solid apps are built with _presets_, which optimise your project for deployment to different environments.
-
-By default, `npm run build` will generate a Node app that you can run with `npm start`. To use a different preset, add it to the `devDependencies` in `package.json` and specify in your `app.config.js`.
-
-## This project was created with the [Solid CLI](https://github.com/solidjs-community/solid-cli)
+Stylyf exists to make a SolidJS registry feel like a real design and product
+system from the start: structured, themed, source-owned, and ready for gradual
+promotion from empty shell to stable implementation.

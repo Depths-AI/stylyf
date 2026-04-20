@@ -6,7 +6,8 @@
     "build": "vinxi build",
     "start": "vinxi start",
     "preview": "vinxi preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "generate:registry-shells": "node scripts/generate-registry-shells.mjs"
   },
   "dependencies": {
     "@solidjs/meta": "^0.29.4",

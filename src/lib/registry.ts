@@ -28,13 +28,23 @@ export type RegistryTier = {
   clusters: RegistryCluster[];
 };
 
+export type RegistryClusterSection = RegistryCluster & {
+  tierId: string;
+  tierLabel: string;
+  tierTitle: string;
+  tierDescription: string;
+};
+
 type ItemSeed = Omit<
   RegistryItem,
   "slug" | "tierId" | "tierLabel" | "clusterId" | "clusterLabel"
->;
+> & {
+  slug?: string;
+};
 
 function slugify(value: string) {
   return value
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
     .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -50,7 +60,7 @@ function withContext(
 ): RegistryItem[] {
   return items.map(item => ({
     ...item,
-    slug: slugify(item.name),
+    slug: item.slug ?? slugify(item.name),
     tierId,
     tierLabel,
     clusterId,
@@ -62,54 +72,56 @@ function componentSymbol(name: string) {
   return name.replace(/[^a-zA-Z0-9]/g, "");
 }
 
+function clusterDirectory(item: Pick<RegistryItem, "tierId" | "clusterId">) {
+  return item.clusterId.replace(`${item.tierId}-`, "");
+}
+
+export function componentFilePath(item: RegistryItem) {
+  return `src/components/registry/${item.tierId}/${clusterDirectory(item)}/${item.slug}.tsx`;
+}
+
+export function componentImportPath(item: RegistryItem) {
+  return `~/components/registry/${item.tierId}/${clusterDirectory(item)}/${item.slug}`;
+}
+
 export function targetPath(item: RegistryItem) {
   if (item.registryShape.includes("page")) {
     return `src/routes/${item.slug}.tsx`;
   }
 
-  if (item.registryShape.includes("hook")) {
-    return `src/components/${item.slug}.tsx`;
-  }
-
-  return `src/components/${item.slug}.tsx`;
+  return componentFilePath(item);
 }
 
 export function sourceFor(item: RegistryItem) {
   const symbol = componentSymbol(item.name);
-  const styleParams = item.styleParams.length ? item.styleParams.join(", ") : "none";
-  const stateParams = item.stateParams.length ? item.stateParams.join(", ") : "none";
 
   if (item.registryShape.includes("page")) {
     return [
       'import { Title } from "@solidjs/meta";',
-      `import { ${symbol} } from "~/components/${item.slug}";`,
+      'import { RegistryPageShell } from "~/components/registry-page-shell";',
+      `import { ${symbol} } from "${componentImportPath(item)}";`,
+      'import { registryItemBySlug } from "~/lib/registry";',
       "",
       `export default function ${symbol}Page() {`,
       "  return (",
-      "    <main class=\"mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-6 py-12 lg:px-10\">",
+      "    <>",
       `      <Title>${item.name} | Stylyf</Title>`,
-      '      <header class="space-y-3"> ',
-      `        <p class="text-sm uppercase tracking-[0.24em] text-muted">${item.tierLabel}</p>`,
-      `        <h1 class="text-4xl font-semibold tracking-tight text-foreground">${item.name}</h1>`,
-      `        <p class="max-w-3xl text-base text-muted">${item.description}</p>`,
-      "      </header>",
-      `      <${symbol} />`,
-      "    </main>",
+      `      <RegistryPageShell item={registryItemBySlug["${item.slug}"]}>`,
+      `        <${symbol} />`,
+      "      </RegistryPageShell>",
+      "    </>",
       "  );",
       "}",
-      "",
-      `// Style params: ${styleParams}`,
-      `// State params: ${stateParams}`,
-      `// Registry shape: ${item.registryShape}`,
     ].join("\n");
   }
 
   return [
     'import { mergeProps, splitProps } from "solid-js";',
     'import type { JSX } from "solid-js";',
-    'import { cn } from "~/lib/cn";',
+    'import { RegistryComponentShell } from "~/components/registry-component-shell";',
+    'import { registryItemBySlug } from "~/lib/registry";',
     "",
-    `export type ${symbol}Props = JSX.HTMLAttributes<HTMLDivElement> & {`,
+    `export type ${symbol}Props = JSX.HTMLAttributes<HTMLElement> & {`,
     "  class?: string;",
     "};",
     "",
@@ -118,24 +130,11 @@ export function sourceFor(item: RegistryItem) {
     '  const [local, others] = splitProps(props, ["class", "children"]);',
     "",
     "  return (",
-    '    <section',
-    '      class={cn(',
-    '        "rounded-3xl border border-border/70 bg-panel p-6 shadow-soft",',
-    "        local.class,",
-    "      )}",
-    "      {...others}",
-    "    >",
-    `      <h3 class="text-lg font-semibold text-foreground">${item.name}</h3>`,
-    `      <p class="mt-2 text-sm text-muted">${item.description}</p>`,
-    `      <p class="mt-4 text-sm text-muted">TODO: implement ${item.pattern.toLowerCase()}.</p>`,
+    `    <RegistryComponentShell item={registryItemBySlug["${item.slug}"]} class={local.class} {...others}>`,
     "      {local.children}",
-    "    </section>",
+    "    </RegistryComponentShell>",
     "  );",
     "}",
-    "",
-    `// Style params: ${styleParams}`,
-    `// State params: ${stateParams}`,
-    `// Registry shape: ${item.registryShape}`,
   ].join("\n");
 }
 
@@ -253,6 +252,7 @@ export const registryTiers: RegistryTier[] = [
           },
           {
             name: "OTPField",
+            slug: "otp-field",
             description: "One-time code entry.",
             pattern: "Grouped slots with hidden aggregate value.",
             styleParams: ["size", "gap", "masked", "mono", "cell shape"],
@@ -902,6 +902,7 @@ export const registryTiers: RegistryTier[] = [
           },
           {
             name: "FAQList",
+            slug: "faq-list",
             description: "Question-answer disclosure group.",
             pattern: "Accordion plus search/filter hook.",
             styleParams: ["density", "divided/card", "default-open behavior"],
@@ -1009,6 +1010,7 @@ export const registryTiers: RegistryTier[] = [
           },
           {
             name: "OTPVerify",
+            slug: "otp-verify",
             description: "6-digit verification step.",
             pattern: "OTPField + resend + support actions.",
             styleParams: ["cell style", "mono font", "compact/full"],
@@ -1107,6 +1109,7 @@ export const registryTiers: RegistryTier[] = [
           },
           {
             name: "CRMWorkspace",
+            slug: "crm-workspace",
             description: "Sales/customer dashboard.",
             pattern: "Pipeline summary + account list + detail pane.",
             styleParams: ["density", "avatar use", "badge intensity"],
@@ -1187,6 +1190,7 @@ export const registryTiers: RegistryTier[] = [
           },
           {
             name: "APIKeysPage",
+            slug: "api-keys-page",
             description: "API key management page.",
             pattern: "Table/list + create dialog + secret reveal flow.",
             styleParams: ["mono key style", "danger emphasis"],
@@ -1334,6 +1338,7 @@ export const registryTiers: RegistryTier[] = [
             },
             {
               name: "HeroSaaS",
+              slug: "hero-saas",
               description: "Main product hero section.",
               pattern: "Heading, subcopy, CTA pair, social proof, screenshot.",
               styleParams: ["alignment", "media ratio", "accent intensity"],
@@ -1397,6 +1402,7 @@ export const registryTiers: RegistryTier[] = [
             },
             {
               name: "FAQSection",
+              slug: "faq-section",
               description: "Landing page FAQ block.",
               pattern: "SectionHeader + FAQList + support CTA.",
               styleParams: ["density", "background band", "CTA style"],
@@ -1415,6 +1421,7 @@ export const registryTiers: RegistryTier[] = [
             },
             {
               name: "CTASection",
+              slug: "cta-section",
               description: "Strong conversion section.",
               pattern: "Heading, support copy, CTA(s), trust note.",
               styleParams: ["background band", "contrast", "compact/full"],
@@ -1562,6 +1569,20 @@ export const registryTiers: RegistryTier[] = [
 ];
 
 export const registryItems = registryTiers.flatMap(tier => tier.clusters.flatMap(cluster => cluster.items));
+
+export const registryItemBySlug = Object.fromEntries(
+  registryItems.map(item => [item.slug, item]),
+) as Record<string, RegistryItem>;
+
+export const registryClusters: RegistryClusterSection[] = registryTiers.flatMap(tier =>
+  tier.clusters.map(cluster => ({
+    ...cluster,
+    tierId: tier.id,
+    tierLabel: tier.label,
+    tierTitle: tier.title,
+    tierDescription: tier.description,
+  })),
+);
 
 export const registryCounts = {
   total: registryItems.length,
