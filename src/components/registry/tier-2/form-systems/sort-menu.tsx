@@ -61,7 +61,7 @@ export function SortMenu(userProps: SortMenuProps) {
         <Select
           label={local.compact ? undefined : "Ordering"}
           value={currentValue()}
-          onChange={event => commit(event.currentTarget.value)}
+          onValueChange={commit}
           options={local.options}
           size={local.compact ? "sm" : "md"}
           description={local.compact ? undefined : "Lightweight ordering control designed to pair with toolbars and tables."}

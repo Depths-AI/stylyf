@@ -1,8 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-solid";
-import { For, Show, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { For, Show, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { createFieldAria } from "~/components/registry/tier-1/form-inputs/field";
 import { addMonths, formatDate, monthMatrix, sameDay, sameMonth, startOfDay, type CalendarValue } from "~/components/registry/tier-1/form-inputs/calendar-utils";
 
 type SelectionMode = "single" | "range";
@@ -76,12 +75,12 @@ export function Calendar(userProps: CalendarProps) {
     return Array.isArray(value) ? value : undefined;
   });
   const weeks = createMemo(() => monthMatrix(month()));
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   const commit = (next: CalendarValue) => {
     if (local.value === undefined) {
@@ -116,12 +115,12 @@ export function Calendar(userProps: CalendarProps) {
         <div class="text-sm font-semibold tracking-[-0.01em] text-foreground">{local.label}</div>
       </Show>
       <Show when={local.description}>
-        <p id={aria.descriptionId} class="text-sm leading-6 text-muted-foreground">
+        <p id={descriptionId} class="text-sm leading-6 text-muted-foreground">
           {local.description}
         </p>
       </Show>
 
-      <div class="ui-card p-4">
+      <div class="ui-card p-4" aria-describedby={describedBy}>
         <div class="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -197,7 +196,7 @@ export function Calendar(userProps: CalendarProps) {
       </div>
 
       <Show when={local.invalid && local.errorMessage}>
-        <p id={aria.errorId} class="text-sm font-medium leading-6 text-destructive">
+        <p id={errorId} class="text-sm font-medium leading-6 text-destructive">
           {local.errorMessage}
         </p>
       </Show>

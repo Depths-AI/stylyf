@@ -1,8 +1,9 @@
 import { CircleDot } from "lucide-solid";
-import { For, Show, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { For, Show, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { createFieldAria, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldSize = "sm" | "md" | "lg";
 
 type RadioOption = {
   description?: JSX.Element;
@@ -65,12 +66,12 @@ export function RadioGroup(userProps: RadioGroupProps) {
 
   const [internalValue, setInternalValue] = createSignal(local.defaultValue);
   const currentValue = createMemo(() => local.value ?? internalValue());
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   const commit = (next: string) => {
     if (local.value === undefined) {
@@ -81,12 +82,12 @@ export function RadioGroup(userProps: RadioGroupProps) {
   };
 
   return (
-    <fieldset class={cn("space-y-3", local.class)} aria-describedby={aria.describedBy} {...others}>
+    <fieldset class={cn("space-y-3", local.class)} aria-describedby={describedBy} {...others}>
       <Show when={local.label}>
         <legend class="text-sm font-semibold tracking-[-0.01em] text-foreground">{local.label}</legend>
       </Show>
       <Show when={local.description}>
-        <p id={aria.descriptionId} class="text-sm leading-6 text-muted-foreground">
+        <p id={descriptionId} class="text-sm leading-6 text-muted-foreground">
           {local.description}
         </p>
       </Show>
@@ -107,7 +108,7 @@ export function RadioGroup(userProps: RadioGroupProps) {
               <input
                 class="peer sr-only"
                 type="radio"
-                name={local.name ?? aria.inputId}
+                name={local.name ?? baseId}
                 value={option.value}
                 checked={currentValue() === option.value}
                 disabled={option.disabled}
@@ -129,7 +130,7 @@ export function RadioGroup(userProps: RadioGroupProps) {
       </div>
 
       <Show when={local.invalid && local.errorMessage}>
-        <p id={aria.errorId} class="text-sm font-medium leading-6 text-destructive">
+        <p id={errorId} class="text-sm font-medium leading-6 text-destructive">
           {local.errorMessage}
         </p>
       </Show>

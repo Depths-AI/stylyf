@@ -1,11 +1,36 @@
 import { Minus, Plus } from "lucide-solid";
-import { Show, children, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { Show, children, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { FieldCopy, FieldFrame, createFieldAria, fieldControlVariants, type FieldRadius, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
 
 type NumberAlign = "start" | "center" | "end";
 type NumberControlPlacement = "inline" | "stacked";
+type FieldRadius = "md" | "lg" | "pill";
+type FieldSize = "sm" | "md" | "lg";
+
+const frameSizeClasses = {
+  sm: "min-h-10 gap-2.5 px-3",
+  md: "min-h-11 gap-3 px-3.5",
+  lg: "min-h-13 gap-3.5 px-4.5",
+} as const;
+
+const frameRadiusClasses = {
+  md: "rounded-lg",
+  lg: "rounded-xl",
+  pill: "rounded-full",
+} as const;
+
+const controlSizeClasses = {
+  sm: "text-sm",
+  md: "text-sm",
+  lg: "text-base",
+} as const;
+
+const alignClasses = {
+  start: "text-left",
+  center: "text-center",
+  end: "text-right",
+} as const;
 
 export type NumberFieldProps = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "defaultValue" | "prefix" | "size" | "type" | "value"> & {
   align?: NumberAlign;
@@ -75,12 +100,12 @@ export function NumberField(userProps: NumberFieldProps) {
   const resolvedPrefix = children(() => local.prefix);
   const resolvedSuffix = children(() => local.suffix);
   const currentValue = createMemo(() => local.value ?? internalValue());
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
   let ref: HTMLInputElement | undefined;
 
   const displayValue = createMemo(() => {
@@ -97,6 +122,16 @@ export function NumberField(userProps: NumberFieldProps) {
     }
 
     return `${currentValue()}`;
+  });
+
+  const canDecrease = createMemo(() => {
+    if (others.disabled) return false;
+    return (currentValue() ?? local.min ?? 0) > (local.min ?? Number.NEGATIVE_INFINITY);
+  });
+
+  const canIncrease = createMemo(() => {
+    if (others.disabled) return false;
+    return (currentValue() ?? local.max ?? 0) < (local.max ?? Number.POSITIVE_INFINITY);
   });
 
   const commit = (next: number | undefined) => {
@@ -131,21 +166,27 @@ export function NumberField(userProps: NumberFieldProps) {
   };
 
   return (
-    <FieldCopy
-      label={local.label}
-      labelFor={aria.inputId}
-      description={local.description && <span id={aria.descriptionId}>{local.description}</span>}
-      invalid={local.invalid}
-      errorMessage={local.errorMessage && <span id={aria.errorId}>{local.errorMessage}</span>}
-      required={local.required}
-      class={local.class}
-    >
-      <FieldFrame
-        size={local.size}
-        radius={local.radius}
-        invalid={local.invalid}
-        disabled={others.disabled}
-        readOnly={others.readOnly}
+    <div class={cn("space-y-2.5", local.class)}>
+      <Show when={local.label}>
+        <div class="flex items-center gap-2">
+          <label for={baseId} class="text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {local.label}
+          </label>
+          <Show when={local.required}>
+            <span class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Required</span>
+          </Show>
+        </div>
+      </Show>
+      <div
+        class={cn(
+          "group relative flex w-full items-center border bg-background text-foreground shadow-inset transition-[border-color,box-shadow,background-color,color]",
+          "hover:border-primary/18 focus-within:border-primary/48 focus-within:bg-card focus-within:ring-2 focus-within:ring-ring/24",
+          local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
+          others.disabled && "cursor-not-allowed bg-muted/70 opacity-70",
+          others.readOnly && "bg-muted/40",
+          frameSizeClasses[local.size],
+          frameRadiusClasses[local.radius],
+        )}
       >
         <Show when={resolvedPrefix()}>
           <div class="shrink-0 text-muted-foreground">{resolvedPrefix()}</div>
@@ -153,11 +194,16 @@ export function NumberField(userProps: NumberFieldProps) {
 
         <input
           ref={ref}
-          id={aria.inputId}
+          id={baseId}
           type="text"
           inputMode="decimal"
-          class={cn(fieldControlVariants({ size: local.size, align: local.align }), "tabular-nums")}
-          aria-describedby={aria.describedBy}
+          class={cn(
+            "w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground/90 disabled:cursor-not-allowed",
+            controlSizeClasses[local.size],
+            alignClasses[local.align],
+            "tabular-nums font-semibold tracking-[0.08em]",
+          )}
+          aria-describedby={describedBy}
           aria-invalid={local.invalid ? true : undefined}
           value={displayValue()}
           onFocus={() => setDraft(currentValue() === undefined ? "" : `${currentValue()}`)}
@@ -183,27 +229,45 @@ export function NumberField(userProps: NumberFieldProps) {
           <div class="shrink-0 text-muted-foreground">{resolvedSuffix()}</div>
         </Show>
 
-        <div class={cn("shrink-0", local.controlPlacement === "stacked" ? "grid gap-1" : "inline-flex items-center gap-1")}>
+        <div
+          class={cn(
+            "shrink-0 rounded-full border border-border/78 bg-muted-soft shadow-inset",
+            local.controlPlacement === "stacked" ? "grid gap-1 p-1" : "inline-flex items-center p-1",
+          )}
+        >
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition hover:border-primary/28 hover:bg-accent hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
             aria-label="Decrease value"
             onClick={() => bump(-local.step)}
-            disabled={others.disabled || (currentValue() ?? local.min ?? 0) <= (local.min ?? Number.NEGATIVE_INFINITY)}
+            disabled={!canDecrease()}
           >
             <Minus class="size-4" />
           </button>
+          <Show when={local.controlPlacement === "inline"}>
+            <span class="h-5 w-px bg-border/70" />
+          </Show>
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition hover:border-primary/28 hover:bg-accent hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-background hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
             aria-label="Increase value"
             onClick={() => bump(local.step)}
-            disabled={others.disabled || (currentValue() ?? local.max ?? 0) >= (local.max ?? Number.POSITIVE_INFINITY)}
+            disabled={!canIncrease()}
           >
             <Plus class="size-4" />
           </button>
         </div>
-      </FieldFrame>
-    </FieldCopy>
+      </div>
+      <Show when={local.description}>
+        <div id={descriptionId} class="text-sm leading-6 text-muted-foreground">
+          {local.description}
+        </div>
+      </Show>
+      <Show when={local.invalid && local.errorMessage}>
+        <div id={errorId} class="text-sm font-medium leading-6 text-destructive">
+          {local.errorMessage}
+        </div>
+      </Show>
+    </div>
   );
 }

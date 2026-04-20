@@ -1,8 +1,28 @@
-import { Show, children, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { Show, children, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { CircleX } from "lucide-solid";
 import { cn } from "~/lib/cn";
-import { FieldCopy, FieldFrame, createFieldAria, fieldControlVariants, type FieldRadius, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldRadius = "md" | "lg" | "pill";
+type FieldSize = "sm" | "md" | "lg";
+
+const frameSizeClasses = {
+  sm: "min-h-10 gap-2.5 px-3",
+  md: "min-h-11 gap-3 px-3.5",
+  lg: "min-h-13 gap-3.5 px-4.5",
+} as const;
+
+const frameRadiusClasses = {
+  md: "rounded-lg",
+  lg: "rounded-xl",
+  pill: "rounded-full",
+} as const;
+
+const controlSizeClasses = {
+  sm: "text-sm",
+  md: "text-sm",
+  lg: "text-base",
+} as const;
 
 export type TextFieldProps = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "defaultValue" | "prefix" | "size" | "value"> & {
   class?: string;
@@ -59,12 +79,12 @@ export function TextField(userProps: TextFieldProps) {
   const [internalValue, setInternalValue] = createSignal(local.defaultValue);
   const resolvedPrefix = children(() => local.prefix);
   const resolvedSuffix = children(() => local.suffix);
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
   let ref: HTMLInputElement | undefined;
 
   const currentValue = createMemo(() => local.value ?? internalValue());
@@ -84,30 +104,40 @@ export function TextField(userProps: TextFieldProps) {
   };
 
   return (
-    <FieldCopy
-      label={local.label}
-      labelFor={aria.inputId}
-      description={local.description && <span id={aria.descriptionId}>{local.description}</span>}
-      invalid={local.invalid}
-      errorMessage={local.errorMessage && <span id={aria.errorId}>{local.errorMessage}</span>}
-      required={local.required}
-      class={local.class}
-    >
-      <FieldFrame
-        size={local.size}
-        radius={local.radius}
-        invalid={local.invalid}
-        disabled={others.disabled}
-        readOnly={others.readOnly}
+    <div class={cn("space-y-2.5", local.class)}>
+      <Show when={local.label}>
+        <div class="flex items-center gap-2">
+          <label for={baseId} class="text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {local.label}
+          </label>
+          <Show when={local.required}>
+            <span class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Required</span>
+          </Show>
+        </div>
+      </Show>
+      <div
+        class={cn(
+          "group relative flex w-full items-center border bg-background text-foreground shadow-inset transition-[border-color,box-shadow,background-color,color]",
+          "hover:border-primary/18 focus-within:border-primary/48 focus-within:bg-card focus-within:ring-2 focus-within:ring-ring/24",
+          local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
+          others.disabled && "cursor-not-allowed bg-muted/70 opacity-70",
+          others.readOnly && "bg-muted/40",
+          frameSizeClasses[local.size],
+          frameRadiusClasses[local.radius],
+        )}
       >
         <Show when={resolvedPrefix()}>
           <div class="shrink-0 text-muted-foreground">{resolvedPrefix()}</div>
         </Show>
         <input
           ref={ref}
-          id={aria.inputId}
-          class={cn(fieldControlVariants({ size: local.size }), local.inputClass)}
-          aria-describedby={aria.describedBy}
+          id={baseId}
+          class={cn(
+            "w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground/90 disabled:cursor-not-allowed",
+            controlSizeClasses[local.size],
+            local.inputClass,
+          )}
+          aria-describedby={describedBy}
           aria-invalid={local.invalid ? true : undefined}
           value={currentValue()}
           onInput={event => {
@@ -136,7 +166,17 @@ export function TextField(userProps: TextFieldProps) {
         <Show when={resolvedSuffix()}>
           <div class="shrink-0 text-muted-foreground">{resolvedSuffix()}</div>
         </Show>
-      </FieldFrame>
-    </FieldCopy>
+      </div>
+      <Show when={local.description}>
+        <div id={descriptionId} class="text-sm leading-6 text-muted-foreground">
+          {local.description}
+        </div>
+      </Show>
+      <Show when={local.invalid && local.errorMessage}>
+        <div id={errorId} class="text-sm font-medium leading-6 text-destructive">
+          {local.errorMessage}
+        </div>
+      </Show>
+    </div>
   );
 }

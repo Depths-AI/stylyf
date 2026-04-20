@@ -1,8 +1,28 @@
 import { Check, ChevronDown, CircleX, LoaderCircle } from "lucide-solid";
-import { For, Show, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { For, Show, createMemo, createSignal, createUniqueId, mergeProps, onCleanup, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { FieldCopy, FieldFrame, createFieldAria, fieldControlVariants, type FieldRadius, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldRadius = "md" | "lg" | "pill";
+type FieldSize = "sm" | "md" | "lg";
+
+const frameSizeClasses = {
+  sm: "min-h-10 gap-2.5 px-3",
+  md: "min-h-11 gap-3 px-3.5",
+  lg: "min-h-13 gap-3.5 px-4.5",
+} as const;
+
+const frameRadiusClasses = {
+  md: "rounded-lg",
+  lg: "rounded-xl",
+  pill: "rounded-full",
+} as const;
+
+const controlSizeClasses = {
+  sm: "text-sm",
+  md: "text-sm",
+  lg: "text-base",
+} as const;
 
 export type ComboboxOption = {
   description?: string;
@@ -79,16 +99,16 @@ export function Combobox(userProps: ComboboxProps) {
   const [internalSelectedValue, setInternalSelectedValue] = createSignal<string | undefined>(local.defaultSelectedValue);
   const [open, setOpen] = createSignal(false);
   const [highlightedIndex, setHighlightedIndex] = createSignal(0);
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
-
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
   const inputValue = createMemo(() => local.inputValue ?? internalInputValue());
   const selectedValue = createMemo(() => local.selectedValue ?? internalSelectedValue());
-  const listboxId = `${aria.inputId}-listbox`;
+  const listboxId = `${baseId}-listbox`;
+  let rootRef: HTMLDivElement | undefined;
 
   const filteredOptions = createMemo(() => {
     const query = inputValue().trim().toLowerCase();
@@ -124,35 +144,54 @@ export function Combobox(userProps: ComboboxProps) {
     setOpen(false);
   };
 
+  if (typeof document !== "undefined") {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (rootRef && !rootRef.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    onCleanup(() => document.removeEventListener("pointerdown", handlePointerDown));
+  }
+
   return (
-    <FieldCopy
-      label={local.label}
-      labelFor={aria.inputId}
-      description={local.description && <span id={aria.descriptionId}>{local.description}</span>}
-      invalid={local.invalid}
-      errorMessage={local.errorMessage && <span id={aria.errorId}>{local.errorMessage}</span>}
-      required={local.required}
-      class={local.class}
-    >
-      <div class="relative">
-        <FieldFrame
-          size={local.size}
-          radius={local.radius}
-          invalid={local.invalid}
-          disabled={others.disabled}
-          readOnly={others.readOnly}
-          class="pr-2"
+    <div class={cn("space-y-2.5", local.class)}>
+      <Show when={local.label}>
+        <div class="flex items-center gap-2">
+          <label for={baseId} class="text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {local.label}
+          </label>
+          <Show when={local.required}>
+            <span class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Required</span>
+          </Show>
+        </div>
+      </Show>
+      <div class="relative" ref={rootRef}>
+        <div
+          class={cn(
+            "group relative flex w-full items-center border bg-background text-foreground shadow-inset transition-[border-color,box-shadow,background-color,color]",
+            "hover:border-primary/18 focus-within:border-primary/48 focus-within:bg-card focus-within:ring-2 focus-within:ring-ring/24",
+            local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
+            others.disabled && "cursor-not-allowed bg-muted/70 opacity-70",
+            others.readOnly && "bg-muted/40",
+            frameSizeClasses[local.size],
+            frameRadiusClasses[local.radius],
+            "pr-2",
+          )}
         >
           <input
-            id={aria.inputId}
+            id={baseId}
             role="combobox"
             aria-autocomplete="list"
             aria-controls={open() ? listboxId : undefined}
             aria-expanded={open()}
-            aria-describedby={aria.describedBy}
+            aria-describedby={describedBy}
             aria-activedescendant={open() ? `${listboxId}-option-${highlightedIndex()}` : undefined}
             aria-invalid={local.invalid ? true : undefined}
-            class={fieldControlVariants({ size: local.size })}
+            class={cn(
+              "w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground/90 disabled:cursor-not-allowed",
+              controlSizeClasses[local.size],
+            )}
             value={inputValue()}
             onFocus={event => {
               const onFocus = local.onFocus as JSX.EventHandler<HTMLInputElement, FocusEvent> | undefined;
@@ -207,7 +246,7 @@ export function Combobox(userProps: ComboboxProps) {
           <Show when={local.loading} fallback={<ChevronDown class="mr-1 size-4 shrink-0 text-muted-foreground" />}>
             <LoaderCircle class="mr-1 size-4 shrink-0 animate-spin text-muted-foreground" />
           </Show>
-        </FieldFrame>
+        </div>
 
         <Show when={open()}>
           <div class="ui-popover absolute inset-x-0 top-[calc(100%+0.6rem)] z-20 overflow-hidden">
@@ -249,6 +288,16 @@ export function Combobox(userProps: ComboboxProps) {
           </div>
         </Show>
       </div>
-    </FieldCopy>
+      <Show when={local.description}>
+        <div id={descriptionId} class="text-sm leading-6 text-muted-foreground">
+          {local.description}
+        </div>
+      </Show>
+      <Show when={local.invalid && local.errorMessage}>
+        <div id={errorId} class="text-sm font-medium leading-6 text-destructive">
+          {local.errorMessage}
+        </div>
+      </Show>
+    </div>
   );
 }

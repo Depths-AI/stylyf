@@ -1,22 +1,23 @@
 import { Check, X } from "lucide-solid";
-import { Show, createSignal, mergeProps, splitProps } from "solid-js";
+import { Show, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { createFieldAria, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldSize = "sm" | "md" | "lg";
 
 type SwitchTone = "soft" | "solid" | "outline";
 type SwitchLabelPlacement = "end" | "start";
 
 const trackSizes = {
   sm: "h-7 w-12",
-  md: "h-8 w-14",
-  lg: "h-9 w-16",
+  md: "h-9 w-15",
+  lg: "h-10 w-17",
 } as const;
 
 const thumbSizes = {
   sm: "size-5 data-[checked=true]:translate-x-5",
-  md: "size-6 data-[checked=true]:translate-x-6",
-  lg: "size-7 data-[checked=true]:translate-x-7",
+  md: "size-7 data-[checked=true]:translate-x-[1.625rem]",
+  lg: "size-8 data-[checked=true]:translate-x-7",
 } as const;
 
 export type SwitchProps = Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "onChange" | "size"> & {
@@ -65,12 +66,12 @@ export function Switch(userProps: SwitchProps) {
 
   const [internalChecked, setInternalChecked] = createSignal(local.defaultChecked);
   const checked = () => local.checked ?? internalChecked();
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   const commit = (next: boolean) => {
     if (local.checked === undefined) {
@@ -101,22 +102,22 @@ export function Switch(userProps: SwitchProps) {
       )}
     >
       <button
-        id={aria.inputId}
+        id={baseId}
         type={local.type}
         role="switch"
         aria-checked={checked()}
-        aria-describedby={aria.describedBy}
+        aria-describedby={describedBy}
         aria-invalid={local.invalid ? true : undefined}
         onClick={handleClick}
         class={cn(
-          "relative inline-flex shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/18",
+          "relative inline-flex shrink-0 items-center rounded-full border shadow-inset transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/24",
           trackSizes[local.size],
           local.tone === "soft" &&
             "border-accent/35 bg-accent data-[checked=true]:border-primary/18 data-[checked=true]:bg-primary",
           local.tone === "outline" &&
             "border-border/70 bg-background data-[checked=true]:border-primary/35 data-[checked=true]:bg-accent",
           local.tone === "solid" && "border-primary/10 bg-primary text-primary-foreground",
-          local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
+          local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
         )}
         data-checked={checked() ? "true" : "false"}
         disabled={others.disabled}
@@ -137,17 +138,17 @@ export function Switch(userProps: SwitchProps) {
 
       <div class="min-w-0">
         <Show when={local.label}>
-          <label for={aria.inputId} class="block text-sm font-semibold tracking-[-0.01em] text-foreground">
+          <label for={baseId} class="block text-sm font-semibold tracking-[-0.01em] text-foreground">
             {local.label}
           </label>
         </Show>
         <Show when={local.description}>
-          <div id={aria.descriptionId} class="mt-1 text-sm leading-6 text-muted-foreground">
+          <div id={descriptionId} class="mt-1 text-sm leading-6 text-muted-foreground">
             {local.description}
           </div>
         </Show>
         <Show when={local.invalid && local.errorMessage}>
-          <div id={aria.errorId} class="mt-1 text-sm font-medium leading-6 text-destructive">
+          <div id={errorId} class="mt-1 text-sm font-medium leading-6 text-destructive">
             {local.errorMessage}
           </div>
         </Show>

@@ -1,7 +1,8 @@
-import { For, Show, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { For, Show, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { FieldCopy, createFieldAria, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldSize = "sm" | "md" | "lg";
 
 type SliderOrientation = "horizontal" | "vertical";
 
@@ -69,12 +70,12 @@ export function Slider(userProps: SliderProps) {
   const [internalValue, setInternalValue] = createSignal<number | [number, number]>(local.defaultValue);
   const currentValue = createMemo(() => normalize(local.value ?? internalValue(), local.min, local.max));
   const isRange = createMemo(() => Array.isArray(local.value ?? internalValue()));
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
 
   const percent = (value: number) => ((value - local.min) / (local.max - local.min)) * 100;
 
@@ -89,14 +90,12 @@ export function Slider(userProps: SliderProps) {
   };
 
   return (
-    <FieldCopy
-      label={local.label}
-      labelFor={aria.inputId}
-      description={local.description && <span id={aria.descriptionId}>{local.description}</span>}
-      invalid={local.invalid}
-      errorMessage={local.errorMessage && <span id={aria.errorId}>{local.errorMessage}</span>}
-      class={local.class}
-    >
+    <div class={cn("space-y-2.5", local.class)}>
+      <Show when={local.label}>
+        <label for={baseId} class="block text-sm font-semibold tracking-[-0.01em] text-foreground">
+          {local.label}
+        </label>
+      </Show>
       <div class={cn("space-y-4", local.orientation === "vertical" && "flex items-start gap-5 space-y-0")}>
         <div class={cn("relative", local.orientation === "horizontal" ? "w-full py-3" : "h-64 px-3")}>
           <div
@@ -127,13 +126,13 @@ export function Slider(userProps: SliderProps) {
           />
 
           <input
-            id={aria.inputId}
+            id={baseId}
             type="range"
             min={local.min}
             max={local.max}
             step={local.step}
             value={currentValue()[0]}
-            aria-describedby={aria.describedBy}
+            aria-describedby={describedBy}
             aria-invalid={local.invalid ? true : undefined}
             class={cn(
               "absolute appearance-none bg-transparent accent-foreground",
@@ -180,6 +179,16 @@ export function Slider(userProps: SliderProps) {
           </span>
         </div>
       </div>
-    </FieldCopy>
+      <Show when={local.description}>
+        <div id={descriptionId} class="text-sm leading-6 text-muted-foreground">
+          {local.description}
+        </div>
+      </Show>
+      <Show when={local.invalid && local.errorMessage}>
+        <div id={errorId} class="text-sm font-medium leading-6 text-destructive">
+          {local.errorMessage}
+        </div>
+      </Show>
+    </div>
   );
 }

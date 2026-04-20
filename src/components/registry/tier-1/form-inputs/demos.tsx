@@ -32,22 +32,26 @@ export function TextFieldPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <TextField
-          label="Workspace name"
-          description="This appears in invites and billing surfaces."
-          placeholder="Stylyf internal tools"
-          clearable
-          prefix={<Hash class="size-4" />}
-        />
-        <TextField
-          label="Owner email"
-          type="email"
-          placeholder="ops@stylyf.com"
-          prefix={<Mail class="size-4" />}
-          suffix={<ShieldCheck class="size-4" />}
-          invalid
-          errorMessage="Use a valid company email address."
-        />
+        <div data-demo-slot="workspace-name">
+          <TextField
+            label="Workspace name"
+            description="This appears in invites and billing surfaces."
+            placeholder="Stylyf internal tools"
+            clearable
+            prefix={<Hash class="size-4" />}
+          />
+        </div>
+        <div data-demo-slot="owner-email">
+          <TextField
+            label="Owner email"
+            type="email"
+            placeholder="ops@stylyf.com"
+            prefix={<Mail class="size-4" />}
+            suffix={<ShieldCheck class="size-4" />}
+            invalid
+            errorMessage="Use a valid company email address."
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -57,18 +61,22 @@ export function TextAreaPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <TextArea
-          label="Release note"
-          description="Auto-resize keeps copy editing comfortable."
-          defaultValue="Shipped production-safe hydration fixes for Stylyf and moved the edge compression contract fully into Caddy."
-          autoResize
-        />
-        <TextArea
-          label="Admin note"
-          placeholder="Describe why this account needs an exception."
-          invalid
-          errorMessage="An explanation is required before saving."
-        />
+        <div data-demo-slot="release-note">
+          <TextArea
+            label="Release note"
+            description="Auto-resize keeps copy editing comfortable."
+            defaultValue="Shipped production-safe hydration fixes for Stylyf and moved the edge compression contract fully into Caddy."
+            autoResize
+          />
+        </div>
+        <div data-demo-slot="admin-note">
+          <TextArea
+            label="Admin note"
+            placeholder="Describe why this account needs an exception."
+            invalid
+            errorMessage="An explanation is required before saving."
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -80,23 +88,28 @@ export function NumberFieldPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <NumberField
-          label="Team seats"
-          description="Steppers keep the value bounded and fast to adjust."
-          min={1}
-          max={50}
-          value={seats()}
-          onValueChange={setSeats}
-          suffix={<span class="text-xs uppercase tracking-[0.18em] text-muted-foreground">seats</span>}
-        />
-        <NumberField
-          label="Budget cap"
-          defaultValue={2400}
-          min={0}
-          step={100}
-          prefix={<DollarSign class="size-4" />}
-          formatOptions={{ maximumFractionDigits: 0 }}
-        />
+        <div data-demo-slot="team-seats">
+          <NumberField
+            label="Team seats"
+            description="Steppers keep the value bounded and fast to adjust."
+            min={1}
+            max={50}
+            value={seats()}
+            onValueChange={setSeats}
+            align="center"
+            suffix={<span class="text-xs uppercase tracking-[0.18em] text-muted-foreground">seats</span>}
+          />
+        </div>
+        <div data-demo-slot="budget-cap">
+          <NumberField
+            label="Budget cap"
+            defaultValue={2400}
+            min={0}
+            step={100}
+            prefix={<DollarSign class="size-4" />}
+            formatOptions={{ maximumFractionDigits: 0 }}
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -108,13 +121,14 @@ export function OTPFieldPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-end">
-        <OTPField
-          label="Verification code"
-          description="Paste is supported and focus advances automatically."
-          value={code()}
-          onValueChange={setCode}
-          masked
-        />
+        <div data-demo-slot="verification-code">
+          <OTPField
+            label="Verification code"
+            description="Paste is supported and focus advances automatically."
+            value={code()}
+            onValueChange={setCode}
+          />
+        </div>
         <div class="ui-demo-inset text-sm text-muted-foreground">
           Aggregated value: <span class="font-mono text-foreground">{code() || "------"}</span>
         </div>
@@ -129,22 +143,28 @@ export function CheckboxPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="space-y-4">
-        <Checkbox
-          label="Weekly product digest"
-          description="Receives the Friday summary of shipped changes."
-          checked={updates()}
-          onCheckedChange={setUpdates}
-        />
-        <Checkbox
-          label="Apply to all child workspaces"
-          description="A tri-state checkbox for cascading workspace permissions."
-          indeterminate
-        />
-        <Checkbox
-          label="Accept the security acknowledgment"
-          invalid
-          errorMessage="This acknowledgment is required."
-        />
+        <div data-demo-slot="product-digest">
+          <Checkbox
+            label="Weekly product digest"
+            description="Receives the Friday summary of shipped changes."
+            checked={updates()}
+            onCheckedChange={setUpdates}
+          />
+        </div>
+        <div data-demo-slot="child-workspaces">
+          <Checkbox
+            label="Apply to all child workspaces"
+            description="A tri-state checkbox for cascading workspace permissions."
+            indeterminate
+          />
+        </div>
+        <div data-demo-slot="security-acknowledgment">
+          <Checkbox
+            label="Accept the security acknowledgment"
+            invalid
+            errorMessage="This acknowledgment is required."
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -155,12 +175,14 @@ export function RadioGroupPreview(props: { item: RegistryItem }) {
 
   return (
     <DemoFrame item={props.item} title="Live primitive">
-      <RadioGroup
-        label="Workspace plan"
-        description="Arrow keys move through the set because the primitive uses real radio inputs."
-        value={plan()}
-        onValueChange={setPlan}
-      />
+      <div data-demo-slot="workspace-plan">
+        <RadioGroup
+          label="Workspace plan"
+          description="Arrow keys move through the set because the primitive uses real radio inputs."
+          value={plan()}
+          onValueChange={setPlan}
+        />
+      </div>
     </DemoFrame>
   );
 }
@@ -171,19 +193,23 @@ export function SwitchPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="space-y-4">
-        <Switch
-          label="Immediate publish"
-          description="When enabled, approved content goes live without a second review gate."
-          checked={enabled()}
-          onCheckedChange={setEnabled}
-        />
-        <Switch
-          label="Lock external sharing"
-          description="A more severe setting with an invalid state for policy conflict."
-          tone="outline"
-          invalid
-          errorMessage="Cannot be enabled while guest access is still active."
-        />
+        <div data-demo-slot="immediate-publish">
+          <Switch
+            label="Immediate publish"
+            description="When enabled, approved content goes live without a second review gate."
+            checked={enabled()}
+            onCheckedChange={setEnabled}
+          />
+        </div>
+        <div data-demo-slot="lock-external-sharing">
+          <Switch
+            label="Lock external sharing"
+            description="A more severe setting with an invalid state for policy conflict."
+            tone="outline"
+            invalid
+            errorMessage="Cannot be enabled while guest access is still active."
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -193,18 +219,22 @@ export function SelectPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <Select label="Surface preset" description="Finite choices can stay semantic with a native select." />
-        <Select
-          label="Environment"
-          placeholder="Choose an environment"
-          invalid
-          errorMessage="Production access requires explicit approval."
-          options={[
-            { value: "dev", label: "Development" },
-            { value: "stage", label: "Staging" },
-            { value: "prod", label: "Production" },
-          ]}
-        />
+        <div data-demo-slot="surface-preset">
+          <Select label="Surface preset" description="The trigger, listbox, and selected value stay fully themeable." />
+        </div>
+        <div data-demo-slot="environment">
+          <Select
+            label="Environment"
+            placeholder="Choose an environment"
+            invalid
+            errorMessage="Production access requires explicit approval."
+            options={[
+              { value: "dev", label: "Development" },
+              { value: "stage", label: "Staging" },
+              { value: "prod", label: "Production" },
+            ]}
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -216,18 +246,20 @@ export function ComboboxPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-end">
-        <Combobox
-          label="Search workspace"
-          description="Listbox suggestions filter as you type and support keyboard selection."
-          onSelectedValueChange={setSelected}
-          placeholder="Search collections"
-          options={[
-            { value: "search", label: "Search", description: "Discovery and knowledge retrieval" },
-            { value: "billing", label: "Billing", description: "Invoices, cards, and plans" },
-            { value: "ops", label: "Ops", description: "Queues and support tooling" },
-            { value: "security", label: "Security", description: "Sessions, keys, and access policy" },
-          ]}
-        />
+        <div data-demo-slot="workspace-search">
+          <Combobox
+            label="Search workspace"
+            description="Listbox suggestions filter as you type and support keyboard selection."
+            onSelectedValueChange={setSelected}
+            placeholder="Search collections"
+            options={[
+              { value: "search", label: "Search", description: "Discovery and knowledge retrieval" },
+              { value: "billing", label: "Billing", description: "Invoices, cards, and plans" },
+              { value: "ops", label: "Ops", description: "Queues and support tooling" },
+              { value: "security", label: "Security", description: "Sessions, keys, and access policy" },
+            ]}
+          />
+        </div>
         <div class="ui-demo-inset text-sm text-muted-foreground">
           Selected: <span class="font-semibold text-foreground">{selected() ?? "None"}</span>
         </div>
@@ -243,20 +275,24 @@ export function SliderPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="space-y-6">
-        <Slider
-          label="Confidence threshold"
-          description="Native range inputs keep pointer and keyboard behavior stable."
-          value={threshold()}
-          onValueChange={setThreshold}
-          marks={[0, 25, 50, 75, 100]}
-        />
-        <Slider
-          label="Usage band"
-          description="Range mode is useful for filtering and quota targeting."
-          value={range()}
-          onValueChange={setRange}
-          marks={[10, 25, 50, 75, 90]}
-        />
+        <div data-demo-slot="confidence-threshold">
+          <Slider
+            label="Confidence threshold"
+            description="Native range inputs keep pointer and keyboard behavior stable."
+            value={threshold()}
+            onValueChange={setThreshold}
+            marks={[0, 25, 50, 75, 100]}
+          />
+        </div>
+        <div data-demo-slot="usage-band">
+          <Slider
+            label="Usage band"
+            description="Range mode is useful for filtering and quota targeting."
+            value={range()}
+            onValueChange={setRange}
+            marks={[10, 25, 50, 75, 90]}
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -269,17 +305,21 @@ export function CalendarPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <Calendar
-          label="Single date"
-          value={single()}
-          onValueChange={value => setSingle(value as Date | undefined)}
-        />
-        <Calendar
-          label="Date range"
-          mode="range"
-          value={range()}
-          onValueChange={value => setRange(value as [Date | undefined, Date | undefined] | undefined)}
-        />
+        <div data-demo-slot="single-date">
+          <Calendar
+            label="Single date"
+            value={single()}
+            onValueChange={value => setSingle(value as Date | undefined)}
+          />
+        </div>
+        <div data-demo-slot="date-range">
+          <Calendar
+            label="Date range"
+            mode="range"
+            value={range()}
+            onValueChange={value => setRange(value as [Date | undefined, Date | undefined] | undefined)}
+          />
+        </div>
       </div>
     </DemoFrame>
   );
@@ -292,19 +332,23 @@ export function DatePickerPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-2">
-        <DatePicker
-          label="Launch date"
-          description="Field shell plus calendar overlay for route-level forms."
-          value={single()}
-          onValueChange={value => setSingle(value as Date | undefined)}
-        />
-        <DatePicker
-          label="Campaign window"
-          mode="range"
-          value={range()}
-          onValueChange={value => setRange(value as [Date | undefined, Date | undefined] | undefined)}
-          description="Range mode closes only after both boundaries are selected."
-        />
+        <div data-demo-slot="launch-date">
+          <DatePicker
+            label="Launch date"
+            description="Field shell plus calendar overlay for route-level forms."
+            value={single()}
+            onValueChange={value => setSingle(value as Date | undefined)}
+          />
+        </div>
+        <div data-demo-slot="campaign-window">
+          <DatePicker
+            label="Campaign window"
+            mode="range"
+            value={range()}
+            onValueChange={value => setRange(value as [Date | undefined, Date | undefined] | undefined)}
+            description="Range mode closes only after both boundaries are selected."
+          />
+        </div>
       </div>
     </DemoFrame>
   );

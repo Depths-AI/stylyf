@@ -1,7 +1,9 @@
-import { For, Show, createMemo, createSignal, mergeProps, splitProps } from "solid-js";
+import { For, Show, createMemo, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { FieldCopy, createFieldAria, type FieldRadius, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldRadius = "md" | "lg" | "pill";
+type FieldSize = "sm" | "md" | "lg";
 
 export type OTPFieldProps = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "value" | "defaultValue" | "size" | "onInput"> & {
   cellClass?: string;
@@ -71,13 +73,14 @@ export function OTPField(userProps: OTPFieldProps) {
   const [internalValue, setInternalValue] = createSignal(local.defaultValue);
   const currentValue = createMemo(() => (local.value ?? internalValue()).slice(0, local.length));
   const chars = createMemo(() => Array.from({ length: local.length }, (_, index) => currentValue()[index] ?? ""));
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
   const refs: Array<HTMLInputElement | undefined> = [];
+  const midpoint = createMemo(() => Math.ceil(local.length / 2));
 
   const commit = (next: string) => {
     const normalized = next.replace(/\s+/g, "").slice(0, local.length);
@@ -98,80 +101,105 @@ export function OTPField(userProps: OTPFieldProps) {
   const focusIndex = (index: number) => refs[index]?.focus();
 
   return (
-    <FieldCopy
-      label={local.label}
-      labelFor={aria.inputId}
-      description={local.description && <span id={aria.descriptionId}>{local.description}</span>}
-      invalid={local.invalid}
-      errorMessage={local.errorMessage && <span id={aria.errorId}>{local.errorMessage}</span>}
-      required={local.required}
-      class={local.class}
-    >
-      <div class={cn("flex flex-wrap items-center", gapClasses[local.gap])}>
+    <div class={cn("space-y-2.5", local.class)}>
+      <Show when={local.label}>
+        <div class="flex items-center gap-2">
+          <label for={baseId} class="text-sm font-semibold tracking-[-0.01em] text-foreground">
+            {local.label}
+          </label>
+          <Show when={local.required}>
+            <span class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Required</span>
+          </Show>
+        </div>
+      </Show>
+      <div class={cn("inline-flex flex-wrap items-center rounded-[calc(var(--radius-xl)+0.1rem)] border border-border/82 bg-muted-soft p-3 shadow-inset", gapClasses[local.gap])}>
         <For each={chars()}>
           {(value, index) => (
-            <input
-              ref={element => {
-                refs[index()] = element;
-              }}
-              value={local.masked && value ? "•" : value}
-              inputMode="numeric"
-              type="text"
-              maxLength={1}
-              id={index() === 0 ? aria.inputId : undefined}
-              aria-invalid={local.invalid ? true : undefined}
-              aria-describedby={aria.describedBy}
-              aria-label={`Digit ${index() + 1}`}
-              class={cn(
-                "rounded-lg border border-border/70 bg-background text-center font-semibold outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/18",
-                cellClasses[local.size],
-                local.mono && "font-mono tracking-[0.16em]",
-                local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
-                local.radius === "md" && "rounded-md",
-                local.radius === "pill" && "rounded-full",
-                local.cellClass,
-              )}
-              disabled={others.disabled}
-              readOnly={others.readOnly}
-              onInput={event => {
-                const raw = event.currentTarget.value.replace(/[^0-9A-Za-z]/g, "").slice(-1);
-                assignAt(index(), raw);
+            <>
+              <input
+                ref={element => {
+                  refs[index()] = element;
+                }}
+                value={local.masked && value ? "•" : value}
+                inputMode="numeric"
+                type="text"
+                maxLength={1}
+                id={index() === 0 ? baseId : undefined}
+                aria-invalid={local.invalid ? true : undefined}
+                aria-describedby={describedBy}
+                aria-label={`Digit ${index() + 1}`}
+                class={cn(
+                  "rounded-xl border border-border/76 bg-background text-center font-semibold outline-none shadow-inset transition focus:border-primary/48 focus:bg-card focus:ring-2 focus:ring-ring/24",
+                  cellClasses[local.size],
+                  local.mono && "font-mono tracking-[0.2em]",
+                  value && "border-primary/24 bg-card",
+                  local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
+                  local.radius === "md" && "rounded-lg",
+                  local.radius === "pill" && "rounded-full",
+                  local.cellClass,
+                )}
+                disabled={others.disabled}
+                readOnly={others.readOnly}
+                onInput={event => {
+                  const raw = event.currentTarget.value.replace(/[^0-9A-Za-z]/g, "").slice(-1);
+                  assignAt(index(), raw);
 
-                if (raw && index() < local.length - 1) {
-                  focusIndex(index() + 1);
-                }
-              }}
-              onKeyDown={event => {
-                if (event.key === "Backspace" && !chars()[index()] && index() > 0) {
-                  assignAt(index() - 1, "");
-                  focusIndex(index() - 1);
-                }
+                  if (raw && index() < local.length - 1) {
+                    focusIndex(index() + 1);
+                  }
+                }}
+                onKeyDown={event => {
+                  if (event.key === "Backspace" && chars()[index()]) {
+                    event.preventDefault();
+                    assignAt(index(), "");
+                    return;
+                  }
 
-                if (event.key === "ArrowLeft" && index() > 0) {
+                  if (event.key === "Backspace" && !chars()[index()] && index() > 0) {
+                    event.preventDefault();
+                    assignAt(index() - 1, "");
+                    focusIndex(index() - 1);
+                  }
+
+                  if (event.key === "ArrowLeft" && index() > 0) {
+                    event.preventDefault();
+                    focusIndex(index() - 1);
+                  }
+
+                  if (event.key === "ArrowRight" && index() < local.length - 1) {
+                    event.preventDefault();
+                    focusIndex(index() + 1);
+                  }
+                }}
+                onPaste={event => {
                   event.preventDefault();
-                  focusIndex(index() - 1);
-                }
-
-                if (event.key === "ArrowRight" && index() < local.length - 1) {
-                  event.preventDefault();
-                  focusIndex(index() + 1);
-                }
-              }}
-              onPaste={event => {
-                event.preventDefault();
-                const pasted = (event.clipboardData?.getData("text") ?? "").replace(/[^0-9A-Za-z]/g, "").slice(0, local.length);
-                commit(pasted);
-                focusIndex(Math.min(pasted.length, local.length - 1));
-              }}
-              {...others}
-            />
+                  const pasted = (event.clipboardData?.getData("text") ?? "").replace(/[^0-9A-Za-z]/g, "").slice(0, local.length);
+                  commit(pasted);
+                  focusIndex(Math.min(pasted.length, local.length - 1));
+                }}
+                {...others}
+              />
+              <Show when={index() + 1 === midpoint() && index() + 1 !== local.length}>
+                <span class="mx-0.5 h-px w-4 bg-border/70" aria-hidden="true" />
+              </Show>
+            </>
           )}
         </For>
       </div>
 
       <Show when={currentValue().length === local.length}>
-        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Complete</div>
+        <div class="ui-chip ui-chip-accent w-fit text-[0.7rem] font-semibold uppercase tracking-[0.2em]">Complete</div>
       </Show>
-    </FieldCopy>
+      <Show when={local.description}>
+        <div id={descriptionId} class="text-sm leading-6 text-muted-foreground">
+          {local.description}
+        </div>
+      </Show>
+      <Show when={local.invalid && local.errorMessage}>
+        <div id={errorId} class="text-sm font-medium leading-6 text-destructive">
+          {local.errorMessage}
+        </div>
+      </Show>
+    </div>
   );
 }

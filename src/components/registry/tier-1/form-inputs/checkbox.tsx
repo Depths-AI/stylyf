@@ -1,15 +1,17 @@
 import { Check, Minus } from "lucide-solid";
-import { Show, createEffect, createSignal, mergeProps, splitProps } from "solid-js";
+import { Show, createEffect, createSignal, createUniqueId, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
-import { createFieldAria, type FieldRadius, type FieldSize } from "~/components/registry/tier-1/form-inputs/field";
+
+type FieldRadius = "md" | "lg" | "pill";
+type FieldSize = "sm" | "md" | "lg";
 
 type CheckboxTone = "soft" | "outline" | "solid";
 
 const indicatorSizes = {
-  sm: "size-4.5",
-  md: "size-5",
-  lg: "size-5.5",
+  sm: "size-5",
+  md: "size-5.5",
+  lg: "size-6",
 } as const;
 
 const labelSizes = {
@@ -64,12 +66,12 @@ export function Checkbox(userProps: CheckboxProps) {
 
   const [internalChecked, setInternalChecked] = createSignal(local.defaultChecked);
   const checked = () => local.checked ?? internalChecked();
-  const aria = createFieldAria({
-    description: local.description,
-    errorMessage: local.errorMessage,
-    id: local.id,
-    invalid: local.invalid,
-  });
+  const baseId = local.id ?? createUniqueId();
+  const descriptionId = `${baseId}-description`;
+  const errorId = `${baseId}-error`;
+  const describedBy = [local.description ? descriptionId : undefined, local.invalid && local.errorMessage ? errorId : undefined]
+    .filter(Boolean)
+    .join(" ") || undefined;
   let ref: HTMLInputElement | undefined;
 
   createEffect(() => {
@@ -87,22 +89,22 @@ export function Checkbox(userProps: CheckboxProps) {
   };
 
   return (
-    <label class={cn("flex items-start gap-3", others.disabled && "opacity-70", local.class)} for={aria.inputId}>
+    <label class={cn("flex items-start gap-3", others.disabled && "opacity-70", local.class)} for={baseId}>
       <span class="relative mt-0.5">
         <input
           ref={ref}
-          id={aria.inputId}
+          id={baseId}
           type="checkbox"
           class="peer sr-only"
           checked={checked()}
-          aria-describedby={aria.describedBy}
+          aria-describedby={describedBy}
           aria-invalid={local.invalid ? true : undefined}
           onChange={event => commit(event.currentTarget.checked)}
           {...others}
         />
         <span
           class={cn(
-            "inline-flex items-center justify-center border transition peer-focus-visible:ring-2 peer-focus-visible:ring-ring/18",
+            "inline-flex items-center justify-center border shadow-inset transition peer-focus-visible:ring-2 peer-focus-visible:ring-ring/24",
             indicatorSizes[local.size],
             local.radius === "md" && "rounded-md",
             local.radius === "lg" && "rounded-lg",
@@ -112,7 +114,7 @@ export function Checkbox(userProps: CheckboxProps) {
             local.tone === "outline" &&
               "border-border bg-background text-primary peer-checked:border-primary/35 peer-checked:bg-accent peer-checked:text-accent-foreground",
             local.tone === "solid" && "border-primary/15 bg-primary text-primary-foreground",
-            local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
+            local.invalid && "border-destructive/52 ring-2 ring-destructive/14",
           )}
         >
           <Show when={local.indeterminate && !checked()} fallback={<Check class="size-3.5 opacity-0 transition peer-checked:opacity-100" />}>
@@ -128,12 +130,12 @@ export function Checkbox(userProps: CheckboxProps) {
           </span>
         </Show>
         <Show when={local.description}>
-          <span id={aria.descriptionId} class="mt-1 block text-sm leading-6 text-muted-foreground">
+          <span id={descriptionId} class="mt-1 block text-sm leading-6 text-muted-foreground">
             {local.description}
           </span>
         </Show>
         <Show when={local.invalid && local.errorMessage}>
-          <span id={aria.errorId} class="mt-1 block text-sm font-medium leading-6 text-destructive">
+          <span id={errorId} class="mt-1 block text-sm font-medium leading-6 text-destructive">
             {local.errorMessage}
           </span>
         </Show>
