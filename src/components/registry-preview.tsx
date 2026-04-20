@@ -37,6 +37,14 @@ import {
   TabsPreview,
   TooltipPreview,
 } from "~/components/registry/tier-1/disclosure-overlay/demos";
+import {
+  AvatarPreview,
+  BadgePreview,
+  ProgressPreview,
+  SeparatorPreview,
+  SkeletonPreview,
+  ToastPreview,
+} from "~/components/registry/tier-1/feedback-display/demos";
 import type { RegistryItem } from "~/lib/registry";
 
 const implementedPreviewBySlug: Record<string, Component<{ item: RegistryItem }>> = {
@@ -71,6 +79,12 @@ const implementedPreviewBySlug: Record<string, Component<{ item: RegistryItem }>
   "context-menu": ContextMenuPreview,
   menubar: MenubarPreview,
   "command-menu": CommandMenuPreview,
+  progress: ProgressPreview,
+  badge: BadgePreview,
+  avatar: AvatarPreview,
+  toast: ToastPreview,
+  skeleton: SkeletonPreview,
+  separator: SeparatorPreview,
 };
 
 export function RegistryPreview(props: { item: RegistryItem }) {

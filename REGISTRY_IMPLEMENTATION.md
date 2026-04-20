@@ -10,7 +10,7 @@ Stylyf is being implemented cluster by cluster. Each cluster should land as a co
   TextField, TextArea, NumberField, OTPField, Checkbox, RadioGroup, Switch, Select, Combobox, Slider, Calendar, DatePicker
 - [x] Disclosure & Overlay
   CommandMenu, Tabs, Accordion, Collapsible, Dialog, AlertDialog, Drawer, Popover, Tooltip, DropdownMenu, ContextMenu, Menubar
-- [ ] Feedback & Display
+- [x] Feedback & Display
   Progress, Badge, Avatar, Toast, Skeleton, Separator
 - [ ] Data & Structure
   Table
