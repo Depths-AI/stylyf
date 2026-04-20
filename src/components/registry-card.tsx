@@ -1,9 +1,10 @@
 import { For, Show, createSignal } from "solid-js";
 import { ArrowRight } from "lucide-solid";
 import { CopyButton } from "~/components/copy-button";
-import { PreviewShell } from "~/components/preview-shell";
+import { RegistryPreview } from "~/components/registry-preview";
 import { cn } from "~/lib/cn";
-import { sourceFor, targetPath, type RegistryItem } from "~/lib/registry";
+import { targetPath, type RegistryItem } from "~/lib/registry";
+import { sourceFor } from "~/lib/registry-source";
 
 type RegistryPane = "preview" | "source";
 
@@ -138,7 +139,7 @@ export function RegistryCard(props: { item: RegistryItem }) {
                 </div>
               }
             >
-              <PreviewShell item={props.item} />
+              <RegistryPreview item={props.item} />
             </Show>
           </div>
         </section>

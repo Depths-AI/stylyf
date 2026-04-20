@@ -92,7 +92,7 @@ export function targetPath(item: RegistryItem) {
   return componentFilePath(item);
 }
 
-export function sourceFor(item: RegistryItem) {
+export function starterSourceFor(item: RegistryItem) {
   const symbol = componentSymbol(item.name);
 
   if (item.registryShape.includes("page")) {
