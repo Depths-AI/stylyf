@@ -268,9 +268,7 @@ function ToggleGroupRoot(userProps: ToggleGroupProps) {
         )}
         {...others}
       >
-        <Show when={local.children} fallback={defaultToggleGroupChildren()}>
-          {local.children}
-        </Show>
+        {local.children ?? defaultToggleGroupChildren()}
       </div>
     </ToggleGroupContext.Provider>
   );
@@ -389,9 +387,7 @@ export function ToggleGroupItem(userProps: ToggleGroupItemProps) {
       onKeyDown={handleKeyDown}
       {...others}
     >
-      <Show when={local.children} fallback={local.value}>
-        {local.children}
-      </Show>
+      {local.children ?? local.value}
     </button>
   );
 }

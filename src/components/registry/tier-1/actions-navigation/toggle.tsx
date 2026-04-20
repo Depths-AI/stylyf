@@ -38,7 +38,6 @@ export function Toggle(userProps: ToggleProps) {
     {
       type: "button" as const,
       children: "Toggle",
-      leftIcon: <Bold />,
       intent: "neutral" as const,
       tone: "soft" as const,
       size: "md" as const,
@@ -123,7 +122,7 @@ export function Toggle(userProps: ToggleProps) {
       {...others}
     >
       <ActionContent
-        leftIcon={local.leftIcon}
+        leftIcon={local.leftIcon ?? <Bold />}
         rightIcon={local.rightIcon}
         loading={local.loading}
         pending={local.pending}

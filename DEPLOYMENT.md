@@ -65,7 +65,12 @@ searchupp.com, www.searchupp.com {
 
 stylyf.com, www.stylyf.com {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:3001
+	reverse_proxy 127.0.0.1:3001 {
+		header_up -Accept-Encoding
+		transport http {
+			compression off
+		}
+	}
 }
 ```
 
@@ -73,6 +78,20 @@ Validate and reload:
 
 ```bash
 caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+```
+
+## Deployment learnings
+
+- Keep the proxy contract simple. Let `Caddy` handle edge compression and let the SolidStart/Nitro app serve normal upstream responses.
+- Strip `Accept-Encoding` on the upstream proxy request for Stylyf. Caddy passes request headers through by default, and Nitro uses `Accept-Encoding` when deciding whether to serve precompressed public assets. If that contract gets out of sync with the build output, asset requests can fail.
+- Do not add Stylyf-specific helper scripts or copied release directories. The repo checkout is the deployment source of truth, so the update flow stays:
+
+```bash
+git pull
+npm install
+npm run build
+systemctl restart stylyf
 systemctl reload caddy
 ```
 

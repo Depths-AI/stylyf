@@ -1,4 +1,4 @@
-import { For, Show, splitProps } from "solid-js";
+import { For, Show, children, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import type { RegistryItem } from "~/lib/registry";
 import { cn } from "~/lib/cn";
@@ -9,6 +9,7 @@ type RegistryComponentShellProps = JSX.HTMLAttributes<HTMLElement> & {
 
 export function RegistryComponentShell(props: RegistryComponentShellProps) {
   const [local, others] = splitProps(props, ["item", "class", "children"]);
+  const resolvedChildren = children(() => local.children);
 
   return (
     <section
@@ -46,8 +47,8 @@ export function RegistryComponentShell(props: RegistryComponentShellProps) {
               later sweep.
             </p>
             <p class="mt-4 text-sm leading-6 text-muted">{local.item.pattern}</p>
-            <Show when={local.children}>
-              <div class="mt-4">{local.children}</div>
+            <Show when={resolvedChildren()}>
+              <div class="mt-4">{resolvedChildren()}</div>
             </Show>
           </div>
 

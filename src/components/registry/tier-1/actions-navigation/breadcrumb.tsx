@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router";
 import { ChevronRight, Ellipsis } from "lucide-solid";
-import { Show, mergeProps, splitProps } from "solid-js";
+import { children, mergeProps, splitProps } from "solid-js";
 import type { JSX, ParentProps } from "solid-js";
 import { cn } from "~/lib/cn";
 
@@ -31,6 +31,7 @@ export type BreadcrumbProps = ParentProps<JSX.HTMLAttributes<HTMLElement> & { la
 function BreadcrumbRoot(userProps: BreadcrumbProps) {
   const props = mergeProps({ label: "Breadcrumb" }, userProps);
   const [local, others] = splitProps(props, ["children", "class", "label"]);
+  const resolvedChildren = children(() => local.children);
 
   return (
     <nav
@@ -38,9 +39,7 @@ function BreadcrumbRoot(userProps: BreadcrumbProps) {
       class={cn("w-full text-sm text-muted", local.class)}
       {...others}
     >
-      <Show when={local.children} fallback={defaultBreadcrumbChildren()}>
-        {local.children}
-      </Show>
+      {resolvedChildren() ?? defaultBreadcrumbChildren()}
     </nav>
   );
 }

@@ -1,5 +1,5 @@
 import { LoaderCircle, Plus } from "lucide-solid";
-import { Show, mergeProps, splitProps } from "solid-js";
+import { mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { cn } from "~/lib/cn";
 import {
@@ -53,7 +53,6 @@ export function IconButton(userProps: IconButtonProps) {
       density: "comfortable" as const,
       shape: "round" as const,
       label: "Icon button",
-      children: <Plus />,
     },
     userProps,
   );
@@ -108,9 +107,7 @@ export function IconButton(userProps: IconButtonProps) {
       data-pressed={local.pressed ? "true" : "false"}
       {...others}
     >
-      <Show when={local.loading || local.pending} fallback={local.children}>
-        <LoaderCircle class="animate-spin" />
-      </Show>
+      {local.loading || local.pending ? <LoaderCircle class="animate-spin" /> : local.children ?? <Plus />}
     </button>
   );
 }
