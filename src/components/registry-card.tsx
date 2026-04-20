@@ -1,10 +1,13 @@
-import { For, Show, createSignal } from "solid-js";
+import { Dynamic } from "solid-js/web";
+import { For, Show, createEffect, createSignal } from "solid-js";
+import type { Component } from "solid-js";
 import { ArrowRight } from "lucide-solid";
 import { CopyButton } from "~/components/copy-button";
-import { RegistryPreview } from "~/components/registry-preview";
+import { PreviewShell } from "~/components/preview-shell";
+import { Skeleton } from "~/components/registry/tier-1/feedback-display/skeleton";
 import { cn } from "~/lib/cn";
 import { targetPath, type RegistryItem } from "~/lib/registry";
-import { sourceFor } from "~/lib/registry-source";
+import { loadSourceFor } from "~/lib/registry-source";
 
 type RegistryPane = "preview" | "source";
 
@@ -18,13 +21,85 @@ function pillTone(index: number) {
   return tones[index % tones.length];
 }
 
-export function RegistryCard(props: { item: RegistryItem }) {
+function PreviewPlaceholder() {
+  return (
+    <div class="space-y-4">
+      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+        <span>Deferred preview</span>
+        <span class="text-border">/</span>
+        <span>Loading on demand</span>
+      </div>
+      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">
+        <div class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div class="space-y-3">
+            <Skeleton shape="line" width="10rem" height="0.85rem" />
+            <Skeleton width="100%" height="4rem" />
+            <Skeleton width="82%" height="3rem" />
+          </div>
+          <div class="space-y-3 rounded-[1.2rem] border border-border/70 bg-background p-4">
+            <Skeleton shape="line" width="8rem" height="0.8rem" />
+            <Skeleton width="100%" height="1rem" />
+            <Skeleton width="90%" height="1rem" />
+            <Skeleton width="64%" height="1rem" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SourcePlaceholder(props: { loading: boolean }) {
+  return (
+    <div>
+      <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+        {props.loading ? "Loading source" : "Source on demand"}
+      </div>
+      <div class="mt-1 text-sm text-foreground">
+        {props.loading ? "Fetching the current source file." : "Open this tab to fetch the live source without front-loading every file."}
+      </div>
+      <div class="mt-4 space-y-3 rounded-[1.2rem] border border-border/70 bg-ink px-4 py-4">
+        <Skeleton width="20%" height="0.8rem" class="bg-white/8 border-white/10" />
+        <Skeleton width="88%" height="0.8rem" class="bg-white/8 border-white/10" />
+        <Skeleton width="74%" height="0.8rem" class="bg-white/8 border-white/10" />
+        <Skeleton width="94%" height="0.8rem" class="bg-white/8 border-white/10" />
+        <Skeleton width="60%" height="0.8rem" class="bg-white/8 border-white/10" />
+      </div>
+    </div>
+  );
+}
+
+export function RegistryCard(props: {
+  item: RegistryItem;
+  previewComponent?: Component<{ item: RegistryItem }>;
+  previewReady: boolean;
+}) {
   const [activePane, setActivePane] = createSignal<RegistryPane>("preview");
-  const source = sourceFor(props.item);
+  const [source, setSource] = createSignal<string>();
+  const [sourceStatus, setSourceStatus] = createSignal<"idle" | "loading" | "ready" | "error">("idle");
+
+  createEffect(() => {
+    if (activePane() !== "source" || sourceStatus() !== "idle") {
+      return;
+    }
+
+    setSourceStatus("loading");
+    void loadSourceFor(props.item)
+      .then(value => {
+        setSource(value);
+        setSourceStatus("ready");
+      })
+      .catch(() => {
+        setSourceStatus("error");
+      });
+  });
+
+  const sourceReady = () => sourceStatus() === "ready" && Boolean(source());
+  const sourceValue = () => source() ?? "";
 
   return (
     <article
       id={props.item.slug}
+      data-registry-card={props.item.slug}
       class="scroll-mt-28 rounded-[1.8rem] border border-border/70 bg-panel/92 p-6 shadow-soft backdrop-blur-sm lg:p-7"
     >
       <div class="flex flex-col gap-6">
@@ -45,7 +120,11 @@ export function RegistryCard(props: { item: RegistryItem }) {
           </div>
 
           <div class="flex items-center gap-3">
-            <CopyButton value={source} />
+            <CopyButton
+              value={sourceValue()}
+              disabled={!sourceReady()}
+              label={sourceStatus() === "loading" ? "Loading source" : "Copy source"}
+            />
             <a
               href={`#${props.item.slug}`}
               class="inline-flex h-9 items-center gap-2 rounded-full border border-border/70 bg-background px-3 text-xs font-medium text-muted transition hover:border-accent/50 hover:text-foreground"
@@ -95,6 +174,7 @@ export function RegistryCard(props: { item: RegistryItem }) {
               <button
                 type="button"
                 onClick={() => setActivePane("preview")}
+                data-pane-trigger="preview"
                 class={cn(
                   "rounded-full px-4 py-2 text-sm font-medium transition",
                   activePane() === "preview"
@@ -107,6 +187,7 @@ export function RegistryCard(props: { item: RegistryItem }) {
               <button
                 type="button"
                 onClick={() => setActivePane("source")}
+                data-pane-trigger="source"
                 class={cn(
                   "rounded-full px-4 py-2 text-sm font-medium transition",
                   activePane() === "source"
@@ -121,7 +202,11 @@ export function RegistryCard(props: { item: RegistryItem }) {
             <Show when={activePane() === "source"}>
               <div class="flex items-center gap-3">
                 <div class="hidden text-sm text-muted sm:block">{targetPath(props.item)}</div>
-                <CopyButton value={source} />
+                <CopyButton
+                  value={sourceValue()}
+                  disabled={!sourceReady()}
+                  label={sourceStatus() === "loading" ? "Loading source" : "Copy source"}
+                />
               </div>
             </Show>
           </div>
@@ -130,16 +215,25 @@ export function RegistryCard(props: { item: RegistryItem }) {
             <Show
               when={activePane() === "preview"}
               fallback={
-                <div>
-                  <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Starter source</div>
-                  <div class="mt-1 text-sm text-foreground">{targetPath(props.item)}</div>
-                  <pre class="mt-4 max-h-[30rem] overflow-auto rounded-[1.2rem] border border-border/70 bg-ink px-4 py-4 text-[12px] leading-6 text-ink-foreground">
-                    <code>{source}</code>
-                  </pre>
-                </div>
+                <Show
+                  when={sourceReady()}
+                  fallback={<SourcePlaceholder loading={sourceStatus() === "loading"} />}
+                >
+                  <div>
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Live source</div>
+                    <div class="mt-1 text-sm text-foreground">{targetPath(props.item)}</div>
+                    <pre class="mt-4 max-h-[30rem] overflow-auto rounded-[1.2rem] border border-border/70 bg-ink px-4 py-4 text-[12px] leading-6 text-ink-foreground">
+                      <code>{sourceValue()}</code>
+                    </pre>
+                  </div>
+                </Show>
               }
             >
-              <RegistryPreview item={props.item} />
+              <Show when={props.previewReady} fallback={<PreviewPlaceholder />}>
+                <Show when={props.previewComponent} fallback={<PreviewShell item={props.item} />}>
+                  {PreviewComponent => <Dynamic component={PreviewComponent()} item={props.item} />}
+                </Show>
+              </Show>
             </Show>
           </div>
         </section>

@@ -5,6 +5,8 @@ import type { RegistryClusterSection } from "~/lib/registry";
 
 type RegistrySidebarProps = {
   clusters: RegistryClusterSection[];
+  onClusterIntent?: (clusterId: string) => void;
+  onComponentIntent?: (clusterId: string) => void;
   query: string;
   totalComponents: number;
   onQueryInput: (value: string) => void;
@@ -48,6 +50,10 @@ export function RegistrySidebar(props: RegistrySidebarProps) {
                   <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">{cluster.tierLabel}</div>
                   <a
                     href={`#${cluster.id}`}
+                    data-sidebar-cluster={cluster.id}
+                    onMouseEnter={() => props.onClusterIntent?.(cluster.id)}
+                    onFocus={() => props.onClusterIntent?.(cluster.id)}
+                    onPointerDown={() => props.onClusterIntent?.(cluster.id)}
                     class="mt-1 block truncate text-sm font-semibold text-foreground hover:text-accent-strong"
                   >
                     {cluster.title}
@@ -66,6 +72,10 @@ export function RegistrySidebar(props: RegistrySidebarProps) {
                   {item => (
                     <a
                       href={`#${item.slug}`}
+                      data-sidebar-component={item.slug}
+                      onMouseEnter={() => props.onComponentIntent?.(cluster.id)}
+                      onFocus={() => props.onComponentIntent?.(cluster.id)}
+                      onPointerDown={() => props.onComponentIntent?.(cluster.id)}
                       class={cn(
                         "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panel hover:text-foreground",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",

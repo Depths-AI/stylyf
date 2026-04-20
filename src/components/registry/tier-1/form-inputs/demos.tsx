@@ -309,3 +309,18 @@ export function DatePickerPreview(props: { item: RegistryItem }) {
     </DemoFrame>
   );
 }
+
+export const previewBySlug = {
+  calendar: CalendarPreview,
+  checkbox: CheckboxPreview,
+  combobox: ComboboxPreview,
+  "date-picker": DatePickerPreview,
+  "number-field": NumberFieldPreview,
+  "otp-field": OTPFieldPreview,
+  "radio-group": RadioGroupPreview,
+  select: SelectPreview,
+  slider: SliderPreview,
+  switch: SwitchPreview,
+  "text-area": TextAreaPreview,
+  "text-field": TextFieldPreview,
+};

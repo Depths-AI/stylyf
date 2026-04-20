@@ -1,0 +1,159 @@
+Stylyf Load Instrumentation
+===========================
+
+Captured: 2026-04-20 UTC
+Environment:
+- URL: https://stylyf.com
+- Browser: Chromium via Playwright
+- Cache: disabled
+- Viewport: 1440 x 2200
+- Wait condition: networkidle
+
+Baseline: Pre-lazy-loading Registry Page
+----------------------------------------
+
+Navigation timing:
+- Response end: 162.6 ms
+- DOM interactive: 506.0 ms
+- DOM content loaded: 506.0 ms
+- Load event: 547.8 ms
+
+Document payload:
+- HTML transfer size: 68,003 B
+- HTML encoded body size: 67,703 B
+- HTML decoded body size: 1,416,199 B
+
+Initial resource counts:
+- Total resources: 8
+- Same-origin resources: 7
+- JS resources: 6
+- CSS resources: 1
+- Font resources: 1
+- Image resources: 0
+
+Initial transferred payload:
+- Same-origin transfer size: 163,284 B
+- JS transfer size: 150,978 B
+- CSS transfer size: 12,306 B
+- Font transfer size: 1,086 B
+
+Initial encoded payload:
+- Same-origin encoded body size: 161,184 B
+- JS encoded body size: 149,178 B
+- CSS encoded body size: 12,006 B
+- Font encoded body size: 786 B
+
+Initial decoded payload:
+- Same-origin decoded body size: 757,777 B
+- JS decoded body size: 685,102 B
+- CSS decoded body size: 72,675 B
+- Font decoded body size: 7,989 B
+
+Largest initial resources by encoded size:
+1. /_build/assets/index-BbfBWeze.js -> 99,107 B encoded
+2. /_build/assets/registry-Cs6U7tuk.js -> 22,516 B encoded
+3. /_build/assets/index-BShp1kH0.js -> 12,600 B encoded
+4. /_build/assets/client-xFI1f1rP.css -> 12,006 B encoded
+5. /_build/assets/client-DdZ26I6e.js -> 10,245 B encoded
+6. /_build/assets/layers-DxReW-Z_.js -> 4,678 B encoded
+
+Failures:
+- None
+
+Notes:
+- This baseline is from the all-clusters-eager registry page before app-level deferred preview/source loading.
+- After the lazy-loading refactor, record the same metrics below and compute the delta in initial JS and same-origin transfer size.
+
+Post-Refactor: App-Level Deferred Preview + Source Loading
+----------------------------------------------------------
+
+Captured: 2026-04-20 UTC
+Environment:
+- URL: https://stylyf.com
+- Browser: Chromium via Playwright
+- Cache: disabled
+- Viewport: 1440 x 2200
+- Wait condition: networkidle
+
+Navigation timing:
+- Response end: 81.3 ms
+- DOM interactive: 353.5 ms
+- DOM content loaded: 353.5 ms
+- Load event: 393.3 ms
+
+Document payload:
+- HTML transfer size: 44,326 B
+- HTML encoded body size: 44,026 B
+- HTML decoded body size: 1,267,608 B
+
+Initial resource counts:
+- Total resources: 9
+- Same-origin resources: 8
+- JS resources: 7
+- CSS resources: 1
+- Font resources: 1
+
+Initial transferred payload:
+- Same-origin transfer size: 87,259 B
+- JS transfer size: 74,903 B
+- CSS transfer size: 12,356 B
+- Font transfer size: 1,086 B
+
+Initial encoded payload:
+- Same-origin encoded body size: 84,859 B
+- JS encoded body size: 72,803 B
+- CSS encoded body size: 12,056 B
+- Font encoded body size: 786 B
+
+Initial decoded payload:
+- Same-origin decoded body size: 309,992 B
+- JS decoded body size: 236,910 B
+- CSS decoded body size: 73,082 B
+- Font decoded body size: 7,989 B
+
+Largest initial resources by encoded size:
+1. /_build/assets/registry-CriDnu4q.js -> 22,533 B encoded
+2. /_build/assets/index-Dg55r-_U.js -> 22,518 B encoded
+3. /_build/assets/index-DdZODB2Y.js -> 12,599 B encoded
+4. /_build/assets/client-xn0sb4zY.css -> 12,056 B encoded
+5. /_build/assets/client-DGKID9FP.js -> 9,755 B encoded
+6. /_build/assets/layers-ChtxAews.js -> 5,216 B encoded
+
+Deferred shell verification:
+- Initial page load renders 131 `Deferred preview` placeholders for non-eager cluster content.
+- Scrolling to `#tier-1-disclosure-overlay` reduced deferred placeholders from 131 to 119 after preload.
+- Direct hash navigation to `#tier-1-disclosure-overlay` reduced deferred placeholders to 107 after preload.
+
+Failures:
+- None
+
+Delta vs baseline
+-----------------
+
+Navigation timing delta:
+- Response end: -81.3 ms (-50.0%)
+- DOM content loaded: -152.5 ms (-30.1%)
+- Load event: -154.5 ms (-28.2%)
+
+Document payload delta:
+- HTML transfer size: -23,677 B (-34.8%)
+- HTML encoded body size: -23,677 B (-35.0%)
+- HTML decoded body size: -148,591 B (-10.5%)
+
+Initial payload delta:
+- Same-origin transfer size: -76,025 B (-46.6%)
+- JS transfer size: -76,075 B (-50.4%)
+- Same-origin encoded body size: -76,325 B (-47.4%)
+- JS encoded body size: -76,375 B (-51.2%)
+- Same-origin decoded body size: -447,785 B (-59.1%)
+- JS decoded body size: -448,192 B (-65.4%)
+
+Resource count delta:
+- Total resources: +1
+- Same-origin resources: +1
+- JS resources: +1
+
+Interpretation:
+- The app now ships slightly more initial requests, but each request is materially smaller and the total initial JS cost is cut by roughly half.
+- The biggest win is decoded JS and same-origin payload, which means the browser has substantially less code and source text to parse before the page becomes useful.
+- The cluster shells stay immediately navigable, while preview/source payload moves behind scroll, anchor, and navigation intent.

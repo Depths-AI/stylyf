@@ -212,3 +212,13 @@ export function PaginationPreview(props: { item: RegistryItem }) {
     </DemoFrame>
   );
 }
+
+export const previewBySlug = {
+  breadcrumb: BreadcrumbPreview,
+  button: ButtonPreview,
+  "icon-button": IconButtonPreview,
+  "link-button": LinkButtonPreview,
+  pagination: PaginationPreview,
+  toggle: TogglePreview,
+  "toggle-group": ToggleGroupPreview,
+};

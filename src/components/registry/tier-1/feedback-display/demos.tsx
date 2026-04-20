@@ -118,3 +118,12 @@ export function SeparatorPreview(props: { item: RegistryItem }) {
     </DemoFrame>
   );
 }
+
+export const previewBySlug = {
+  avatar: AvatarPreview,
+  badge: BadgePreview,
+  progress: ProgressPreview,
+  separator: SeparatorPreview,
+  skeleton: SkeletonPreview,
+  toast: ToastPreview,
+};

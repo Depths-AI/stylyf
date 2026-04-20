@@ -61,3 +61,7 @@ export function TablePreview(props: { item: RegistryItem }) {
     </DemoFrame>
   );
 }
+
+export const previewBySlug = {
+  table: TablePreview,
+};

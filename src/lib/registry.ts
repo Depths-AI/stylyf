@@ -72,12 +72,20 @@ function componentSymbol(name: string) {
   return name.replace(/[^a-zA-Z0-9]/g, "");
 }
 
-function clusterDirectory(item: Pick<RegistryItem, "tierId" | "clusterId">) {
-  return item.clusterId.replace(`${item.tierId}-`, "");
+export function clusterDirectory(entry: Pick<RegistryItem, "tierId" | "clusterId"> | Pick<RegistryClusterSection, "tierId" | "id">) {
+  if ("clusterId" in entry) {
+    return entry.clusterId.replace(`${entry.tierId}-`, "");
+  }
+
+  return entry.id.replace(`${entry.tierId}-`, "");
 }
 
 export function componentFilePath(item: RegistryItem) {
   return `src/components/registry/${item.tierId}/${clusterDirectory(item)}/${item.slug}.tsx`;
+}
+
+export function clusterDemoFilePath(cluster: Pick<RegistryClusterSection, "id" | "tierId">) {
+  return `src/components/registry/${cluster.tierId}/${clusterDirectory(cluster)}/demos.tsx`;
 }
 
 export function componentImportPath(item: RegistryItem) {

@@ -178,3 +178,18 @@ export function CommandMenuPreview(props: { item: RegistryItem }) {
     </DemoFrame>
   );
 }
+
+export const previewBySlug = {
+  accordion: AccordionPreview,
+  "alert-dialog": AlertDialogPreview,
+  collapsible: CollapsiblePreview,
+  "command-menu": CommandMenuPreview,
+  "context-menu": ContextMenuPreview,
+  dialog: DialogPreview,
+  drawer: DrawerPreview,
+  "dropdown-menu": DropdownMenuPreview,
+  menubar: MenubarPreview,
+  popover: PopoverPreview,
+  tabs: TabsPreview,
+  tooltip: TooltipPreview,
+};

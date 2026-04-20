@@ -1,9 +1,13 @@
 import { Title } from "@solidjs/meta";
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import type { Component } from "solid-js";
 import { Layers3, Orbit } from "lucide-solid";
 import { RegistryCard } from "~/components/registry-card";
 import { RegistrySidebar } from "~/components/registry-sidebar";
-import { registryClusters, registryCounts, type RegistryClusterSection } from "~/lib/registry";
+import { eagerClusterIds, eagerPreviewMapForCluster, loadPreviewMapForCluster } from "~/lib/registry-previews";
+import { registryClusters, registryCounts, registryItemBySlug, type RegistryClusterSection, type RegistryItem } from "~/lib/registry";
+
+type PreviewMap = Record<string, Component<{ item: RegistryItem }>>;
 
 function matchesCluster(cluster: RegistryClusterSection, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
@@ -51,6 +55,22 @@ function matchesCluster(cluster: RegistryClusterSection, query: string) {
 
 export default function Home() {
   const [query, setQuery] = createSignal("");
+  const initialPreviewMaps: Record<string, PreviewMap> = {};
+
+  for (const cluster of registryClusters) {
+    const eagerPreviewMap = eagerPreviewMapForCluster(cluster.id);
+
+    if (eagerPreviewMap) {
+      initialPreviewMaps[cluster.id] = eagerPreviewMap;
+    }
+  }
+
+  const [previewMaps, setPreviewMaps] = createSignal<Record<string, PreviewMap>>(initialPreviewMaps);
+  const [loadedClusters, setLoadedClusters] = createSignal<Set<string>>(new Set(eagerClusterIds));
+  const [loadingClusters, setLoadingClusters] = createSignal<Set<string>>(new Set());
+  const sectionRefs = new Map<string, HTMLElement>();
+  const preloadPromises = new Map<string, Promise<void>>();
+  let observer: IntersectionObserver | undefined;
 
   const filteredClusters = createMemo(() =>
     registryClusters
@@ -61,6 +81,126 @@ export default function Home() {
   const visibleComponentCount = createMemo(() =>
     filteredClusters().reduce((sum, cluster) => sum + cluster.items.length, 0),
   );
+
+  const clusterById = new Map(registryClusters.map(cluster => [cluster.id, cluster]));
+
+  const preloadCluster = (clusterId: string) => {
+    if (loadedClusters().has(clusterId)) {
+      return Promise.resolve();
+    }
+
+    const existing = preloadPromises.get(clusterId);
+
+    if (existing) {
+      return existing;
+    }
+
+    const cluster = clusterById.get(clusterId);
+
+    if (!cluster) {
+      return Promise.resolve();
+    }
+
+    setLoadingClusters(current => {
+      const next = new Set(current);
+      next.add(clusterId);
+      return next;
+    });
+
+    const promise = loadPreviewMapForCluster(cluster)
+      .then(map => {
+        setPreviewMaps(current => ({ ...current, [clusterId]: map }));
+        setLoadedClusters(current => {
+          const next = new Set(current);
+          next.add(clusterId);
+          return next;
+        });
+      })
+      .finally(() => {
+        setLoadingClusters(current => {
+          const next = new Set(current);
+          next.delete(clusterId);
+          return next;
+        });
+        preloadPromises.delete(clusterId);
+      });
+
+    preloadPromises.set(clusterId, promise);
+    return promise;
+  };
+
+  const observeCurrentSections = () => {
+    if (!observer) {
+      return;
+    }
+
+    observer.disconnect();
+
+    for (const cluster of filteredClusters()) {
+      const element = sectionRefs.get(cluster.id);
+
+      if (element) {
+        observer.observe(element);
+      }
+    }
+  };
+
+  createEffect(() => {
+    const firstVisibleCluster = filteredClusters()[0];
+
+    if (firstVisibleCluster) {
+      void preloadCluster(firstVisibleCluster.id);
+    }
+  });
+
+  onMount(() => {
+    observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            void preloadCluster((entry.target as HTMLElement).id);
+          }
+        }
+      },
+      { rootMargin: "1000px 0px" },
+    );
+
+    const preloadHashTarget = () => {
+      const hash = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+
+      if (!hash) {
+        return;
+      }
+
+      const item = registryItemBySlug[hash];
+
+      if (item) {
+        void preloadCluster(item.clusterId);
+        return;
+      }
+
+      if (clusterById.has(hash)) {
+        void preloadCluster(hash);
+      }
+    };
+
+    createEffect(() => {
+      filteredClusters();
+
+      queueMicrotask(observeCurrentSections);
+    });
+
+    queueMicrotask(() => {
+      observeCurrentSections();
+      preloadHashTarget();
+    });
+    window.addEventListener("hashchange", preloadHashTarget);
+
+    onCleanup(() => {
+      observer?.disconnect();
+      window.removeEventListener("hashchange", preloadHashTarget);
+    });
+  });
 
   return (
     <main id="library" class="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -107,6 +247,8 @@ export default function Home() {
       <section class="grid gap-6 xl:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
         <RegistrySidebar
           clusters={filteredClusters()}
+          onClusterIntent={preloadCluster}
+          onComponentIntent={preloadCluster}
           query={query()}
           totalComponents={visibleComponentCount()}
           onQueryInput={setQuery}
@@ -131,7 +273,14 @@ export default function Home() {
           >
             <For each={filteredClusters()}>
               {cluster => (
-                <section id={cluster.id} class="scroll-mt-28 space-y-5">
+                <section
+                  id={cluster.id}
+                  ref={element => {
+                    sectionRefs.set(cluster.id, element);
+                    observer?.observe(element);
+                  }}
+                  class="scroll-mt-28 space-y-5"
+                >
                   <header class="rounded-[1.8rem] border border-border/70 bg-panel/92 p-6 shadow-soft backdrop-blur-sm lg:p-7">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
@@ -147,13 +296,25 @@ export default function Home() {
                         <p class="mt-3 max-w-3xl text-sm leading-6 text-muted">{cluster.description}</p>
                       </div>
                       <div class="rounded-full border border-border/70 bg-background px-4 py-2 text-sm text-muted">
-                        {cluster.items.length} components
+                        {loadedClusters().has(cluster.id)
+                          ? `${cluster.items.length} components`
+                          : loadingClusters().has(cluster.id)
+                            ? "Loading preview payload"
+                            : `${cluster.items.length} components`}
                       </div>
                     </div>
                   </header>
 
                   <div class="space-y-5">
-                    <For each={cluster.items}>{item => <RegistryCard item={item} />}</For>
+                    <For each={cluster.items}>
+                      {item => (
+                        <RegistryCard
+                          item={item}
+                          previewComponent={previewMaps()[cluster.id]?.[item.slug]}
+                          previewReady={loadedClusters().has(cluster.id)}
+                        />
+                      )}
+                    </For>
                   </div>
                 </section>
               )}

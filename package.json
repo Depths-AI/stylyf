@@ -3,11 +3,15 @@
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",
+    "dev:ui": "vinxi dev --host 127.0.0.1 --port 4173",
     "build": "vinxi build",
     "start": "vinxi start",
     "preview": "vinxi preview",
     "check": "tsc --noEmit",
-    "generate:registry-shells": "node scripts/generate-registry-shells.mjs"
+    "generate:registry-shells": "node scripts/generate-registry-shells.mjs",
+    "ui:shot": "webknife shot http://127.0.0.1:4173 --config webknife.config.json",
+    "ui:interact": "webknife interact http://127.0.0.1:4173 --config webknife.config.json --steps webknife/registry-smoke.yaml",
+    "ui:review": "webknife ui:review --url http://127.0.0.1:4173 --config webknife.config.json"
   },
   "dependencies": {
     "@solidjs/meta": "^0.29.4",
@@ -24,8 +28,9 @@
     "node": ">=22"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
+    "@depths/webknife": "^0.1.0",
     "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.6.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"
   }

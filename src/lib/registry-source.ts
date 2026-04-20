@@ -1,23 +1,26 @@
 import { starterSourceFor, targetPath, type RegistryItem } from "~/lib/registry";
 
-const registryComponentSources = import.meta.glob("../components/registry/**/*.tsx", {
-  eager: true,
+const registryComponentSourceLoaders = import.meta.glob("../components/registry/**/*.tsx", {
   import: "default",
   query: "?raw",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
-const routeSources = import.meta.glob("../routes/**/*.tsx", {
-  eager: true,
+const routeSourceLoaders = import.meta.glob("../routes/**/*.tsx", {
   import: "default",
   query: "?raw",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 function sourceKeyFor(item: RegistryItem) {
   return targetPath(item).replace(/^src\//, "../");
 }
 
-export function sourceFor(item: RegistryItem) {
+export async function loadSourceFor(item: RegistryItem) {
   const key = sourceKeyFor(item);
+  const loader = routeSourceLoaders[key] ?? registryComponentSourceLoaders[key];
 
-  return routeSources[key] ?? registryComponentSources[key] ?? starterSourceFor(item);
+  if (!loader) {
+    return starterSourceFor(item);
+  }
+
+  return loader();
 }
