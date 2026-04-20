@@ -116,18 +116,18 @@ export function OTPField(userProps: OTPFieldProps) {
               }}
               value={local.masked && value ? "•" : value}
               inputMode="numeric"
-              type={local.masked ? "password" : "text"}
+              type="text"
               maxLength={1}
               id={index() === 0 ? aria.inputId : undefined}
               aria-invalid={local.invalid ? true : undefined}
               aria-describedby={aria.describedBy}
               aria-label={`Digit ${index() + 1}`}
               class={cn(
-                "rounded-[1.15rem] border border-border/70 bg-background text-center font-semibold outline-none transition focus:border-accent/45 focus:ring-2 focus:ring-ring/18",
+                "rounded-lg border border-border/70 bg-background text-center font-semibold outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/18",
                 cellClasses[local.size],
                 local.mono && "font-mono tracking-[0.16em]",
-                local.invalid && "border-rose-500/45 ring-2 ring-rose-500/12",
-                local.radius === "md" && "rounded-[0.95rem]",
+                local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
+                local.radius === "md" && "rounded-md",
                 local.radius === "pill" && "rounded-full",
                 local.cellClass,
               )}
@@ -170,7 +170,7 @@ export function OTPField(userProps: OTPFieldProps) {
       </div>
 
       <Show when={currentValue().length === local.length}>
-        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-accent-strong">Complete</div>
+        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Complete</div>
       </Show>
     </FieldCopy>
   );

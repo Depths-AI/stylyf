@@ -145,22 +145,22 @@ export function Popover(userProps: PopoverProps) {
             tabIndex={-1}
             style={position()}
             class={cn(
-              "z-50 w-[min(24rem,calc(100vw-2rem))] rounded-[1.45rem] border border-border/70 bg-panel p-4 shadow-soft focus:outline-none",
+              "ui-popover z-50 w-[min(24rem,calc(100vw-2rem))] p-4 focus:outline-none",
               local.class,
             )}
           >
-            <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Inline surface</div>
+            <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Inline surface</div>
             <h3 id={titleId} class="mt-3 text-lg font-semibold tracking-tight text-foreground">
               {local.title}
             </h3>
-            <p class="mt-2 text-sm leading-6 text-muted">{local.description}</p>
+            <p class="mt-2 text-sm leading-6 text-muted-foreground">{local.description}</p>
             <div class="mt-4">
               {local.children ?? (
                 <div class="grid gap-3">
-                  <div class="rounded-[1.1rem] border border-border/70 bg-background px-4 py-3 text-sm text-foreground">
+                  <div class="ui-demo-inset text-sm text-foreground">
                     Assign review to operations
                   </div>
-                  <div class="rounded-[1.1rem] border border-border/70 bg-background px-4 py-3 text-sm text-foreground">
+                  <div class="ui-demo-inset text-sm text-foreground">
                     Request legal sign-off
                   </div>
                 </div>

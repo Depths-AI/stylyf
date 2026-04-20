@@ -101,7 +101,7 @@ export function TextField(userProps: TextFieldProps) {
         readOnly={others.readOnly}
       >
         <Show when={resolvedPrefix()}>
-          <div class="shrink-0 text-muted">{resolvedPrefix()}</div>
+          <div class="shrink-0 text-muted-foreground">{resolvedPrefix()}</div>
         </Show>
         <input
           ref={ref}
@@ -127,14 +127,14 @@ export function TextField(userProps: TextFieldProps) {
           <button
             type="button"
             onClick={clear}
-            class="inline-flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-panel hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
             aria-label="Clear field"
           >
             <CircleX class="size-4" />
           </button>
         </Show>
         <Show when={resolvedSuffix()}>
-          <div class="shrink-0 text-muted">{resolvedSuffix()}</div>
+          <div class="shrink-0 text-muted-foreground">{resolvedSuffix()}</div>
         </Show>
       </FieldFrame>
     </FieldCopy>

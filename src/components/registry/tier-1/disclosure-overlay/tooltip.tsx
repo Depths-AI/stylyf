@@ -95,14 +95,14 @@ export function Tooltip(userProps: TooltipProps) {
       <button
         ref={triggerRef}
         type="button"
-        class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-2 text-sm text-foreground transition hover:border-accent/30 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+        class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-2 text-sm text-foreground transition hover:border-primary/30 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
         aria-describedby={open() ? tooltipId : undefined}
         onPointerEnter={show}
         onPointerLeave={hide}
         onFocus={show}
         onBlur={hide}
       >
-        <Info class="size-4 text-accent-strong" />
+        <Info class="size-4 text-primary" />
         <span>{local.label}</span>
       </button>
 
@@ -113,7 +113,7 @@ export function Tooltip(userProps: TooltipProps) {
             role="tooltip"
             style={position()}
             class={cn(
-              "z-50 max-w-xs rounded-[1rem] border border-border/70 bg-ink px-3 py-2 text-sm leading-6 text-ink-foreground shadow-soft",
+              "ui-code z-50 max-w-xs px-3 py-2 text-sm leading-6",
               local.class,
             )}
           >

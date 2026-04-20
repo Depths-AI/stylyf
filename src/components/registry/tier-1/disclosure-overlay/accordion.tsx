@@ -27,7 +27,7 @@ const defaultItems: AccordionItem[] = [
     title: "Publishing governance",
     description: "Who can approve and ship content.",
     content: (
-      <p class="text-sm leading-6 text-muted">
+      <p class="text-sm leading-6 text-muted-foreground">
         Approval logic is explicit, with reviewer roles, escalation rules, and a visible audit trail for every change.
       </p>
     ),
@@ -37,7 +37,7 @@ const defaultItems: AccordionItem[] = [
     title: "Access policy",
     description: "Workspace and role boundaries.",
     content: (
-      <p class="text-sm leading-6 text-muted">
+      <p class="text-sm leading-6 text-muted-foreground">
         Access is partitioned by workspace and role. Sensitive workflows add an extra confirmation step and stronger
         logging.
       </p>
@@ -48,7 +48,7 @@ const defaultItems: AccordionItem[] = [
     title: "Retention defaults",
     description: "Record lifetime and archival policy.",
     content: (
-      <p class="text-sm leading-6 text-muted">
+      <p class="text-sm leading-6 text-muted-foreground">
         Retention windows stay configurable but visible, so operators understand what is auto-archived and when.
       </p>
     ),
@@ -151,7 +151,7 @@ export function Accordion(userProps: AccordionProps) {
           const panelId = `${rootId}-panel-${item.value}`;
 
           return (
-            <section class="overflow-hidden rounded-[1.45rem] border border-border/70 bg-panel shadow-soft">
+            <section class="ui-card overflow-hidden">
               <h3>
                 <button
                   ref={element => {
@@ -165,7 +165,7 @@ export function Accordion(userProps: AccordionProps) {
                   disabled={item.disabled}
                   class={cn(
                     "flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
-                    expanded() ? "bg-background" : "hover:bg-background/60",
+                    expanded() ? "bg-background" : "hover:bg-accent/75",
                     item.disabled && "cursor-not-allowed opacity-50",
                   )}
                   onClick={() => {
@@ -199,14 +199,14 @@ export function Accordion(userProps: AccordionProps) {
                   <div class="min-w-0">
                     <div class="font-semibold tracking-[-0.01em] text-foreground">{item.title}</div>
                     <Show when={item.description}>
-                      <div class="mt-1 text-sm leading-6 text-muted">{item.description}</div>
+                      <div class="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</div>
                     </Show>
                   </div>
-                  <ChevronDown class={cn("mt-0.5 size-5 shrink-0 text-muted transition", expanded() && "rotate-180 text-foreground")} />
+                  <ChevronDown class={cn("mt-0.5 size-5 shrink-0 text-muted-foreground transition", expanded() && "rotate-180 text-foreground")} />
                 </button>
               </h3>
               <Show when={expanded()}>
-                <div id={panelId} role="region" aria-labelledby={triggerId} class="border-t border-border/70 bg-panel px-5 py-4">
+                <div id={panelId} role="region" aria-labelledby={triggerId} class="border-t border-border/70 bg-card px-5 py-4">
                   {item.content}
                 </div>
               </Show>

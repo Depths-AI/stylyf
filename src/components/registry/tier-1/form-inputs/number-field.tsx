@@ -148,7 +148,7 @@ export function NumberField(userProps: NumberFieldProps) {
         readOnly={others.readOnly}
       >
         <Show when={resolvedPrefix()}>
-          <div class="shrink-0 text-muted">{resolvedPrefix()}</div>
+          <div class="shrink-0 text-muted-foreground">{resolvedPrefix()}</div>
         </Show>
 
         <input
@@ -180,13 +180,13 @@ export function NumberField(userProps: NumberFieldProps) {
         />
 
         <Show when={resolvedSuffix()}>
-          <div class="shrink-0 text-muted">{resolvedSuffix()}</div>
+          <div class="shrink-0 text-muted-foreground">{resolvedSuffix()}</div>
         </Show>
 
         <div class={cn("shrink-0", local.controlPlacement === "stacked" ? "grid gap-1" : "inline-flex items-center gap-1")}>
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-full border border-border/70 bg-panel text-muted transition hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition hover:border-primary/28 hover:bg-accent hover:text-foreground"
             aria-label="Decrease value"
             onClick={() => bump(-local.step)}
             disabled={others.disabled || (currentValue() ?? local.min ?? 0) <= (local.min ?? Number.NEGATIVE_INFINITY)}
@@ -195,7 +195,7 @@ export function NumberField(userProps: NumberFieldProps) {
           </button>
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-full border border-border/70 bg-panel text-muted transition hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition hover:border-primary/28 hover:bg-accent hover:text-foreground"
             aria-label="Increase value"
             onClick={() => bump(local.step)}
             disabled={others.disabled || (currentValue() ?? local.max ?? 0) >= (local.max ?? Number.POSITIVE_INFINITY)}

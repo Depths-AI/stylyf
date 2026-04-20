@@ -36,7 +36,7 @@ function BreadcrumbRoot(userProps: BreadcrumbProps) {
   return (
     <nav
       aria-label={local.label}
-      class={cn("w-full text-sm text-muted", local.class)}
+      class={cn("w-full text-sm text-muted-foreground", local.class)}
       {...others}
     >
       {resolvedChildren() ?? defaultBreadcrumbChildren()}
@@ -80,7 +80,7 @@ function BreadcrumbLink(userProps: BreadcrumbLinkProps) {
   const [local, others] = splitProps(props, ["children", "class", "current", "external", "href"]);
   const className = cn(
     "inline-flex min-w-0 items-center rounded-full px-3 py-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    local.current ? "bg-foreground text-background" : "hover:bg-background hover:text-foreground",
+    local.current ? "bg-primary text-primary-foreground" : "hover:bg-accent hover:text-foreground",
     local.class,
   );
 
@@ -110,7 +110,7 @@ function BreadcrumbCurrent(props: ParentProps<JSX.HTMLAttributes<HTMLSpanElement
 
   return (
     <span
-      class={cn("inline-flex min-w-0 items-center rounded-full bg-foreground px-3 py-1.5 font-semibold text-background", local.class)}
+      class={cn("inline-flex min-w-0 items-center rounded-full bg-primary px-3 py-1.5 font-semibold text-primary-foreground", local.class)}
       aria-current="page"
       {...others}
     >
@@ -136,7 +136,7 @@ function BreadcrumbCollapsed(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>)
     <button
       type="button"
       class={cn(
-        "inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1.5 text-foreground transition hover:border-accent/35 hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "inline-flex items-center rounded-full border border-border/70 bg-background px-3 py-1.5 text-foreground transition hover:border-primary/35 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         local.class,
       )}
       aria-label="Show collapsed breadcrumb items"

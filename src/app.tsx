@@ -26,24 +26,24 @@ export default function App() {
               Skip to library
             </a>
 
-            <header class="sticky top-0 z-40 border-b border-border/70 bg-background/88 backdrop-blur-xl">
+            <header class="sticky top-0 z-40 border-b border-border/80 bg-background/96 backdrop-blur-xl">
               <div class="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
                 <div class="flex min-w-0 items-center gap-3">
-                  <div class="inline-flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-panel shadow-soft">
+                  <div class="inline-flex size-11 items-center justify-center rounded-2xl border border-border/80 bg-card shadow-sm">
                     <Layers3 class="size-5 text-accent-strong" />
                   </div>
                   <div class="min-w-0">
                     <a href="/" class="block text-lg font-semibold tracking-tight text-foreground">
                       Stylyf
                     </a>
-                    <p class="truncate text-sm text-muted">
+                    <p class="truncate text-sm text-muted-foreground">
                       SolidStart registry shell for {registryCounts.total} source-owned components
                     </p>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-3">
-                  <div class="hidden items-center gap-2 rounded-full border border-border/70 bg-panel px-4 py-2 text-sm text-muted md:inline-flex">
+                  <div class="ui-pillbar hidden items-center gap-2 px-4 py-2 text-sm text-muted-foreground md:inline-flex">
                     <span>38 primitives</span>
                     <span class="text-border">/</span>
                     <span>37 compositions</span>
@@ -57,19 +57,19 @@ export default function App() {
 
             <Suspense>{props.children}</Suspense>
 
-            <footer class="border-t border-border/70 bg-background/88">
+            <footer class="border-t border-border/80 bg-background/96">
               <div class="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
                 <div>
                   <p class="text-sm font-medium text-foreground">Stylyf registry shell</p>
-                  <p class="mt-1 text-sm text-muted">
+                  <p class="mt-1 text-sm text-muted-foreground">
                     Tailwind v4 tokens, SolidStart v1, and a tiered catalog ready for source-owned component implementation.
                   </p>
                 </div>
-                <div class="flex flex-wrap gap-2 text-sm text-muted">
-                  <a href="#theme-studio" class="rounded-full border border-border/70 bg-panel px-4 py-2 transition hover:text-foreground">
+                <div class="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                  <a href="#theme-studio" class="ui-pillbar px-4 py-2 transition hover:text-foreground">
                     Theme studio
                   </a>
-                  <a href="#library" class="rounded-full border border-border/70 bg-panel px-4 py-2 transition hover:text-foreground">
+                  <a href="#library" class="ui-pillbar px-4 py-2 transition hover:text-foreground">
                     Library
                   </a>
                 </div>

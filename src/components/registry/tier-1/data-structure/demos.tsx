@@ -6,13 +6,13 @@ import { Table } from "~/components/registry/tier-1/data-structure/table";
 
 function DemoFrame(props: { children: JSX.Element; item: RegistryItem; title: string }) {
   return (
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+    <div class="space-y-4" data-demo={props.item.slug}>
+      <div class="ui-demo-chip">
         <span>{props.title}</span>
         <span class="text-border">/</span>
         <span>{props.item.name}</span>
       </div>
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">{props.children}</div>
+      <div class="ui-demo-frame">{props.children}</div>
     </div>
   );
 }
@@ -51,7 +51,7 @@ export function TablePreview(props: { item: RegistryItem }) {
                     {row.status}
                   </Badge>
                 </Table.Cell>
-                <Table.Cell class="text-muted">{row.sync}</Table.Cell>
+                <Table.Cell class="text-muted-foreground">{row.sync}</Table.Cell>
               </Table.Row>
             )}
           </For>

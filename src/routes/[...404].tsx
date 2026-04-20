@@ -8,9 +8,9 @@ export default function NotFound() {
       <HttpStatusCode code={404} />
 
       <section class="max-w-2xl rounded-[2rem] border border-border/70 bg-panel/92 p-8 shadow-soft">
-        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">404</div>
+        <div class="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">404</div>
         <h1 class="mt-4 text-4xl font-semibold tracking-tight text-foreground">This route is not part of the registry shell.</h1>
-        <p class="mt-4 text-base leading-7 text-muted">
+        <p class="mt-4 text-base leading-7 text-muted-foreground">
           The current first pass focuses on the continuous library page and the shared site frame. Return to the
           catalog to continue reviewing the component registry structure.
         </p>

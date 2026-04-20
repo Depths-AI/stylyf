@@ -170,12 +170,12 @@ export function Slider(userProps: SliderProps) {
         <div class="flex flex-wrap items-center gap-3">
           <For each={local.marks}>
             {mark => (
-              <span class="rounded-full border border-border/70 bg-panel px-3 py-1 text-xs text-muted">
+              <span class="ui-chip ui-chip-muted">
                 {mark}
               </span>
             )}
           </For>
-          <span class="rounded-full border border-border/70 bg-background px-3 py-1 text-xs font-semibold text-foreground">
+          <span class="ui-chip bg-background font-semibold text-foreground">
             {isRange() ? `${currentValue()[0]} to ${currentValue()[1]}` : currentValue()[0]}
           </span>
         </div>

@@ -155,7 +155,7 @@ export function Menubar(userProps: MenubarProps) {
   return (
     <div
       role="menubar"
-      class={cn("inline-flex flex-wrap gap-2 rounded-[1.3rem] border border-border/70 bg-panel p-2 shadow-soft", local.class)}
+      class={cn("inline-flex flex-wrap gap-2 rounded-xl border border-border/70 bg-card p-2 shadow-soft", local.class)}
       {...others}
     >
       <For each={local.menus}>
@@ -171,8 +171,8 @@ export function Menubar(userProps: MenubarProps) {
             class={cn(
               "inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
               activeMenu() === menuIndex()
-                ? "border-foreground/10 bg-foreground text-background"
-                : "border-border/70 bg-background text-foreground hover:border-accent/30",
+                ? "border-primary/25 bg-primary text-primary-foreground"
+                : "border-border/70 bg-background text-foreground hover:border-primary/30 hover:bg-accent",
             )}
             onClick={() => (activeMenu() === menuIndex() ? setActiveMenu(undefined) : openMenu(menuIndex()))}
             onKeyDown={event => {
@@ -210,7 +210,7 @@ export function Menubar(userProps: MenubarProps) {
             role="menu"
             tabIndex={-1}
             style={style()}
-            class="z-50 min-w-64 rounded-[1.3rem] border border-border/70 bg-panel p-2 shadow-soft focus:outline-none"
+            class="z-50 min-w-64 rounded-xl border border-border/70 bg-popover p-2 shadow-soft focus:outline-none"
           >
             <For each={local.menus[activeMenu() ?? 0]?.items ?? []}>
               {(item, itemIndex) => (
@@ -220,8 +220,8 @@ export function Menubar(userProps: MenubarProps) {
                   aria-checked={item.role && item.role !== "menuitem" ? item.checked : undefined}
                   disabled={item.disabled}
                   class={cn(
-                    "flex w-full items-center justify-between gap-4 rounded-[1rem] px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
-                    item.tone === "danger" ? "text-rose-300 hover:bg-rose-500/10" : "text-foreground hover:bg-background",
+                    "flex w-full items-center justify-between gap-4 rounded-lg px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                    item.tone === "danger" ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-accent",
                     item.disabled && "cursor-not-allowed opacity-50",
                   )}
                   onClick={() => {
@@ -233,14 +233,14 @@ export function Menubar(userProps: MenubarProps) {
                     <Show when={item.role && item.role !== "menuitem"}>
                       <span class="inline-flex size-4 items-center justify-center rounded-sm border border-border/70 bg-background">
                         <Show when={item.checked}>
-                          <Check class="size-3 text-accent-strong" />
+                          <Check class="size-3 text-primary" />
                         </Show>
                       </span>
                     </Show>
                     <span>{item.label}</span>
                   </span>
                   <Show when={item.shortcut}>
-                    <span class="text-xs uppercase tracking-[0.16em] text-muted">{item.shortcut}</span>
+                    <span class="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.shortcut}</span>
                   </Show>
                 </button>
               )}

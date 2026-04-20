@@ -29,18 +29,18 @@ const defaultItems: TabsItem[] = [
     description: "Highlights",
     content: (
       <div class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-[1.3rem] border border-border/70 bg-background p-4">
-          <div class="text-xs uppercase tracking-[0.2em] text-muted">Workspace summary</div>
+        <div class="ui-demo-inset">
+          <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Workspace summary</div>
           <div class="mt-3 text-lg font-semibold text-foreground">Content operating system</div>
-          <p class="mt-2 text-sm leading-6 text-muted">
+          <p class="mt-2 text-sm leading-6 text-muted-foreground">
             Tabs keep sections parallel and quick to scan, with a clear active state and keyboard movement along the
             list.
           </p>
         </div>
-        <div class="rounded-[1.3rem] border border-border/70 bg-panel p-4">
-          <div class="text-xs uppercase tracking-[0.2em] text-muted">Response SLA</div>
+        <div class="ui-card-muted">
+          <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Response SLA</div>
           <div class="mt-3 text-3xl font-semibold tracking-tight text-foreground">2h</div>
-          <div class="mt-2 text-sm text-highlight-strong">Within target</div>
+          <div class="mt-2 text-sm text-primary">Within target</div>
         </div>
       </div>
     ),
@@ -52,21 +52,19 @@ const defaultItems: TabsItem[] = [
     badge: "14",
     content: (
       <div class="grid gap-3">
-        <div class="flex items-center justify-between rounded-[1.15rem] border border-border/70 bg-background px-4 py-3">
+        <div class="ui-demo-inset flex items-center justify-between">
           <div>
             <div class="font-medium text-foreground">Product design</div>
-            <div class="text-sm text-muted">5 editors, 1 approver</div>
+            <div class="text-sm text-muted-foreground">5 editors, 1 approver</div>
           </div>
-          <div class="rounded-full border border-border/70 bg-panel px-3 py-1 text-xs text-muted">Healthy</div>
+          <div class="ui-chip ui-chip-muted">Healthy</div>
         </div>
-        <div class="flex items-center justify-between rounded-[1.15rem] border border-border/70 bg-background px-4 py-3">
+        <div class="ui-demo-inset flex items-center justify-between">
           <div>
             <div class="font-medium text-foreground">Operations</div>
-            <div class="text-sm text-muted">4 responders, 2 admins</div>
+            <div class="text-sm text-muted-foreground">4 responders, 2 admins</div>
           </div>
-          <div class="rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-xs text-accent-strong">
-            Scaled
-          </div>
+          <div class="ui-chip ui-chip-accent">Scaled</div>
         </div>
       </div>
     ),
@@ -77,13 +75,13 @@ const defaultItems: TabsItem[] = [
     description: "Recent changes",
     content: (
       <div class="space-y-3">
-        <div class="rounded-[1.15rem] border border-border/70 bg-background px-4 py-3">
+        <div class="ui-demo-inset">
           <div class="text-sm font-medium text-foreground">Policy updated</div>
-          <div class="mt-1 text-sm text-muted">Security controls were revised and published fifteen minutes ago.</div>
+          <div class="mt-1 text-sm text-muted-foreground">Security controls were revised and published fifteen minutes ago.</div>
         </div>
-        <div class="rounded-[1.15rem] border border-border/70 bg-background px-4 py-3">
+        <div class="ui-demo-inset">
           <div class="text-sm font-medium text-foreground">Invite accepted</div>
-          <div class="mt-1 text-sm text-muted">One pending workspace invite was accepted and provisioned.</div>
+          <div class="mt-1 text-sm text-muted-foreground">One pending workspace invite was accepted and provisioned.</div>
         </div>
       </div>
     ),
@@ -162,13 +160,13 @@ export function Tabs(userProps: TabsProps) {
   const activePanelId = () => `${tabListId}-panel-${activeItem()?.value ?? "panel"}`;
 
   return (
-    <div class={cn("rounded-[1.55rem] border border-border/70 bg-panel p-3 shadow-soft", local.class)} {...others}>
+    <div class={cn("ui-card p-3", local.class)} {...others}>
       <div
         role="tablist"
         aria-label={local.ariaLabel}
         aria-orientation={local.orientation}
         class={cn(
-          "grid gap-2 rounded-[1.3rem] border border-border/70 bg-background p-2",
+          "grid gap-2 rounded-xl border border-border/70 bg-background p-2",
           local.orientation === "horizontal" ? "sm:grid-cols-3" : "grid-cols-1",
         )}
       >
@@ -192,10 +190,10 @@ export function Tabs(userProps: TabsProps) {
                 disabled={item.disabled}
                 tabIndex={selected() ? 0 : -1}
                 class={cn(
-                  "rounded-[1.05rem] border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                  "rounded-lg border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
                   selected()
-                    ? "border-foreground/10 bg-foreground text-background shadow-soft"
-                    : "border-border/70 bg-panel text-foreground hover:border-accent/30 hover:bg-background",
+                    ? "border-primary/25 bg-primary text-primary-foreground shadow-soft"
+                    : "border-border/70 bg-card text-foreground hover:border-primary/30 hover:bg-accent",
                   item.disabled && "cursor-not-allowed opacity-50",
                 )}
                 onClick={() => {
@@ -247,7 +245,7 @@ export function Tabs(userProps: TabsProps) {
                     <span
                       class={cn(
                         "rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em]",
-                        selected() ? "bg-background/18 text-background" : "bg-accent/10 text-accent-strong",
+                        selected() ? "bg-primary-foreground/14 text-primary-foreground" : "bg-accent text-accent-foreground",
                       )}
                     >
                       {item.badge}
@@ -255,7 +253,7 @@ export function Tabs(userProps: TabsProps) {
                   </Show>
                 </div>
                 <Show when={item.description}>
-                  <div class={cn("mt-1 text-xs", selected() ? "text-background/72" : "text-muted")}>{item.description}</div>
+                  <div class={cn("mt-1 text-xs", selected() ? "text-background/72" : "text-muted-foreground")}>{item.description}</div>
                 </Show>
               </button>
             );
@@ -268,7 +266,7 @@ export function Tabs(userProps: TabsProps) {
         role="tabpanel"
         aria-labelledby={activeTabId()}
         tabIndex={0}
-        class="mt-3 rounded-[1.35rem] border border-border/70 bg-background p-5 focus:outline-none"
+        class="mt-3 rounded-xl border border-border/70 bg-background p-5 focus:outline-none"
       >
         {activeItem()?.content}
       </div>

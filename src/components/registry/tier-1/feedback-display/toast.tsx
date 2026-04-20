@@ -33,9 +33,9 @@ const defaultItems: ToastItem[] = [
 
 function toneClasses(tone: NonNullable<ToastItem["tone"]>) {
   return {
-    danger: "border-rose-500/25 bg-rose-500/10 text-rose-300",
-    info: "border-accent/25 bg-accent/10 text-accent-strong",
-    success: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+    danger: "border-destructive/30 bg-destructive/10 text-destructive",
+    info: "border-accent/35 bg-accent text-accent-foreground",
+    success: "border-success/30 bg-success/10 text-success",
   }[tone];
 }
 
@@ -76,7 +76,7 @@ export function Toast(userProps: ToastProps) {
           const tone = item.tone ?? "info";
 
           return (
-            <div class="w-full max-w-sm rounded-[1.35rem] border border-border/70 bg-panel p-4 shadow-soft">
+            <div class="w-full max-w-sm rounded-xl border border-border/70 bg-card p-4 shadow-soft">
               <div class="flex items-start gap-3">
                 <div class={cn("inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border", toneClasses(tone))}>
                   {toneIcon(tone)}
@@ -84,7 +84,7 @@ export function Toast(userProps: ToastProps) {
                 <div class="min-w-0 flex-1">
                   <div class="font-semibold text-foreground">{item.title}</div>
                   <Show when={item.description}>
-                    <div class="mt-1 text-sm leading-6 text-muted">{item.description}</div>
+                    <div class="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</div>
                   </Show>
                   <Show when={item.actionLabel}>
                     <div class="mt-4">
@@ -97,7 +97,7 @@ export function Toast(userProps: ToastProps) {
                 <button
                   type="button"
                   aria-label="Dismiss notification"
-                  class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+                  class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
                   onClick={() => dismiss(item.id)}
                 >
                   <X class="size-4" />

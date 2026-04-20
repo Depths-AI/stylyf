@@ -11,7 +11,7 @@ export const buttonFrameVariants = cva(
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-50",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0",
-    "data-[loading=true]:cursor-progress data-[pending=true]:cursor-progress data-[pressed=true]:translate-y-px data-[current=true]:ring-2 data-[current=true]:ring-accent/20",
+    "data-[loading=true]:cursor-progress data-[pending=true]:cursor-progress data-[pressed=true]:translate-y-px data-[current=true]:ring-2 data-[current=true]:ring-primary/18",
   ].join(" "),
   {
     variants: {
@@ -25,8 +25,8 @@ export const buttonFrameVariants = cva(
         compact: "gap-2 px-3 text-[0.82rem] uppercase tracking-[0.12em]",
       },
       radius: {
-        md: "rounded-[1rem]",
-        lg: "rounded-[1.2rem]",
+        md: "rounded-lg",
+        lg: "rounded-xl",
         pill: "rounded-full",
       },
       fullWidth: {
@@ -37,7 +37,7 @@ export const buttonFrameVariants = cva(
     defaultVariants: {
       size: "md",
       density: "comfortable",
-      radius: "pill",
+      radius: "lg",
       fullWidth: false,
     },
   },
@@ -46,36 +46,37 @@ export const buttonFrameVariants = cva(
 const toneMatrix = {
   destructive: {
     solid:
-      "border-rose-500/35 bg-rose-600 text-white shadow-soft hover:-translate-y-px hover:border-rose-400/40 hover:bg-rose-500",
-    soft: "border-rose-500/20 bg-rose-500/12 text-rose-300 hover:border-rose-400/30 hover:bg-rose-500/18",
-    outline: "border-rose-500/30 bg-background text-rose-300 hover:border-rose-400/40 hover:bg-rose-500/10",
-    ghost: "border-transparent bg-transparent text-rose-300 hover:bg-rose-500/10 hover:text-rose-200",
+      "border-destructive/30 bg-destructive text-destructive-foreground shadow-soft hover:-translate-y-px hover:border-destructive/45 hover:bg-destructive/92",
+    soft: "border-destructive/28 bg-destructive/10 text-destructive hover:border-destructive/36 hover:bg-destructive/14",
+    outline: "border-destructive/32 bg-background text-destructive hover:border-destructive/42 hover:bg-destructive/8",
+    ghost: "border-transparent bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive",
   },
   primary: {
     solid:
-      "border-foreground/10 bg-foreground text-background shadow-soft hover:-translate-y-px hover:border-foreground/20 hover:bg-foreground/92",
-    soft: "border-accent/20 bg-accent/12 text-accent-strong hover:border-accent/35 hover:bg-accent/18",
-    outline: "border-border/80 bg-background text-foreground hover:border-accent/35 hover:bg-accent/7",
-    ghost: "border-transparent bg-transparent text-foreground hover:bg-background hover:text-foreground",
+      "border-primary/25 bg-primary text-primary-foreground shadow-soft hover:-translate-y-px hover:border-primary/38 hover:bg-primary/92",
+    soft: "border-accent/38 bg-accent text-accent-foreground hover:border-accent/52 hover:bg-accent/88",
+    outline: "border-input bg-background text-foreground hover:border-primary/35 hover:bg-accent/55",
+    ghost: "border-transparent bg-transparent text-foreground hover:bg-accent/55 hover:text-foreground",
   },
   neutral: {
-    solid: "border-border/75 bg-panel text-foreground shadow-soft hover:-translate-y-px hover:border-border hover:bg-background",
-    soft: "border-border/65 bg-muted-soft text-foreground hover:border-border/90 hover:bg-panel",
-    outline: "border-border/80 bg-background text-foreground hover:border-border hover:bg-muted-soft/70",
-    ghost: "border-transparent bg-transparent text-muted hover:bg-background hover:text-foreground",
+    solid: "border-border/75 bg-card text-card-foreground shadow-soft hover:-translate-y-px hover:border-border hover:bg-popover",
+    soft: "border-border/70 bg-muted text-foreground hover:border-border/90 hover:bg-card",
+    outline: "border-input bg-background text-foreground hover:border-border hover:bg-muted/70",
+    ghost: "border-transparent bg-transparent text-muted-foreground hover:bg-background hover:text-foreground",
   },
   highlight: {
-    solid: "border-highlight/30 bg-highlight text-ink shadow-soft hover:-translate-y-px hover:border-highlight/45 hover:bg-highlight/92",
-    soft: "border-highlight/25 bg-highlight/14 text-highlight-strong hover:border-highlight/40 hover:bg-highlight/18",
-    outline: "border-highlight/30 bg-background text-highlight-strong hover:bg-highlight/10",
-    ghost: "border-transparent bg-transparent text-highlight-strong hover:bg-highlight/10",
+    solid: "border-secondary/35 bg-secondary text-secondary-foreground shadow-soft hover:-translate-y-px hover:border-secondary/50 hover:bg-secondary/92",
+    soft: "border-secondary/32 bg-secondary/14 text-secondary-foreground hover:border-secondary/46 hover:bg-secondary/18",
+    outline: "border-secondary/35 bg-background text-secondary-foreground hover:bg-secondary/10",
+    ghost: "border-transparent bg-transparent text-secondary-foreground hover:bg-secondary/10",
   },
 } as const;
 
 const pressedMatrix = {
-  destructive: "data-[pressed=true]:border-rose-400/50 data-[pressed=true]:bg-rose-500 data-[pressed=true]:text-white",
+  destructive:
+    "data-[pressed=true]:border-destructive/45 data-[pressed=true]:bg-destructive data-[pressed=true]:text-destructive-foreground",
   default:
-    "data-[pressed=true]:border-accent/35 data-[pressed=true]:bg-foreground data-[pressed=true]:text-background data-[pressed=true]:shadow-none",
+    "data-[pressed=true]:border-primary/35 data-[pressed=true]:bg-primary data-[pressed=true]:text-primary-foreground data-[pressed=true]:shadow-none",
 } as const;
 
 export type ActionIntent = "primary" | "neutral" | "highlight";

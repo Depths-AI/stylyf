@@ -18,13 +18,13 @@ import { Tooltip } from "~/components/registry/tier-1/disclosure-overlay/tooltip
 
 function DemoFrame(props: { children: JSX.Element; item: RegistryItem; title: string }) {
   return (
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+    <div class="space-y-4" data-demo={props.item.slug}>
+      <div class="ui-demo-chip">
         <span>{props.title}</span>
         <span class="text-border">/</span>
         <span>{props.item.name}</span>
       </div>
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">{props.children}</div>
+      <div class="ui-demo-frame">{props.children}</div>
     </div>
   );
 }
@@ -50,10 +50,10 @@ export function CollapsiblePreview(props: { item: RegistryItem }) {
     <DemoFrame item={props.item} title="Live primitive">
       <Collapsible defaultOpen title="Publishing notes" description="Secondary guidance that does not need full accordion structure.">
         <div class="grid gap-3">
-          <div class="rounded-[1.1rem] border border-border/70 bg-background px-4 py-3 text-sm text-foreground">
+          <div class="ui-demo-inset text-sm text-foreground">
             Reviewers are auto-assigned from the workspace policy set.
           </div>
-          <div class="rounded-[1.1rem] border border-border/70 bg-background px-4 py-3 text-sm text-muted">
+          <div class="ui-demo-inset text-sm text-muted-foreground">
             Non-critical contextual copy stays lightweight and easy to collapse.
           </div>
         </div>
@@ -68,7 +68,7 @@ export function DialogPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="flex flex-wrap gap-3">
-        <Button onClick={() => setOpen(true)}>Open dialog</Button>
+        <Button data-demo-action="open-dialog" onClick={() => setOpen(true)}>Open dialog</Button>
         <Button intent="neutral" tone="outline">Secondary action</Button>
       </div>
       <Dialog
@@ -94,7 +94,7 @@ export function AlertDialogPreview(props: { item: RegistryItem }) {
 
   return (
     <DemoFrame item={props.item} title="Live primitive">
-      <Button destructive leftIcon={<ShieldAlert />} onClick={() => setOpen(true)}>
+      <Button data-demo-action="open-alert-dialog" destructive leftIcon={<ShieldAlert />} onClick={() => setOpen(true)}>
         Open confirmation
       </Button>
       <AlertDialog open={open()} onOpenChange={setOpen} onConfirm={() => setOpen(false)} onCancel={() => setOpen(false)} />
@@ -107,7 +107,7 @@ export function DrawerPreview(props: { item: RegistryItem }) {
 
   return (
     <DemoFrame item={props.item} title="Live primitive">
-      <Button intent="neutral" tone="outline" leftIcon={<PanelsTopLeft />} onClick={() => setOpen(true)}>
+      <Button data-demo-action="open-drawer" intent="neutral" tone="outline" leftIcon={<PanelsTopLeft />} onClick={() => setOpen(true)}>
         Open drawer
       </Button>
       <Drawer open={open()} onOpenChange={setOpen} side="right" />
@@ -167,10 +167,10 @@ export function CommandMenuPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="grid gap-4 xl:grid-cols-[auto_1fr] xl:items-center">
-        <Button leftIcon={<Command />} onClick={() => setOpen(true)}>
+        <Button data-demo-action="open-command-menu" leftIcon={<Command />} onClick={() => setOpen(true)}>
           Open palette
         </Button>
-        <div class="rounded-[1.2rem] border border-border/70 bg-background px-4 py-3 text-sm leading-6 text-muted">
+        <div class="ui-demo-inset text-sm leading-6 text-muted-foreground">
           Command surfaces are optimized for keyboard-first navigation, filtering, and quick action dispatch.
         </div>
       </div>

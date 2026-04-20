@@ -14,29 +14,29 @@ type RegistrySidebarProps = {
 
 export function RegistrySidebar(props: RegistrySidebarProps) {
   return (
-    <aside class="rounded-[1.8rem] border border-border/70 bg-panel/92 p-4 shadow-soft backdrop-blur-sm lg:sticky lg:top-24">
-      <div class="flex items-center gap-3 rounded-[1.35rem] border border-border/70 bg-background px-4 py-3">
-        <Search class="size-4 text-muted" />
+    <aside class="ui-shell p-4 lg:sticky lg:top-24">
+      <div class="ui-shell-muted flex items-center gap-3 px-4 py-3">
+        <Search class="size-4 text-muted-foreground" />
         <input
           value={props.query}
           onInput={event => props.onQueryInput(event.currentTarget.value)}
           type="search"
           placeholder="Search clusters or components"
-          class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
+          class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
       </div>
 
-      <div class="mt-4 rounded-[1.35rem] border border-border/70 bg-background px-4 py-4">
+      <div class="ui-shell-muted mt-4 px-4 py-4">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Navigation</div>
+            <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Navigation</div>
             <div class="mt-1 text-lg font-semibold text-foreground">{props.clusters.length} clusters</div>
           </div>
-          <div class="rounded-full border border-border/70 bg-panel px-3 py-1 text-xs text-muted">
+          <div class="ui-pillbar px-3 py-1 text-xs text-muted-foreground">
             {props.totalComponents} components
           </div>
         </div>
-        <p class="mt-3 text-sm leading-6 text-muted">
+        <p class="mt-3 text-sm leading-6 text-muted-foreground">
           One scrollable section per cluster, with each component nested as a subsection inside it.
         </p>
       </div>
@@ -44,10 +44,10 @@ export function RegistrySidebar(props: RegistrySidebarProps) {
       <nav class="mt-4 space-y-3">
         <For each={props.clusters}>
           {cluster => (
-            <details open class="group rounded-[1.2rem] border border-border/70 bg-background px-4 py-3">
+            <details open class="group rounded-[var(--radius-xl)] border border-border/80 bg-background px-4 py-3">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
                 <div class="min-w-0">
-                  <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">{cluster.tierLabel}</div>
+                  <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{cluster.tierLabel}</div>
                   <a
                     href={`#${cluster.id}`}
                     data-sidebar-cluster={cluster.id}
@@ -60,10 +60,10 @@ export function RegistrySidebar(props: RegistrySidebarProps) {
                   </a>
                 </div>
                 <div class="flex items-center gap-3">
-                  <span class="rounded-full border border-border/70 bg-panel px-3 py-1 text-xs text-muted">
+                  <span class="ui-pillbar px-3 py-1 text-xs text-muted-foreground">
                     {cluster.items.length}
                   </span>
-                  <ChevronDown class="size-4 text-muted transition group-open:rotate-180" />
+                  <ChevronDown class="size-4 text-muted-foreground transition group-open:rotate-180" />
                 </div>
               </summary>
 
@@ -77,7 +77,7 @@ export function RegistrySidebar(props: RegistrySidebarProps) {
                       onFocus={() => props.onComponentIntent?.(cluster.id)}
                       onPointerDown={() => props.onComponentIntent?.(cluster.id)}
                       class={cn(
-                        "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panel hover:text-foreground",
+                        "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted-soft hover:text-foreground",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
                       )}
                     >

@@ -18,16 +18,28 @@ export function Separator(userProps: SeparatorProps) {
       role="separator"
       aria-orientation={local.orientation}
       class={cn(
-        "flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted",
+        "flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground",
         local.orientation === "vertical" ? "h-full flex-col" : "w-full",
         local.class,
       )}
       {...others}
     >
-      <div class={cn("bg-border", local.orientation === "vertical" ? "h-full w-px" : "h-px flex-1", local.tone === "accent" && "bg-accent/35")} />
+      <div
+        class={cn(
+          "bg-border",
+          local.orientation === "vertical" ? "h-full w-px" : "h-px flex-1",
+          local.tone === "accent" && "bg-primary/35",
+        )}
+      />
       <Show when={local.label}>
         <span>{local.label}</span>
-        <div class={cn("bg-border", local.orientation === "vertical" ? "h-full w-px" : "h-px flex-1", local.tone === "accent" && "bg-accent/35")} />
+        <div
+          class={cn(
+            "bg-border",
+            local.orientation === "vertical" ? "h-full w-px" : "h-px flex-1",
+            local.tone === "accent" && "bg-primary/35",
+          )}
+        />
       </Show>
     </div>
   );

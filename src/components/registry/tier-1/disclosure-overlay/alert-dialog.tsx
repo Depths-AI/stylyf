@@ -129,8 +129,8 @@ export function AlertDialog(userProps: AlertDialogProps) {
 
   const severeTone = () =>
     local.severity === "danger"
-      ? "border-rose-500/25 bg-rose-500/12 text-rose-300"
-      : "border-highlight/25 bg-highlight/16 text-highlight-strong";
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      : "border-secondary/30 bg-secondary/16 text-secondary-foreground";
 
   return (
     <Show when={isOpen()}>
@@ -138,7 +138,7 @@ export function AlertDialog(userProps: AlertDialogProps) {
         <div class="fixed inset-0 z-50 px-4 py-6 sm:px-6 sm:py-10">
           <div
             aria-hidden="true"
-            class="absolute inset-0 bg-ink/62 backdrop-blur-[2px]"
+            class="ui-overlay absolute inset-0"
             onClick={() => {
               local.onCancel?.();
               setOpen(false);
@@ -152,7 +152,7 @@ export function AlertDialog(userProps: AlertDialogProps) {
               aria-labelledby={titleId}
               aria-describedby={descriptionId}
               tabIndex={-1}
-              class={cn("relative w-full max-w-xl rounded-[1.75rem] border border-border/70 bg-panel p-6 shadow-soft", local.class)}
+              class={cn("relative w-full max-w-xl rounded-2xl border border-border/70 bg-popover p-6 shadow-soft", local.class)}
               onPointerDown={event => event.stopPropagation()}
               {...others}
             >
@@ -162,11 +162,11 @@ export function AlertDialog(userProps: AlertDialogProps) {
               <h3 id={titleId} class="mt-5 text-2xl font-semibold tracking-tight text-foreground">
                 {local.title}
               </h3>
-              <p id={descriptionId} class="mt-3 text-sm leading-6 text-muted">
+              <p id={descriptionId} class="mt-3 text-sm leading-6 text-muted-foreground">
                 {local.description}
               </p>
 
-              <div class="mt-5 rounded-[1.2rem] border border-border/70 bg-background px-4 py-3 text-sm leading-6 text-muted">
+              <div class="ui-demo-inset mt-5 text-sm leading-6 text-muted-foreground">
                 This pattern keeps the decision explicit and emphasizes the cost of the irreversible action.
               </div>
 

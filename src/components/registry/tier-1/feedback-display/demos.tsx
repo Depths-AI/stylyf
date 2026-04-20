@@ -1,4 +1,5 @@
 import type { JSX } from "solid-js";
+import { createSignal } from "solid-js";
 import type { RegistryItem } from "~/lib/registry";
 import { Avatar } from "~/components/registry/tier-1/feedback-display/avatar";
 import { Badge } from "~/components/registry/tier-1/feedback-display/badge";
@@ -9,13 +10,13 @@ import { Toast } from "~/components/registry/tier-1/feedback-display/toast";
 
 function DemoFrame(props: { children: JSX.Element; item: RegistryItem; title: string }) {
   return (
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+    <div class="space-y-4" data-demo={props.item.slug}>
+      <div class="ui-demo-chip">
         <span>{props.title}</span>
         <span class="text-border">/</span>
         <span>{props.item.name}</span>
       </div>
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">{props.children}</div>
+      <div class="ui-demo-frame">{props.children}</div>
     </div>
   );
 }
@@ -33,13 +34,21 @@ export function ProgressPreview(props: { item: RegistryItem }) {
 }
 
 export function BadgePreview(props: { item: RegistryItem }) {
+  const [showDraft, setShowDraft] = createSignal(true);
+
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="flex flex-wrap gap-3">
         <Badge tone="accent">Featured</Badge>
         <Badge tone="success" emphasis="solid">Healthy</Badge>
         <Badge tone="danger" selected>At risk</Badge>
-        <Badge tone="neutral" emphasis="soft">Draft</Badge>
+        {showDraft() ? (
+          <Badge tone="neutral" emphasis="soft" removable onRemove={() => setShowDraft(false)}>
+            Draft
+          </Badge>
+        ) : (
+          <Badge tone="neutral" emphasis="soft">Removed</Badge>
+        )}
       </div>
     </DemoFrame>
   );
@@ -92,7 +101,7 @@ export function ToastPreview(props: { item: RegistryItem }) {
 export function SkeletonPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
-      <div class="grid gap-4 rounded-[1.35rem] border border-border/70 bg-background p-4 lg:grid-cols-[auto_1fr]">
+      <div class="ui-demo-inset grid gap-4 lg:grid-cols-[auto_1fr]">
         <Skeleton shape="circle" width="4rem" height="4rem" />
         <div class="space-y-3">
           <Skeleton shape="line" width="10rem" height="0.95rem" />
@@ -110,9 +119,9 @@ export function SeparatorPreview(props: { item: RegistryItem }) {
       <div class="space-y-6">
         <Separator label="Section" />
         <div class="flex h-20 items-center gap-5">
-          <span class="text-sm text-muted">Queue</span>
+          <span class="text-sm text-muted-foreground">Queue</span>
           <Separator orientation="vertical" tone="accent" />
-          <span class="text-sm text-muted">Details</span>
+          <span class="text-sm text-muted-foreground">Details</span>
         </div>
       </div>
     </DemoFrame>

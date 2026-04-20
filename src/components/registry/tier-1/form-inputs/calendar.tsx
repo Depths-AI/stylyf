@@ -116,16 +116,16 @@ export function Calendar(userProps: CalendarProps) {
         <div class="text-sm font-semibold tracking-[-0.01em] text-foreground">{local.label}</div>
       </Show>
       <Show when={local.description}>
-        <p id={aria.descriptionId} class="text-sm leading-6 text-muted">
+        <p id={aria.descriptionId} class="text-sm leading-6 text-muted-foreground">
           {local.description}
         </p>
       </Show>
 
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-4 shadow-soft">
+      <div class="ui-card p-4">
         <div class="flex items-center justify-between gap-3">
           <button
             type="button"
-            class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted transition hover:text-foreground"
+            class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-accent hover:text-foreground"
             onClick={() => setMonth(current => addMonths(current, -1))}
             aria-label="Previous month"
           >
@@ -136,7 +136,7 @@ export function Calendar(userProps: CalendarProps) {
           </div>
           <button
             type="button"
-            class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted transition hover:text-foreground"
+            class="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-accent hover:text-foreground"
             onClick={() => setMonth(current => addMonths(current, 1))}
             aria-label="Next month"
           >
@@ -144,7 +144,7 @@ export function Calendar(userProps: CalendarProps) {
           </button>
         </div>
 
-        <div class="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+        <div class="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           <For each={["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]}>{day => <div>{day}</div>}</For>
         </div>
 
@@ -163,14 +163,14 @@ export function Calendar(userProps: CalendarProps) {
                       <button
                         type="button"
                         class={cn(
-                          "inline-flex aspect-square items-center justify-center rounded-[1rem] text-sm transition",
+                          "inline-flex aspect-square items-center justify-center rounded-lg text-sm transition",
                           local.compact ? "size-9" : "size-10",
                           selected()
-                            ? "bg-foreground font-semibold text-background"
+                            ? "bg-primary font-semibold text-primary-foreground"
                             : containsRange(date, currentValue())
-                              ? "bg-accent/12 text-foreground"
+                              ? "bg-accent text-accent-foreground"
                               : "bg-background text-foreground hover:bg-background-subtle",
-                          !sameMonth(date, month()) && "text-muted",
+                          !sameMonth(date, month()) && "text-muted-foreground",
                           isDisabled(date, local.disabledDates) && "cursor-not-allowed opacity-35",
                         )}
                         aria-pressed={selected()}
@@ -187,8 +187,8 @@ export function Calendar(userProps: CalendarProps) {
           </For>
         </div>
 
-        <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted">
-          <span class="rounded-full border border-border/70 bg-background px-3 py-1">
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <span class="ui-chip ui-chip-muted">
             {Array.isArray(currentValue())
               ? `${formatDate(currentRange()?.[0]) || "Start"} - ${formatDate(currentRange()?.[1]) || "End"}`
               : formatDate(currentValue() as Date | undefined) || "No date selected"}
@@ -197,7 +197,7 @@ export function Calendar(userProps: CalendarProps) {
       </div>
 
       <Show when={local.invalid && local.errorMessage}>
-        <p id={aria.errorId} class="text-sm font-medium leading-6 text-rose-300">
+        <p id={aria.errorId} class="text-sm font-medium leading-6 text-destructive">
           {local.errorMessage}
         </p>
       </Show>

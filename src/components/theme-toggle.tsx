@@ -40,7 +40,7 @@ export function ThemeToggle(props: { class?: string }) {
       type="button"
       onClick={handleToggle}
       class={cn(
-        "inline-flex h-10 items-center gap-2 rounded-full border border-border/70 bg-panel px-4 text-sm font-medium text-muted transition hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+        "ui-pillbar inline-flex h-10 items-center gap-2 px-4 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
         props.class,
       )}
       aria-label={`Cycle color mode. Current mode: ${currentMeta().label}`}

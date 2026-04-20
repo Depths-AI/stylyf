@@ -112,11 +112,11 @@ export function Switch(userProps: SwitchProps) {
           "relative inline-flex shrink-0 items-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/18",
           trackSizes[local.size],
           local.tone === "soft" &&
-            "border-accent/25 bg-accent/12 data-[checked=true]:border-foreground/10 data-[checked=true]:bg-foreground",
+            "border-accent/35 bg-accent data-[checked=true]:border-primary/18 data-[checked=true]:bg-primary",
           local.tone === "outline" &&
-            "border-border/70 bg-background data-[checked=true]:border-accent/35 data-[checked=true]:bg-accent/12",
-          local.tone === "solid" && "border-foreground/10 bg-foreground text-background",
-          local.invalid && "border-rose-500/45 ring-2 ring-rose-500/12",
+            "border-border/70 bg-background data-[checked=true]:border-primary/35 data-[checked=true]:bg-accent",
+          local.tone === "solid" && "border-primary/10 bg-primary text-primary-foreground",
+          local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
         )}
         data-checked={checked() ? "true" : "false"}
         disabled={others.disabled}
@@ -129,7 +129,7 @@ export function Switch(userProps: SwitchProps) {
           )}
           data-checked={checked() ? "true" : "false"}
         >
-          <Show when={checked()} fallback={<X class="size-3 text-muted" />}>
+          <Show when={checked()} fallback={<X class="size-3 text-muted-foreground" />}>
             <Check class="size-3" />
           </Show>
         </span>
@@ -142,12 +142,12 @@ export function Switch(userProps: SwitchProps) {
           </label>
         </Show>
         <Show when={local.description}>
-          <div id={aria.descriptionId} class="mt-1 text-sm leading-6 text-muted">
+          <div id={aria.descriptionId} class="mt-1 text-sm leading-6 text-muted-foreground">
             {local.description}
           </div>
         </Show>
         <Show when={local.invalid && local.errorMessage}>
-          <div id={aria.errorId} class="mt-1 text-sm font-medium leading-6 text-rose-300">
+          <div id={aria.errorId} class="mt-1 text-sm font-medium leading-6 text-destructive">
             {local.errorMessage}
           </div>
         </Show>

@@ -16,9 +16,9 @@ import {
 type IconButtonShape = "square" | "round" | "pill";
 
 const shapeClasses: Record<IconButtonShape, string> = {
-  square: "rounded-[1rem]",
+  square: "rounded-lg",
   round: "rounded-full",
-  pill: "rounded-[1.35rem]",
+  pill: "rounded-xl",
 };
 
 const sizeClasses: Record<ActionSize, string> = {

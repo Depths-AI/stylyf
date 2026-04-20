@@ -259,7 +259,7 @@ function ToggleGroupRoot(userProps: ToggleGroupProps) {
           "inline-flex gap-2",
           local.layout === "segmented"
             ? cn(
-                "rounded-[1.4rem] border border-border/70 bg-panel p-1.5 shadow-inset",
+                "rounded-xl border border-border/70 bg-card p-1.5 shadow-inset",
                 local.orientation === "vertical" && "flex-col",
                 local.fullWidth && "w-full",
               )
@@ -368,7 +368,7 @@ export function ToggleGroupItem(userProps: ToggleGroupItemProps) {
           pressedTone: true,
         }),
         context.layout() === "segmented" &&
-          "border-transparent shadow-none hover:bg-background/90 data-[pressed=true]:border-border/80 data-[pressed=true]:bg-background",
+          "border-transparent shadow-none hover:bg-accent data-[pressed=true]:border-primary/20 data-[pressed=true]:bg-background",
         local.class,
       )}
       disabled={unavailable()}

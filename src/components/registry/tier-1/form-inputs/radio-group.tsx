@@ -86,7 +86,7 @@ export function RadioGroup(userProps: RadioGroupProps) {
         <legend class="text-sm font-semibold tracking-[-0.01em] text-foreground">{local.label}</legend>
       </Show>
       <Show when={local.description}>
-        <p id={aria.descriptionId} class="text-sm leading-6 text-muted">
+        <p id={aria.descriptionId} class="text-sm leading-6 text-muted-foreground">
           {local.description}
         </p>
       </Show>
@@ -97,10 +97,10 @@ export function RadioGroup(userProps: RadioGroupProps) {
             <label
               class={cn(
                 "group relative flex cursor-pointer gap-3 border transition",
-                local.layout === "card" ? "rounded-[1.25rem] p-4" : "rounded-full px-4 py-3",
+                local.layout === "card" ? "rounded-xl p-4" : "rounded-full px-4 py-3",
                 currentValue() === option.value
-                  ? "border-accent/35 bg-accent/10"
-                  : "border-border/70 bg-background hover:border-accent/25",
+                  ? "border-primary/35 bg-accent"
+                  : "border-border/70 bg-background hover:border-primary/25",
                 option.disabled && "cursor-not-allowed opacity-60",
               )}
             >
@@ -114,13 +114,13 @@ export function RadioGroup(userProps: RadioGroupProps) {
                 aria-invalid={local.invalid ? true : undefined}
                 onChange={() => commit(option.value)}
               />
-              <span class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-border/70 bg-panel">
-                <CircleDot class={cn("size-3.5 text-accent-strong transition", currentValue() === option.value ? "opacity-100" : "opacity-0")} />
+              <span class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-border/70 bg-card">
+                <CircleDot class={cn("size-3.5 text-primary transition", currentValue() === option.value ? "opacity-100" : "opacity-0")} />
               </span>
               <span class="min-w-0">
                 <span class="block text-sm font-semibold text-foreground">{option.label}</span>
                 <Show when={option.description}>
-                  <span class="mt-1 block text-sm leading-6 text-muted">{option.description}</span>
+                  <span class="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span>
                 </Show>
               </span>
             </label>
@@ -129,7 +129,7 @@ export function RadioGroup(userProps: RadioGroupProps) {
       </div>
 
       <Show when={local.invalid && local.errorMessage}>
-        <p id={aria.errorId} class="text-sm font-medium leading-6 text-rose-300">
+        <p id={aria.errorId} class="text-sm font-medium leading-6 text-destructive">
           {local.errorMessage}
         </p>
       </Show>

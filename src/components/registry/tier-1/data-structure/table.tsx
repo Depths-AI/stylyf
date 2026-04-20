@@ -37,7 +37,7 @@ function TableRoot(props: ParentProps<TableRootProps>) {
   const [local, others] = splitProps(props, ["children", "class", "density", "stickyHeader", "zebra"]);
 
   return (
-    <div class="overflow-hidden rounded-[1.6rem] border border-border/70 bg-panel shadow-soft">
+    <div class="ui-card overflow-hidden">
       <div class="overflow-auto">
         <table
           class={cn(
@@ -79,7 +79,7 @@ function TableRow(props: ParentProps<TableRowProps>) {
   return (
     <tr
       class={cn(
-        "transition hover:bg-background-subtle data-[selected=true]:bg-accent/8 [&_td]:border-b [&_td]:border-border/70 [&_th]:border-b [&_th]:border-border/70",
+        "transition hover:bg-background-subtle data-[selected=true]:bg-accent [&_td]:border-b [&_td]:border-border/70 [&_th]:border-b [&_th]:border-border/70",
         local.class,
       )}
       data-selected={local.selected ? "true" : "false"}
@@ -97,7 +97,7 @@ function TableHeaderCell(props: ParentProps<TableHeaderCellProps>) {
       scope="col"
       aria-sort={local.sorted === "asc" ? "ascending" : local.sorted === "desc" ? "descending" : "none"}
       class={cn(
-        "bg-background-subtle text-xs font-semibold uppercase tracking-[0.2em] text-muted first:rounded-tl-[1.2rem] last:rounded-tr-[1.2rem]",
+        "bg-background-subtle text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground first:rounded-tl-[1.2rem] last:rounded-tr-[1.2rem]",
         "group-data-[sticky-header=true]:sticky group-data-[sticky-header=true]:top-0",
         local.numeric && "text-right",
         local.class,
@@ -121,7 +121,7 @@ function TableCell(props: ParentProps<TableCellProps>) {
 function TableCaption(props: ParentProps<TableCaptionProps>) {
   const [local, others] = splitProps(props, ["children", "class"]);
   return (
-    <caption class={cn("caption-bottom border-t border-border/70 px-5 py-4 text-left text-sm text-muted", local.class)} {...others}>
+    <caption class={cn("caption-bottom border-t border-border/70 px-5 py-4 text-left text-sm text-muted-foreground", local.class)} {...others}>
       {local.children}
     </caption>
   );

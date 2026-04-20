@@ -123,7 +123,7 @@ export function Drawer(userProps: DrawerProps) {
     <Show when={isOpen()}>
       <Portal>
         <div class="fixed inset-0 z-50 flex p-3 sm:p-4">
-          <div aria-hidden="true" class="absolute inset-0 bg-ink/56 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
+          <div aria-hidden="true" class="ui-overlay absolute inset-0" onClick={() => setOpen(false)} />
           <div
             ref={panelRef}
             role="dialog"
@@ -132,7 +132,7 @@ export function Drawer(userProps: DrawerProps) {
             aria-describedby={descriptionId}
             tabIndex={-1}
             class={cn(
-              "relative z-10 flex w-full flex-col rounded-[1.8rem] border border-border/70 bg-panel p-6 shadow-soft focus:outline-none",
+              "ui-popover relative z-10 flex w-full flex-col p-6 focus:outline-none",
               layoutClass(),
               local.class,
             )}
@@ -141,13 +141,13 @@ export function Drawer(userProps: DrawerProps) {
           >
             <div class="flex items-start justify-between gap-4">
               <div>
-                <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+                <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   <span>Contextual edit</span>
                 </div>
                 <h3 id={titleId} class="mt-4 text-2xl font-semibold tracking-tight text-foreground">
                   {local.title}
                 </h3>
-                <p id={descriptionId} class="mt-3 max-w-2xl text-sm leading-6 text-muted">
+                <p id={descriptionId} class="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                   {local.description}
                 </p>
               </div>
@@ -155,7 +155,7 @@ export function Drawer(userProps: DrawerProps) {
               <button
                 type="button"
                 aria-label="Close drawer"
-                class="inline-flex size-10 items-center justify-center rounded-full border border-border/70 bg-background text-muted transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+                class="inline-flex size-10 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
                 onClick={() => setOpen(false)}
               >
                 <X class="size-4.5" />
@@ -165,14 +165,14 @@ export function Drawer(userProps: DrawerProps) {
             <div class="mt-6 flex-1 overflow-auto">
               {local.children ?? (
                 <div class="grid gap-4">
-                  <div class="rounded-[1.3rem] border border-border/70 bg-background p-4">
-                    <div class="text-xs uppercase tracking-[0.2em] text-muted">Role</div>
+                  <div class="ui-demo-inset">
+                    <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Role</div>
                     <div class="mt-3 text-sm font-medium text-foreground">Billing administrator</div>
-                    <div class="mt-2 text-sm leading-6 text-muted">Can manage invoices, seats, payment methods, and upgrade actions.</div>
+                    <div class="mt-2 text-sm leading-6 text-muted-foreground">Can manage invoices, seats, payment methods, and upgrade actions.</div>
                   </div>
-                  <div class="rounded-[1.3rem] border border-border/70 bg-background p-4">
-                    <div class="text-xs uppercase tracking-[0.2em] text-muted">Scope</div>
-                    <div class="mt-3 text-sm leading-6 text-muted">
+                  <div class="ui-demo-inset">
+                    <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Scope</div>
+                    <div class="mt-3 text-sm leading-6 text-muted-foreground">
                       Applies to the current workspace only, which is why a side panel works better than a route change.
                     </div>
                   </div>

@@ -2,12 +2,14 @@ export type ThemeMode = "light" | "dark" | "system";
 export type ThemePresetId = "stylyf" | "graphite" | "citrus" | "ocean";
 export type ThemeDensity = "comfortable" | "compact";
 export type ThemeRadius = "balanced" | "soft" | "round";
+export type ThemeSpacing = "tight" | "balanced" | "airy";
 
 export type ThemeState = {
   mode: ThemeMode;
   preset: ThemePresetId;
   density: ThemeDensity;
   radius: ThemeRadius;
+  spacing: ThemeSpacing;
 };
 
 export type ThemePreset = {
@@ -24,7 +26,8 @@ export const defaultThemeState: ThemeState = {
   mode: "system",
   preset: "stylyf",
   density: "comfortable",
-  radius: "soft",
+  radius: "balanced",
+  spacing: "balanced",
 };
 
 export const themePresets: ThemePreset[] = [
@@ -72,12 +75,17 @@ function isThemeRadius(value: string): value is ThemeRadius {
   return value === "balanced" || value === "soft" || value === "round";
 }
 
+function isThemeSpacing(value: string): value is ThemeSpacing {
+  return value === "tight" || value === "balanced" || value === "airy";
+}
+
 export function normalizeThemeState(value?: Partial<ThemeState>): ThemeState {
   return {
     mode: value?.mode && isThemeMode(value.mode) ? value.mode : defaultThemeState.mode,
     preset: value?.preset && isThemePreset(value.preset) ? value.preset : defaultThemeState.preset,
     density: value?.density && isThemeDensity(value.density) ? value.density : defaultThemeState.density,
     radius: value?.radius && isThemeRadius(value.radius) ? value.radius : defaultThemeState.radius,
+    spacing: value?.spacing && isThemeSpacing(value.spacing) ? value.spacing : defaultThemeState.spacing,
   };
 }
 
@@ -112,12 +120,14 @@ export function readThemeStateFromDocument(): ThemeState {
   const preset = root.dataset.themePreset;
   const density = root.dataset.density;
   const radius = root.dataset.radius;
+  const spacing = root.dataset.spacing;
 
   return normalizeThemeState({
     mode: mode && isThemeMode(mode) ? mode : undefined,
     preset: preset && isThemePreset(preset) ? preset : undefined,
     density: density && isThemeDensity(density) ? density : undefined,
     radius: radius && isThemeRadius(radius) ? radius : undefined,
+    spacing: spacing && isThemeSpacing(spacing) ? spacing : undefined,
   });
 }
 
@@ -136,6 +146,7 @@ export function applyThemeState(next: Partial<ThemeState>, options?: { persist?:
   root.dataset.themePreset = normalized.preset;
   root.dataset.density = normalized.density;
   root.dataset.radius = normalized.radius;
+  root.dataset.spacing = normalized.spacing;
   root.classList.toggle("dark", resolvedTheme === "dark");
 
   if (persist) {
@@ -191,6 +202,7 @@ export const themeBootstrapScript = `(() => {
     preset: ["stylyf", "graphite", "citrus", "ocean"].includes(value?.preset) ? value.preset : defaults.preset,
     density: value?.density === "compact" || value?.density === "comfortable" ? value.density : defaults.density,
     radius: ["balanced", "soft", "round"].includes(value?.radius) ? value.radius : defaults.radius,
+    spacing: ["tight", "balanced", "airy"].includes(value?.spacing) ? value.spacing : defaults.spacing,
   });
 
   let saved = defaults;
@@ -210,5 +222,6 @@ export const themeBootstrapScript = `(() => {
   root.dataset.themePreset = saved.preset;
   root.dataset.density = saved.density;
   root.dataset.radius = saved.radius;
+  root.dataset.spacing = saved.spacing;
   root.classList.toggle("dark", resolvedTheme === "dark");
 })();`;

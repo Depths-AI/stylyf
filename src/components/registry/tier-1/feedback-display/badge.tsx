@@ -17,20 +17,20 @@ export type BadgeProps = Omit<JSX.HTMLAttributes<HTMLSpanElement>, "children" | 
 
 const toneStyles = {
   accent: {
-    soft: "border-accent/25 bg-accent/10 text-accent-strong",
-    solid: "border-accent/30 bg-accent text-ink",
+    soft: "border-accent/35 bg-accent text-accent-foreground",
+    solid: "border-primary/30 bg-primary text-primary-foreground",
   },
   danger: {
-    soft: "border-rose-500/25 bg-rose-500/12 text-rose-300",
-    solid: "border-rose-500/35 bg-rose-500 text-white",
+    soft: "border-destructive/30 bg-destructive/10 text-destructive",
+    solid: "border-destructive/35 bg-destructive text-destructive-foreground",
   },
   neutral: {
-    soft: "border-border/70 bg-panel text-foreground",
+    soft: "border-border/70 bg-card text-card-foreground",
     solid: "border-border/80 bg-foreground text-background",
   },
   success: {
-    soft: "border-emerald-400/25 bg-emerald-400/12 text-emerald-300",
-    solid: "border-emerald-400/35 bg-emerald-500 text-white",
+    soft: "border-success/30 bg-success/10 text-success",
+    solid: "border-success/35 bg-success text-success-foreground",
   },
 } as const;
 

@@ -145,22 +145,22 @@ export function CommandMenu(userProps: CommandMenuProps) {
       <Show when={isOpen()}>
         <Portal>
           <div class="fixed inset-0 z-50 px-4 py-6 sm:px-6 sm:py-10">
-            <div aria-hidden="true" class="absolute inset-0 bg-ink/60 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
-            <div class="relative mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-panel shadow-soft">
+            <div aria-hidden="true" class="ui-overlay absolute inset-0" onClick={() => setOpen(false)} />
+            <div role="dialog" aria-modal="true" class="ui-popover relative mx-auto flex w-full max-w-2xl flex-col overflow-hidden">
               <div class="border-b border-border/70 px-5 py-4">
-                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Keyboard-first surface</div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Keyboard-first surface</div>
                 <h3 class="mt-2 text-xl font-semibold tracking-tight text-foreground">{local.title}</h3>
               </div>
 
               <div class="border-b border-border/70 px-5 py-4">
-                <label class="flex items-center gap-3 rounded-[1.2rem] border border-border/70 bg-background px-4 py-3">
-                  <Search class="size-4.5 text-muted" />
+                <label class="ui-demo-inset flex items-center gap-3">
+                  <Search class="size-4.5 text-muted-foreground" />
                   <input
                     ref={inputRef}
                     value={query()}
                     onInput={event => setQuery(event.currentTarget.value)}
                     placeholder="Search pages, settings, and actions"
-                    class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
+                    class="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                   />
                 </label>
               </div>
@@ -169,15 +169,15 @@ export function CommandMenu(userProps: CommandMenuProps) {
                 <Show
                   when={filteredGroups().length}
                   fallback={
-                    <div class="rounded-[1.2rem] border border-dashed border-border/70 bg-background p-5 text-sm leading-6 text-muted">
+                    <div class="ui-demo-inset border-dashed text-sm leading-6 text-muted-foreground">
                       No commands match the current query.
                     </div>
                   }
                 >
                   <For each={filteredGroups()}>
                     {group => (
-                      <section class="mb-3 rounded-[1.25rem] border border-border/70 bg-background p-2 last:mb-0">
-                        <div class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">{group.label}</div>
+                      <section class="ui-demo-inset mb-3 p-2 last:mb-0">
+                        <div class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{group.label}</div>
                         <div class="space-y-1">
                           <For each={group.items}>
                             {item => {
@@ -188,8 +188,8 @@ export function CommandMenu(userProps: CommandMenuProps) {
                                 <button
                                   type="button"
                                   class={cn(
-                                    "flex w-full items-center justify-between gap-4 rounded-[1rem] px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
-                                    activeIndex() === flatIndex() ? "bg-foreground text-background shadow-soft" : "hover:bg-panel",
+                                    "flex w-full items-center justify-between gap-4 rounded-lg px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                                    activeIndex() === flatIndex() ? "bg-primary text-primary-foreground shadow-soft" : "hover:bg-accent",
                                   )}
                                   onMouseEnter={() => setActiveIndex(flatIndex())}
                                   onClick={() => setOpen(false)}
@@ -200,7 +200,7 @@ export function CommandMenu(userProps: CommandMenuProps) {
                                       <span
                                         class={cn(
                                           "mt-1 block text-sm",
-                                          activeIndex() === flatIndex() ? "text-background/72" : "text-muted",
+                                          activeIndex() === flatIndex() ? "text-background/72" : "text-muted-foreground",
                                         )}
                                       >
                                         {item.description}
@@ -212,8 +212,8 @@ export function CommandMenu(userProps: CommandMenuProps) {
                                       class={cn(
                                         "shrink-0 rounded-full px-2 py-1 text-[11px] uppercase tracking-[0.16em]",
                                         activeIndex() === flatIndex()
-                                          ? "bg-background/16 text-background"
-                                          : "bg-accent/10 text-accent-strong",
+                                          ? "bg-primary-foreground/14 text-primary-foreground"
+                                          : "bg-accent text-accent-foreground",
                                       )}
                                     >
                                       {item.shortcut}

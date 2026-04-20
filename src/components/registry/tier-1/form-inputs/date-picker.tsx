@@ -121,7 +121,7 @@ export function DatePicker(userProps: DatePickerProps) {
           />
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-panel hover:text-foreground"
+            class="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
             aria-label="Toggle date picker"
             onClick={() => setOpenState(!open())}
           >
@@ -136,7 +136,7 @@ export function DatePicker(userProps: DatePickerProps) {
               mode={local.mode}
               value={currentValue()}
               onValueChange={commit}
-              class={cn("rounded-[1.5rem] border border-border/70 bg-panel/96 p-4 shadow-soft backdrop-blur-sm")}
+              class={cn("ui-popover p-4")}
             />
           </div>
         </Show>

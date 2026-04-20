@@ -94,7 +94,7 @@ export function Pagination(userProps: PaginationProps) {
   };
 
   const basePageButton =
-    "min-w-10 px-0 data-[current=true]:border-accent/35 data-[current=true]:bg-foreground data-[current=true]:text-background data-[current=true]:shadow-soft";
+    "min-w-10 px-0 data-[current=true]:border-primary/35 data-[current=true]:bg-primary data-[current=true]:text-primary-foreground data-[current=true]:shadow-soft";
 
   return (
     <nav
@@ -116,13 +116,13 @@ export function Pagination(userProps: PaginationProps) {
           <span>Previous</span>
         </button>
 
-        <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel p-1.5 shadow-inset">
+        <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card p-1.5 shadow-inset">
           <For each={tokens()}>
             {token => (
               <Show
                 when={token !== "ellipsis"}
                 fallback={
-                  <span class="inline-flex h-10 min-w-10 items-center justify-center text-muted" aria-hidden="true">
+                  <span class="inline-flex h-10 min-w-10 items-center justify-center text-muted-foreground" aria-hidden="true">
                     <MoreHorizontal class="size-4" />
                   </span>
                 }
@@ -168,7 +168,7 @@ export function Pagination(userProps: PaginationProps) {
       </div>
 
       <Show when={local.summary}>
-        <div class="text-sm text-muted">
+        <div class="text-sm text-muted-foreground">
           Page <span class="font-semibold text-foreground">{page()}</span> of{" "}
           <span class="font-semibold text-foreground">{local.pageCount}</span>
         </div>

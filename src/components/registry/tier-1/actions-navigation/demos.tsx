@@ -12,15 +12,13 @@ import { ToggleGroup } from "~/components/registry/tier-1/actions-navigation/tog
 
 function DemoFrame(props: { children: JSX.Element; item: RegistryItem; title: string }) {
   return (
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+    <div class="space-y-4" data-demo={props.item.slug}>
+      <div class="ui-demo-chip">
         <span>{props.title}</span>
         <span class="text-border">/</span>
         <span>{props.item.name}</span>
       </div>
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">
-        {props.children}
-      </div>
+      <div class="ui-demo-frame">{props.children}</div>
     </div>
   );
 }
@@ -44,8 +42,8 @@ export function ButtonPreview(props: { item: RegistryItem }) {
             <Button size="lg" radius="lg" rightIcon={<ChevronRight />}>Continue flow</Button>
           </div>
         </div>
-        <div class="rounded-[1.25rem] border border-dashed border-border/70 bg-background p-4">
-          <div class="text-xs uppercase tracking-[0.22em] text-muted">Contract focus</div>
+        <div class="ui-demo-inset border-dashed">
+          <div class="text-xs uppercase tracking-[0.22em] text-muted-foreground">Contract focus</div>
           <p class="mt-3 text-sm leading-6 text-foreground">
             Base recipe plus variant overrides, explicit loading and pending state, and icon placement without hiding
             button semantics.
@@ -82,16 +80,12 @@ export function LinkButtonPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live primitive">
       <div class="flex flex-wrap gap-3">
-        <LinkButton href="/login-basic" intent="primary" tone="solid">Login route</LinkButton>
-        <LinkButton href="/pricing-section" intent="highlight" tone="soft" current>
-          Active section
-        </LinkButton>
+        <LinkButton href="#tier-1-form-inputs" intent="primary" tone="solid">Form inputs section</LinkButton>
+        <LinkButton href="#theme-studio" intent="highlight" tone="soft" current>Theme studio</LinkButton>
         <LinkButton href="https://solidjs.com" external tone="outline">
           Solid docs
         </LinkButton>
-        <LinkButton href="/docs-sidebar-layout" tone="ghost" underline pending>
-          Pending nav
-        </LinkButton>
+        <LinkButton href="#tier-1-disclosure-overlay" tone="ghost" underline pending>Pending nav</LinkButton>
       </div>
     </DemoFrame>
   );
@@ -160,14 +154,14 @@ export function BreadcrumbPreview(props: { item: RegistryItem }) {
         <Breadcrumb>
           <Breadcrumb.List>
             <Breadcrumb.Item>
-              <Breadcrumb.Link href="/">
+              <Breadcrumb.Link href="#library">
                 <Home class="size-4" />
                 <span>Home</span>
               </Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Breadcrumb.Link href="/dashboard-sidebar-simple">Workspace</Breadcrumb.Link>
+              <Breadcrumb.Link href="#tier-3-app-shells-dashboards">Workspace</Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
@@ -179,7 +173,7 @@ export function BreadcrumbPreview(props: { item: RegistryItem }) {
         <Breadcrumb>
           <Breadcrumb.List>
             <Breadcrumb.Item>
-              <Breadcrumb.Link href="/">Home</Breadcrumb.Link>
+              <Breadcrumb.Link href="#library">Home</Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
@@ -187,7 +181,7 @@ export function BreadcrumbPreview(props: { item: RegistryItem }) {
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Breadcrumb.Link href="/security-settings">Security</Breadcrumb.Link>
+              <Breadcrumb.Link href="#tier-3-settings-admin">Security</Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>

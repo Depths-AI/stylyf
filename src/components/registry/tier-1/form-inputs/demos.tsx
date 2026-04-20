@@ -17,13 +17,13 @@ import { TextField } from "~/components/registry/tier-1/form-inputs/text-field";
 
 function DemoFrame(props: { children: JSX.Element; item: RegistryItem; title: string }) {
   return (
-    <div class="space-y-4">
-      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-panel px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+    <div class="space-y-4" data-demo={props.item.slug}>
+      <div class="ui-demo-chip">
         <span>{props.title}</span>
         <span class="text-border">/</span>
         <span>{props.item.name}</span>
       </div>
-      <div class="rounded-[1.5rem] border border-border/70 bg-panel p-5 shadow-soft">{props.children}</div>
+      <div class="ui-demo-frame">{props.children}</div>
     </div>
   );
 }
@@ -87,7 +87,7 @@ export function NumberFieldPreview(props: { item: RegistryItem }) {
           max={50}
           value={seats()}
           onValueChange={setSeats}
-          suffix={<span class="text-xs uppercase tracking-[0.18em] text-muted">seats</span>}
+          suffix={<span class="text-xs uppercase tracking-[0.18em] text-muted-foreground">seats</span>}
         />
         <NumberField
           label="Budget cap"
@@ -115,7 +115,7 @@ export function OTPFieldPreview(props: { item: RegistryItem }) {
           onValueChange={setCode}
           masked
         />
-        <div class="rounded-[1.2rem] border border-border/70 bg-background px-4 py-3 text-sm text-muted">
+        <div class="ui-demo-inset text-sm text-muted-foreground">
           Aggregated value: <span class="font-mono text-foreground">{code() || "------"}</span>
         </div>
       </div>
@@ -228,7 +228,7 @@ export function ComboboxPreview(props: { item: RegistryItem }) {
             { value: "security", label: "Security", description: "Sessions, keys, and access policy" },
           ]}
         />
-        <div class="rounded-[1.2rem] border border-border/70 bg-background px-4 py-3 text-sm text-muted">
+        <div class="ui-demo-inset text-sm text-muted-foreground">
           Selected: <span class="font-semibold text-foreground">{selected() ?? "None"}</span>
         </div>
       </div>

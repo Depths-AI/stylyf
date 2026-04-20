@@ -104,13 +104,15 @@ export function Checkbox(userProps: CheckboxProps) {
           class={cn(
             "inline-flex items-center justify-center border transition peer-focus-visible:ring-2 peer-focus-visible:ring-ring/18",
             indicatorSizes[local.size],
-            local.radius === "md" && "rounded-[0.8rem]",
-            local.radius === "lg" && "rounded-[1rem]",
+            local.radius === "md" && "rounded-md",
+            local.radius === "lg" && "rounded-lg",
             local.radius === "pill" && "rounded-full",
-            local.tone === "soft" && "border-accent/25 bg-accent/10 text-accent-strong peer-checked:bg-foreground peer-checked:text-background",
-            local.tone === "outline" && "border-border bg-background text-accent-strong peer-checked:border-accent/35 peer-checked:bg-accent/12",
-            local.tone === "solid" && "border-foreground/15 bg-foreground text-background",
-            local.invalid && "border-rose-500/45 ring-2 ring-rose-500/12",
+            local.tone === "soft" &&
+              "border-accent/35 bg-accent text-accent-foreground peer-checked:border-primary/25 peer-checked:bg-primary peer-checked:text-primary-foreground",
+            local.tone === "outline" &&
+              "border-border bg-background text-primary peer-checked:border-primary/35 peer-checked:bg-accent peer-checked:text-accent-foreground",
+            local.tone === "solid" && "border-primary/15 bg-primary text-primary-foreground",
+            local.invalid && "border-destructive/45 ring-2 ring-destructive/12",
           )}
         >
           <Show when={local.indeterminate && !checked()} fallback={<Check class="size-3.5 opacity-0 transition peer-checked:opacity-100" />}>
@@ -126,12 +128,12 @@ export function Checkbox(userProps: CheckboxProps) {
           </span>
         </Show>
         <Show when={local.description}>
-          <span id={aria.descriptionId} class="mt-1 block text-sm leading-6 text-muted">
+          <span id={aria.descriptionId} class="mt-1 block text-sm leading-6 text-muted-foreground">
             {local.description}
           </span>
         </Show>
         <Show when={local.invalid && local.errorMessage}>
-          <span id={aria.errorId} class="mt-1 block text-sm font-medium leading-6 text-rose-300">
+          <span id={aria.errorId} class="mt-1 block text-sm font-medium leading-6 text-destructive">
             {local.errorMessage}
           </span>
         </Show>

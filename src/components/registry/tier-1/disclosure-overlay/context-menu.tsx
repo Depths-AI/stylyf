@@ -49,7 +49,17 @@ export function ContextMenu(userProps: ContextMenuProps) {
   const menuId = createUniqueId();
   const [open, setOpen] = createSignal(false);
   const [style, setStyle] = createSignal<Record<string, string>>({});
+  let areaRef: HTMLDivElement | undefined;
   let menuRef: HTMLDivElement | undefined;
+
+  const openAt = (left: number, top: number) => {
+    setStyle({
+      left: `${Math.round(left)}px`,
+      position: "fixed",
+      top: `${Math.round(top)}px`,
+    });
+    setOpen(true);
+  };
 
   createEffect(() => {
     if (!open()) return;
@@ -112,17 +122,25 @@ export function ContextMenu(userProps: ContextMenuProps) {
       class="inline-flex w-full"
       onContextMenu={event => {
         event.preventDefault();
-        setStyle({
-          left: `${Math.round(event.clientX)}px`,
-          position: "fixed",
-          top: `${Math.round(event.clientY)}px`,
-        });
-        setOpen(true);
+        openAt(event.clientX, event.clientY);
       }}
       {...others}
     >
-      <div class="w-full rounded-[1.45rem] border border-dashed border-border/70 bg-panel p-5 text-sm text-muted">
-        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">{local.areaLabel}</div>
+      <div
+        ref={areaRef}
+        tabIndex={0}
+        class="ui-demo-frame w-full border-dashed text-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/35"
+        onKeyDown={event => {
+          if (!(event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey))) {
+            return;
+          }
+
+          event.preventDefault();
+          const rect = areaRef?.getBoundingClientRect();
+          openAt(rect ? rect.left + rect.width / 2 : 200, rect ? rect.top + rect.height / 2 : 200);
+        }}
+      >
+        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{local.areaLabel}</div>
         <div class="mt-3">
           {local.children ?? (
             <p class="leading-6">
@@ -140,7 +158,7 @@ export function ContextMenu(userProps: ContextMenuProps) {
             role="menu"
             tabIndex={-1}
             style={style()}
-            class={cn("z-50 min-w-64 rounded-[1.3rem] border border-border/70 bg-panel p-2 shadow-soft focus:outline-none", local.class)}
+            class={cn("z-50 min-w-64 rounded-xl border border-border/70 bg-popover p-2 shadow-soft focus:outline-none", local.class)}
           >
             <For each={local.items}>
               {(item, index) => (
@@ -150,10 +168,10 @@ export function ContextMenu(userProps: ContextMenuProps) {
                   aria-checked={item.role && item.role !== "menuitem" ? item.checked : undefined}
                   disabled={item.disabled}
                   class={cn(
-                    "flex w-full items-center justify-between gap-4 rounded-[1rem] px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                    "flex w-full items-center justify-between gap-4 rounded-lg px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
                     item.tone === "danger"
-                      ? "text-rose-300 hover:bg-rose-500/10"
-                      : "text-foreground hover:bg-background",
+                      ? "text-destructive hover:bg-destructive/10"
+                      : "text-foreground hover:bg-accent",
                     item.disabled && "cursor-not-allowed opacity-50",
                   )}
                   onClick={() => {
@@ -165,14 +183,14 @@ export function ContextMenu(userProps: ContextMenuProps) {
                     <Show when={item.role && item.role !== "menuitem"}>
                       <span class="inline-flex size-4 items-center justify-center rounded-sm border border-border/70 bg-background">
                         <Show when={item.checked}>
-                          <Check class="size-3 text-accent-strong" />
+                          <Check class="size-3 text-primary" />
                         </Show>
                       </span>
                     </Show>
                     <span>{item.label}</span>
                   </span>
                   <Show when={item.shortcut}>
-                    <span class="text-xs uppercase tracking-[0.16em] text-muted">{item.shortcut}</span>
+                    <span class="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.shortcut}</span>
                   </Show>
                 </button>
               )}

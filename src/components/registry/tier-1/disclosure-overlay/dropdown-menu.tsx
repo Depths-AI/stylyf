@@ -142,7 +142,7 @@ export function DropdownMenu(userProps: DropdownMenuProps) {
             role="menu"
             tabIndex={-1}
             style={style()}
-            class={cn("z-50 min-w-64 rounded-[1.3rem] border border-border/70 bg-panel p-2 shadow-soft focus:outline-none", local.class)}
+            class={cn("z-50 min-w-64 rounded-xl border border-border/70 bg-popover p-2 shadow-soft focus:outline-none", local.class)}
           >
             <For each={local.items}>
               {(item, index) => (
@@ -152,10 +152,10 @@ export function DropdownMenu(userProps: DropdownMenuProps) {
                   aria-checked={item.role && item.role !== "menuitem" ? item.checked : undefined}
                   disabled={item.disabled}
                   class={cn(
-                    "flex w-full items-center justify-between gap-4 rounded-[1rem] px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
+                    "flex w-full items-center justify-between gap-4 rounded-lg px-3.5 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
                     item.tone === "danger"
-                      ? "text-rose-300 hover:bg-rose-500/10"
-                      : "text-foreground hover:bg-background",
+                      ? "text-destructive hover:bg-destructive/10"
+                      : "text-foreground hover:bg-accent",
                     item.disabled && "cursor-not-allowed opacity-50",
                   )}
                   onClick={() => {
@@ -168,14 +168,14 @@ export function DropdownMenu(userProps: DropdownMenuProps) {
                     <Show when={item.role && item.role !== "menuitem"}>
                       <span class="inline-flex size-4 items-center justify-center rounded-sm border border-border/70 bg-background">
                         <Show when={item.checked}>
-                          <Check class="size-3 text-accent-strong" />
+                          <Check class="size-3 text-primary" />
                         </Show>
                       </span>
                     </Show>
                     <span>{item.label}</span>
                   </span>
                   <Show when={item.shortcut}>
-                    <span class="text-xs uppercase tracking-[0.16em] text-muted">{item.shortcut}</span>
+                    <span class="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.shortcut}</span>
                   </Show>
                 </button>
               )}

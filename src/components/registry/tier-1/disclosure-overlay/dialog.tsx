@@ -140,7 +140,7 @@ export function Dialog(userProps: DialogProps) {
     <Show when={isOpen()}>
       <Portal>
         <div class="fixed inset-0 z-50 px-4 py-6 sm:px-6 sm:py-10">
-          <div class="absolute inset-0 bg-ink/58 backdrop-blur-[2px]" />
+          <div class="ui-overlay absolute inset-0" />
           <div class="relative flex min-h-full items-center justify-center">
             <div
               ref={panelRef}
@@ -150,7 +150,7 @@ export function Dialog(userProps: DialogProps) {
               aria-describedby={descriptionId}
               tabIndex={-1}
               class={cn(
-                "relative w-full rounded-[1.75rem] border border-border/70 bg-panel p-6 shadow-soft focus:outline-none",
+                "ui-popover relative w-full p-6 focus:outline-none",
                 sizeClass(),
                 local.class,
               )}
@@ -161,7 +161,7 @@ export function Dialog(userProps: DialogProps) {
                 <button
                   type="button"
                   aria-label={local.closeLabel}
-                  class="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full border border-border/70 bg-background text-muted transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
+                  class="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35"
                   onClick={() => setOpen(false)}
                 >
                   <X class="size-4.5" />
@@ -169,12 +169,12 @@ export function Dialog(userProps: DialogProps) {
               </Show>
 
               <div class="pr-12">
-                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">Modal surface</div>
+                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Modal surface</div>
                 <h3 id={titleId} class="mt-3 text-2xl font-semibold tracking-tight text-foreground">
                   {local.title}
                 </h3>
                 <Show when={local.description}>
-                  <p id={descriptionId} class="mt-3 max-w-2xl text-sm leading-6 text-muted">
+                  <p id={descriptionId} class="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                     {local.description}
                   </p>
                 </Show>
@@ -183,15 +183,15 @@ export function Dialog(userProps: DialogProps) {
               <div class="mt-6 space-y-4">
                 {local.children ?? (
                   <div class="grid gap-4 lg:grid-cols-2">
-                    <div class="rounded-[1.25rem] border border-border/70 bg-background p-4">
-                      <div class="text-xs uppercase tracking-[0.2em] text-muted">Request summary</div>
+                    <div class="ui-demo-inset">
+                      <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Request summary</div>
                       <div class="mt-3 text-sm leading-6 text-foreground">
                         Promote the new pricing section to live and notify workspace owners when the publish completes.
                       </div>
                     </div>
-                    <div class="rounded-[1.25rem] border border-border/70 bg-background p-4">
-                      <div class="text-xs uppercase tracking-[0.2em] text-muted">Impact</div>
-                      <div class="mt-3 text-sm leading-6 text-muted">
+                    <div class="ui-demo-inset">
+                      <div class="text-xs uppercase tracking-[0.2em] text-muted-foreground">Impact</div>
+                      <div class="mt-3 text-sm leading-6 text-muted-foreground">
                         This affects one public route and triggers a content sync to the marketing cache.
                       </div>
                     </div>

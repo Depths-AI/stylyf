@@ -14,9 +14,9 @@ export type ProgressProps = Omit<JSX.HTMLAttributes<HTMLDivElement>, "children">
 };
 
 const toneClasses = {
-  accent: "bg-accent text-accent-strong",
-  danger: "bg-rose-500 text-rose-300",
-  highlight: "bg-highlight text-highlight-strong",
+  accent: "bg-primary text-primary-foreground",
+  danger: "bg-destructive text-destructive-foreground",
+  highlight: "bg-secondary text-secondary-foreground",
 } as const;
 
 export function Progress(userProps: ProgressProps) {
@@ -42,7 +42,7 @@ export function Progress(userProps: ProgressProps) {
       <div class="flex items-center justify-between gap-3 text-sm">
         <div class="font-medium text-foreground">{local.label}</div>
         <Show when={!local.indeterminate}>
-          <div class="text-muted">{Math.round((safeValue() / local.max) * 100)}%</div>
+          <div class="text-muted-foreground">{Math.round((safeValue() / local.max) * 100)}%</div>
         </Show>
       </div>
       <div class="overflow-hidden rounded-full border border-border/70 bg-background p-1">

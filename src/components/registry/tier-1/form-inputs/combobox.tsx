@@ -192,7 +192,7 @@ export function Combobox(userProps: ComboboxProps) {
           <Show when={inputValue().length > 0}>
             <button
               type="button"
-              class="inline-flex size-8 items-center justify-center rounded-full text-muted transition hover:bg-panel hover:text-foreground"
+              class="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
               onClick={() => {
                 commitInput("");
                 commitSelection(undefined);
@@ -204,17 +204,17 @@ export function Combobox(userProps: ComboboxProps) {
             </button>
           </Show>
 
-          <Show when={local.loading} fallback={<ChevronDown class="mr-1 size-4 shrink-0 text-muted" />}>
-            <LoaderCircle class="mr-1 size-4 shrink-0 animate-spin text-muted" />
+          <Show when={local.loading} fallback={<ChevronDown class="mr-1 size-4 shrink-0 text-muted-foreground" />}>
+            <LoaderCircle class="mr-1 size-4 shrink-0 animate-spin text-muted-foreground" />
           </Show>
         </FieldFrame>
 
         <Show when={open()}>
-          <div class="absolute inset-x-0 top-[calc(100%+0.6rem)] z-20 overflow-hidden rounded-[1.3rem] border border-border/70 bg-panel shadow-soft">
+          <div class="ui-popover absolute inset-x-0 top-[calc(100%+0.6rem)] z-20 overflow-hidden">
             <div role="listbox" id={listboxId} class="max-h-72 overflow-auto p-2">
               <Show
                 when={filteredOptions().length}
-                fallback={<div class="rounded-[1rem] px-3 py-3 text-sm text-muted">{local.emptyMessage}</div>}
+                fallback={<div class="rounded-lg px-3 py-3 text-sm text-muted-foreground">{local.emptyMessage}</div>}
               >
                 <For each={filteredOptions()}>
                   {(option, index) => (
@@ -225,10 +225,10 @@ export function Combobox(userProps: ComboboxProps) {
                       aria-selected={selectedValue() === option.value}
                       disabled={option.disabled}
                       class={cn(
-                        "flex w-full items-start justify-between gap-3 rounded-[1rem] px-3 py-3 text-left transition",
+                        "flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left transition",
                         highlightedIndex() === index()
-                          ? "bg-background text-foreground"
-                          : "text-muted hover:bg-background hover:text-foreground",
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
                       )}
                       onMouseEnter={() => setHighlightedIndex(index())}
                       onMouseDown={event => event.preventDefault()}
@@ -237,10 +237,10 @@ export function Combobox(userProps: ComboboxProps) {
                       <span class="min-w-0">
                         <span class="block text-sm font-semibold text-current">{option.label}</span>
                         <Show when={option.description}>
-                          <span class="mt-1 block text-sm leading-6 text-muted">{option.description}</span>
+                          <span class="mt-1 block text-sm leading-6 text-muted-foreground">{option.description}</span>
                         </Show>
                       </span>
-                      <Check class={cn("size-4 shrink-0 text-accent-strong", selectedValue() === option.value ? "opacity-100" : "opacity-0")} />
+                      <Check class={cn("size-4 shrink-0 text-primary", selectedValue() === option.value ? "opacity-100" : "opacity-0")} />
                     </button>
                   )}
                 </For>

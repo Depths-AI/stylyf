@@ -6,10 +6,10 @@ import { cn } from "~/lib/cn";
 export const fieldFrameVariants = cva(
   [
     "group relative flex w-full items-center border bg-background transition-[border-color,box-shadow,background-color]",
-    "focus-within:border-accent/45 focus-within:ring-2 focus-within:ring-ring/18",
-    "data-[invalid=true]:border-rose-500/45 data-[invalid=true]:ring-2 data-[invalid=true]:ring-rose-500/12",
-    "data-[disabled=true]:bg-muted-soft/70 data-[disabled=true]:opacity-70",
-    "data-[readonly=true]:bg-muted-soft/45",
+    "focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-ring/22",
+    "data-[invalid=true]:border-destructive/45 data-[invalid=true]:ring-2 data-[invalid=true]:ring-destructive/12",
+    "data-[disabled=true]:bg-muted/70 data-[disabled=true]:opacity-70",
+    "data-[readonly=true]:bg-muted/45",
   ].join(" "),
   {
     variants: {
@@ -19,21 +19,21 @@ export const fieldFrameVariants = cva(
         lg: "min-h-13 gap-3 px-4.5",
       },
       radius: {
-        md: "rounded-[1rem]",
-        lg: "rounded-[1.2rem]",
-        pill: "rounded-[1.7rem]",
+        md: "rounded-lg",
+        lg: "rounded-xl",
+        pill: "rounded-full",
       },
     },
     defaultVariants: {
       size: "md",
-      radius: "lg",
+      radius: "md",
     },
   },
 );
 
 export const fieldControlVariants = cva(
   [
-    "w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted",
+    "w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
     "disabled:cursor-not-allowed",
   ].join(" "),
   {
@@ -128,16 +128,16 @@ export function FieldCopy(
             {local.label}
           </label>
           <Show when={local.required}>
-            <span class="text-xs font-medium uppercase tracking-[0.2em] text-accent-strong">Required</span>
+            <span class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Required</span>
           </Show>
         </div>
       </Show>
       {local.children}
       <Show when={local.description}>
-        <div class="text-sm leading-6 text-muted">{local.description}</div>
+        <div class="text-sm leading-6 text-muted-foreground">{local.description}</div>
       </Show>
       <Show when={local.invalid && local.errorMessage}>
-        <div class="text-sm font-medium leading-6 text-rose-300">{local.errorMessage}</div>
+        <div class="text-sm font-medium leading-6 text-destructive">{local.errorMessage}</div>
       </Show>
     </div>
   );

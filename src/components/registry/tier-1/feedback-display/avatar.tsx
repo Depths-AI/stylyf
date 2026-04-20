@@ -33,7 +33,15 @@ export function Avatar(userProps: AvatarProps) {
     })[local.size];
 
   return (
-    <div class={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-border/70 bg-panel shadow-soft", sizeClass(), local.shape === "circle" ? "rounded-full" : "rounded-[1.1rem]", local.class)} {...others}>
+    <div
+      class={cn(
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-border/70 bg-card shadow-soft",
+        sizeClass(),
+        local.shape === "circle" ? "rounded-full" : "rounded-lg",
+        local.class,
+      )}
+      {...others}
+    >
       <Switch fallback={<span class="font-semibold tracking-[0.08em] text-foreground">{local.fallback ?? initials()}</span>}>
         <Match when={local.src && !failed()}>
           <img src={local.src} alt={local.alt} class="size-full object-cover" onError={() => setFailed(true)} />
@@ -43,7 +51,7 @@ export function Avatar(userProps: AvatarProps) {
         <span
           class={cn(
             "absolute bottom-0.5 right-0.5 size-3 rounded-full border-2 border-panel",
-            local.status === "online" ? "bg-emerald-400" : "bg-muted",
+            local.status === "online" ? "bg-success" : "bg-muted-foreground/40",
           )}
         />
       </Show>

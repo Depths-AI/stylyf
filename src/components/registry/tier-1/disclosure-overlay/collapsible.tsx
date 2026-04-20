@@ -48,7 +48,7 @@ export function Collapsible(userProps: CollapsibleProps) {
   };
 
   return (
-    <section class={cn("overflow-hidden rounded-[1.45rem] border border-border/70 bg-panel shadow-soft", local.class)} {...others}>
+    <section class={cn("ui-card overflow-hidden", local.class)} {...others}>
       <button
         type="button"
         aria-expanded={isOpen()}
@@ -56,7 +56,7 @@ export function Collapsible(userProps: CollapsibleProps) {
         disabled={local.disabled}
         class={cn(
           "flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35",
-          isOpen() ? "bg-background" : "hover:bg-background/60",
+          isOpen() ? "bg-background" : "hover:bg-accent/75",
           local.disabled && "cursor-not-allowed opacity-50",
         )}
         onClick={() => setOpen(!isOpen())}
@@ -64,16 +64,16 @@ export function Collapsible(userProps: CollapsibleProps) {
         <div>
           <div class="font-semibold tracking-[-0.01em] text-foreground">{local.title}</div>
           <Show when={local.description}>
-            <div class="mt-1 text-sm leading-6 text-muted">{local.description}</div>
+            <div class="mt-1 text-sm leading-6 text-muted-foreground">{local.description}</div>
           </Show>
         </div>
-        <ChevronDown class={cn("mt-0.5 size-5 shrink-0 text-muted transition", isOpen() && "rotate-180 text-foreground")} />
+        <ChevronDown class={cn("mt-0.5 size-5 shrink-0 text-muted-foreground transition", isOpen() && "rotate-180 text-foreground")} />
       </button>
 
       <Show when={isOpen()}>
-        <div id={regionId} class="border-t border-border/70 bg-panel px-5 py-4">
+        <div id={regionId} class="border-t border-border/70 bg-card px-5 py-4">
           {local.children ?? (
-            <div class="space-y-3 text-sm leading-6 text-muted">
+            <div class="space-y-3 text-sm leading-6 text-muted-foreground">
               <p>Progressive disclosure works best when the hidden content is related but not required for the main path.</p>
               <p>This component retains state and keeps the trigger semantics explicit for keyboard and assistive technology.</p>
             </div>

@@ -28,7 +28,7 @@ export function CopyButton(props: CopyButtonProps) {
       onClick={handleCopy}
       disabled={props.disabled}
       class={cn(
-        "inline-flex h-9 items-center gap-2 rounded-full border border-border/70 bg-panel px-3 text-xs font-medium text-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+        "inline-flex h-9 items-center gap-2 rounded-full border border-border/70 bg-panel px-3 text-xs font-medium text-muted-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         props.disabled
           ? "cursor-not-allowed opacity-60"
           : "hover:border-accent/50 hover:text-foreground",

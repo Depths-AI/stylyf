@@ -9,8 +9,11 @@
     "preview": "vinxi preview",
     "check": "tsc --noEmit",
     "generate:registry-shells": "node scripts/generate-registry-shells.mjs",
+    "generate:webknife:tier1": "node scripts/generate-webknife-tier1.mjs",
     "ui:shot": "webknife shot http://127.0.0.1:4173 --config webknife.config.json",
-    "ui:interact": "webknife interact http://127.0.0.1:4173 --config webknife.config.json --steps webknife/registry-smoke.yaml",
+    "ui:interact": "webknife --ci interact http://127.0.0.1:4173 --config webknife.config.json --steps webknife/registry-smoke.yaml",
+    "ui:tier1:themes": "webknife --ci interact http://127.0.0.1:4173 --config webknife.config.json --steps webknife/tier1-theme-sweep.yaml",
+    "ui:tier1:tour": "webknife --ci interact http://127.0.0.1:4173 --config webknife.config.json --steps webknife/tier1-tour.yaml",
     "ui:review": "webknife ui:review --url http://127.0.0.1:4173 --config webknife.config.json"
   },
   "dependencies": {
