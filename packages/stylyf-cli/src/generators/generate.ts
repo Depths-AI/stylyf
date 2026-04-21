@@ -11,6 +11,7 @@ import type {
   SectionIR,
 } from "../ir/types.js";
 import { assertValidAppIr } from "../ir/validate.js";
+import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
 import { installGeneratedProjectDependencies, writeProjectScaffold } from "./project.js";
@@ -326,6 +327,8 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   await writeGeneratedFile(resolve(targetPath, "src/entry-server.tsx"), renderGeneratedEntryServer());
   await writeGeneratedFile(resolve(targetPath, "src/app.css"), await renderGeneratedAppCss(app));
   await writeGeneratedFile(resolve(targetPath, "src/lib/theme-system.ts"), renderGeneratedThemeSystem(app));
+  await writeGeneratedFile(resolve(targetPath, ".env.example"), renderGeneratedEnvExample(app));
+  await writeGeneratedFile(resolve(targetPath, "src/lib/env.ts"), renderGeneratedEnvModule(app));
 
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
