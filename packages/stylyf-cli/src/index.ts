@@ -30,8 +30,8 @@ export function helpText() {
     "  -v, --version  Show version",
     "",
     "Phase 1 status:",
-    "  Manifests, validation, search, and source generation are implemented.",
-    "  Style emission and dependency installation land next.",
+    "  Frontend generation is implemented through dependency installation.",
+    "  Dogfooding and publishability validation land next.",
   ].join("\n");
 }
 import { runBuildIndexCommand } from "./commands/build-index.js";

@@ -13,7 +13,14 @@ import type {
 import { assertValidAppIr } from "../ir/validate.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
-import { renderGeneratedAppCss, renderGeneratedAppRoot, renderGeneratedEntryServer, renderGeneratedThemeSystem } from "./style.js";
+import { installGeneratedProjectDependencies, writeProjectScaffold } from "./project.js";
+import {
+  renderGeneratedAppCss,
+  renderGeneratedAppRoot,
+  renderGeneratedEntryClient,
+  renderGeneratedEntryServer,
+  renderGeneratedThemeSystem,
+} from "./style.js";
 import { listLayoutTemplates, renderAppShellTemplate, renderLayoutTemplate, renderPageShellTemplate } from "./templates.js";
 
 function normalizeKey(value: string) {
@@ -300,19 +307,22 @@ async function copyBundledDependencyTree(importPath: string, targetRoot: string,
   }
 }
 
-export async function generateFrontendDraft(irPath: string, targetPath: string) {
+export async function generateFrontendDraft(irPath: string, targetPath: string, options?: { install?: boolean }) {
   const raw = await readFile(resolve(process.cwd(), irPath), "utf8");
   const parsed = JSON.parse(raw) as unknown;
   assertValidAppIr(parsed);
 
   const app = parsed as AppIR;
+  const install = options?.install ?? true;
   const assemblyLookup = createAssemblyLookup(await loadAssemblyRegistry());
   const usedAppShells = new Set<AppShellId>([app.shell]);
   const usedPageShells = new Set<PageShellId>();
   const usedLayouts = new Set<LayoutNodeId>(listLayoutTemplates());
   const registryImportsToCopy = new Set<string>(["~/lib/cn"]);
 
+  await writeProjectScaffold(app, targetPath);
   await writeGeneratedFile(resolve(targetPath, "src/app.tsx"), renderGeneratedAppRoot(app));
+  await writeGeneratedFile(resolve(targetPath, "src/entry-client.tsx"), renderGeneratedEntryClient());
   await writeGeneratedFile(resolve(targetPath, "src/entry-server.tsx"), renderGeneratedEntryServer());
   await writeGeneratedFile(resolve(targetPath, "src/app.css"), await renderGeneratedAppCss(app));
   await writeGeneratedFile(resolve(targetPath, "src/lib/theme-system.ts"), renderGeneratedThemeSystem(app));
@@ -357,11 +367,16 @@ export async function generateFrontendDraft(irPath: string, targetPath: string) 
     await copyBundledDependencyTree(importPath, targetPath, seenImports);
   }
 
+  if (install) {
+    await installGeneratedProjectDependencies(targetPath);
+  }
+
   return {
     routes: app.routes.length,
     appShells: usedAppShells.size,
     pageShells: usedPageShells.size,
     layouts: usedLayouts.size,
     copiedFiles: seenImports.size,
+    installed: install,
   };
 }

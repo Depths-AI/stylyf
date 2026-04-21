@@ -14,20 +14,39 @@ const toneClasses = {
   elevated: "ui-card",
 } as const;
 
-export type PanelProps = JSX.HTMLAttributes<HTMLElement> & {
+type PanelBaseProps = {
   as?: "div" | "section";
+  children?: JSX.Element;
+  class?: string;
   padding?: keyof typeof paddingClasses;
   tone?: keyof typeof toneClasses;
 };
 
+type PanelDivProps = JSX.HTMLAttributes<HTMLDivElement> & PanelBaseProps & {
+  as: "div";
+};
+
+type PanelSectionProps = JSX.HTMLAttributes<HTMLElement> & PanelBaseProps & {
+  as?: "section";
+};
+
+export type PanelProps = PanelDivProps | PanelSectionProps;
+
 export function Panel(userProps: PanelProps) {
   const [local, others] = splitProps(userProps, ["as", "children", "class", "padding", "tone"]);
-  const Component = local.as ?? "section";
+  const classes = cn(toneClasses[local.tone ?? "default"], paddingClasses[local.padding ?? "comfortable"], local.class);
+
+  if (local.as === "div") {
+    return (
+      <div class={classes} {...(others as JSX.HTMLAttributes<HTMLDivElement>)}>
+        {local.children}
+      </div>
+    );
+  }
 
   return (
-    <Component class={cn(toneClasses[local.tone ?? "default"], paddingClasses[local.padding ?? "comfortable"], local.class)} {...others}>
+    <section class={classes} {...(others as JSX.HTMLAttributes<HTMLElement>)}>
       {local.children}
-    </Component>
+    </section>
   );
 }
-

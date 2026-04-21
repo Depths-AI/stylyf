@@ -230,3 +230,13 @@ export function renderGeneratedEntryServer() {
     "",
   ].join("\n");
 }
+
+export function renderGeneratedEntryClient() {
+  return [
+    "// @refresh reload",
+    'import { mount, StartClient } from "@solidjs/start/client";',
+    "",
+    'export default mount(() => <StartClient />, document.getElementById("app")!);',
+    "",
+  ].join("\n");
+}
