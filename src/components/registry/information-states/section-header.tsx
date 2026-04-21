@@ -24,30 +24,30 @@ export function SectionHeader(userProps: SectionHeaderProps) {
   return (
     <section
       class={cn(
-        "flex flex-col gap-4 border-b border-border/70 pb-[var(--space-4)] sm:flex-row sm:items-end sm:justify-between",
+        "ui-shell-muted flex flex-col gap-4 border border-border/80 px-[var(--space-5)] py-[var(--space-4)] sm:flex-row sm:items-end sm:justify-between",
         local.class,
       )}
       {...others}
     >
-      <div class="space-y-2">
-        <div class="flex flex-wrap items-center gap-3">
-          <h3 class={cn("text-xl tracking-[-0.02em]", local.strong ? "font-semibold text-foreground" : "font-medium text-foreground")}>{local.title}</h3>
-          <Show when={local.anchorHref}>
-            <a
-              href={local.anchorHref}
-              class="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground transition hover:text-foreground"
-            >
-              Jump link
-            </a>
-          </Show>
-        </div>
+      <div class="space-y-2.5">
+        <h3 class={cn("text-[1.45rem] tracking-[-0.03em]", local.strong ? "font-semibold text-foreground" : "font-medium text-foreground")}>{local.title}</h3>
         <Show when={local.description}>
           <p class="max-w-2xl text-sm leading-6 text-muted-foreground">{local.description}</p>
         </Show>
       </div>
-      <Show when={local.actions}>
-        <div class="shrink-0">{local.actions}</div>
-      </Show>
+      <div class="flex shrink-0 flex-wrap items-center gap-2.5">
+        <Show when={local.anchorHref}>
+          <a
+            href={local.anchorHref}
+            class="ui-pillbar px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground transition hover:bg-foreground hover:text-background"
+          >
+            Jump link
+          </a>
+        </Show>
+        <Show when={local.actions}>
+          <div>{local.actions}</div>
+        </Show>
+      </div>
     </section>
   );
 }

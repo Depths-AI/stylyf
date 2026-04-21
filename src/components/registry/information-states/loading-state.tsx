@@ -29,16 +29,17 @@ export function LoadingState(userProps: LoadingStateProps) {
   return (
     <section
       class={cn(
-        "ui-card flex flex-col items-start gap-[var(--space-5)]",
+        "ui-shell-muted flex flex-col items-start gap-[var(--space-5)] shadow-soft",
         local.compact ? "p-[var(--space-5)]" : "px-[var(--space-6)] py-[var(--space-7)]",
         local.class,
       )}
       {...others}
     >
-      <div class="inline-flex size-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-soft">
+      <div class="inline-flex size-12 items-center justify-center rounded-[var(--radius-xl)] border border-accent/24 bg-accent text-accent-foreground shadow-soft">
         <LoaderCircle class="size-5 animate-spin" />
       </div>
       <div class="space-y-2">
+        <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Processing</div>
         <h3 class="text-xl font-semibold tracking-[-0.02em] text-foreground">{local.title}</h3>
         <p class="max-w-xl text-sm leading-6 text-muted-foreground">{local.description}</p>
       </div>

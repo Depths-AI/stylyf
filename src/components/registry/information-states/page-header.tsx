@@ -26,32 +26,49 @@ export function PageHeader(userProps: PageHeaderProps) {
   const [local, others] = splitProps(props, ["actions", "class", "description", "eyebrow", "meta", "readonly", "stale", "title"]);
 
   return (
-    <section class={cn("space-y-[var(--space-4)] border-b border-border/70 pb-[var(--space-5)]", local.class)} {...others}>
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div class="space-y-3">
-          <Show when={local.eyebrow}>
-            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">{local.eyebrow}</div>
-          </Show>
-          <div class="flex flex-wrap items-center gap-3">
-            <h2 class="text-3xl font-semibold tracking-[-0.03em] text-foreground">{local.title}</h2>
+    <section
+      class={cn(
+        "ui-shell-muted overflow-hidden border border-border/80 px-[var(--space-5)] py-[var(--space-5)] shadow-soft",
+        local.class,
+      )}
+      {...others}
+    >
+      <div class="flex flex-col gap-[var(--space-5)] xl:flex-row xl:items-start xl:justify-between">
+        <div class="min-w-0 flex-1 space-y-4">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <Show when={local.eyebrow}>
+              <div class="ui-pillbar px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                {local.eyebrow}
+              </div>
+            </Show>
             <Show when={local.stale}>
-              <Badge tone="accent">Stale data</Badge>
+              <Badge tone="accent" emphasis="soft">Stale data</Badge>
             </Show>
             <Show when={local.readonly}>
-              <Badge>Read only</Badge>
+              <Badge tone="neutral" emphasis="soft">Read only</Badge>
             </Show>
           </div>
-          <Show when={local.description}>
-            <p class="max-w-3xl text-sm leading-6 text-muted-foreground">{local.description}</p>
-          </Show>
+
+          <div class="space-y-3">
+            <h2 class="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-[-0.045em] text-foreground">{local.title}</h2>
+            <Show when={local.description}>
+              <p class="max-w-3xl text-[0.98rem] leading-7 text-muted-foreground">{local.description}</p>
+            </Show>
+          </div>
+
           <Show when={local.meta}>
-            <div class="flex flex-wrap gap-2">{local.meta}</div>
+            <div class="flex flex-wrap gap-2.5">{local.meta}</div>
           </Show>
         </div>
+
         <Show when={local.actions}>
-          <div class="shrink-0">{local.actions}</div>
+          <div class="ui-shell flex shrink-0 flex-wrap items-center gap-2.5 self-start p-2">
+            {local.actions}
+          </div>
         </Show>
       </div>
+
+      <div class="mt-[var(--space-5)] h-px bg-border/80" />
     </section>
   );
 }

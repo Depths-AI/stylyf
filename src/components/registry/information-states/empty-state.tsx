@@ -26,15 +26,15 @@ export function EmptyState(userProps: EmptyStateProps) {
   const [local, others] = splitProps(props, ["actions", "class", "description", "eyebrow", "icon", "title"]);
 
   return (
-    <section class={cn("ui-card px-[var(--space-6)] py-[var(--space-8)] text-center", local.class)} {...others}>
-      <div class="mx-auto inline-flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-soft">
+    <section class={cn("ui-shell-muted px-[var(--space-6)] py-[var(--space-8)] text-center shadow-soft", local.class)} {...others}>
+      <div class="mx-auto inline-flex size-16 items-center justify-center rounded-[var(--radius-2xl)] border border-accent/36 bg-accent text-accent-foreground shadow-soft">
         {local.icon}
       </div>
       <Show when={local.eyebrow}>
         <div class="mt-[var(--space-5)] text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">{local.eyebrow}</div>
       </Show>
       <h3 class="mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground">{local.title}</h3>
-      <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{local.description}</p>
+      <p class="mx-auto mt-3 max-w-xl text-[0.96rem] leading-7 text-muted-foreground">{local.description}</p>
       <Show when={local.actions}>
         <div class="mt-[var(--space-5)] flex flex-wrap justify-center gap-3">{local.actions}</div>
       </Show>

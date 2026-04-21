@@ -35,8 +35,9 @@ export function StatCard(userProps: StatCardProps) {
   return (
     <article
       class={cn(
-        "ui-card overflow-hidden p-[var(--space-5)]",
-        local.accent === "highlight" && "border-secondary/30 bg-secondary/10",
+        "ui-card overflow-hidden p-[var(--space-5)] shadow-soft",
+        local.accent === "accent" && "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--accent)_50%,var(--card)_50%),var(--card))]",
+        local.accent === "highlight" && "border-secondary/30 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--secondary)_18%,var(--card)_82%),var(--card))]",
         local.accent === "neutral" && "bg-card",
         local.class,
       )}
@@ -50,12 +51,21 @@ export function StatCard(userProps: StatCardProps) {
           </Show>
         </div>
         <Show when={local.icon}>
-          <div class="inline-flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground">{local.icon}</div>
+          <div
+            class={cn(
+              "inline-flex size-11 items-center justify-center rounded-[var(--radius-xl)] border shadow-inset",
+              local.accent === "highlight" && "border-secondary/24 bg-secondary/16 text-secondary-foreground",
+              local.accent === "neutral" && "border-border/80 bg-[var(--muted-soft)] text-foreground",
+              local.accent === "accent" && "border-accent/40 bg-accent text-accent-foreground",
+            )}
+          >
+            {local.icon}
+          </div>
         </Show>
       </div>
 
-      <div class="mt-[var(--space-5)] flex items-center justify-between gap-3">
-        <div class="inline-flex items-center gap-2 text-sm font-medium">
+      <div class="mt-[var(--space-5)] flex items-center justify-between gap-3 border-t border-border/75 pt-[var(--space-4)]">
+        <div class="inline-flex items-center gap-2 rounded-full bg-background px-3 py-1.5 text-sm font-medium shadow-inset">
           <Switch>
             <Match when={local.trend === "positive"}>
               <ArrowUpRight class="size-4 text-success" />
@@ -71,7 +81,7 @@ export function StatCard(userProps: StatCardProps) {
             </Match>
           </Switch>
         </div>
-        <div class="text-sm text-muted-foreground">{local.footer}</div>
+        <div class="text-right text-sm text-muted-foreground">{local.footer}</div>
       </div>
     </article>
   );

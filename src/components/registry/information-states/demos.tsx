@@ -30,7 +30,7 @@ export function PageHeaderPreview(props: { item: RegistryItem }) {
       <PageHeader
         eyebrow="Revenue workspace"
         title="Analytics overview"
-        description="Primary route identity with space for actions, data freshness, and contextual metadata."
+        description="Primary route identity with room for critical actions, freshness cues, and the metadata operators need before they scroll into charts and tables."
         stale
         meta={
           <>
@@ -53,12 +53,17 @@ export function PageHeaderPreview(props: { item: RegistryItem }) {
 export function SectionHeaderPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live block">
-      <SectionHeader
-        title="Recent activity"
-        description="Reusable subsection header for route internals, cards, and documentation sections."
-        anchorHref="#activity"
-        actions={<Button type="button" tone="ghost" intent="neutral" size="sm">View all</Button>}
-      />
+      <div class="space-y-4">
+        <SectionHeader
+          title="Recent activity"
+          description="Reusable subsection header for route internals, cards, and documentation sections."
+          anchorHref="#information-states-activity"
+          actions={<Button type="button" tone="ghost" intent="neutral" size="sm">View all</Button>}
+        />
+        <div id="information-states-activity" class="ui-shell-muted p-[var(--space-4)] text-sm text-muted-foreground">
+          Activity timeline target inside the same demo block.
+        </div>
+      </div>
     </DemoFrame>
   );
 }
@@ -67,7 +72,13 @@ export function StatCardPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live block">
       <div class="max-w-sm">
-        <StatCard icon={<Wallet class="size-4.5" />} />
+        <StatCard
+          icon={<Wallet class="size-4.5" />}
+          label="Net expansion"
+          value="$148.2k"
+          delta="+12.4%"
+          footer="Compared with last week"
+        />
       </div>
     </DemoFrame>
   );
@@ -77,9 +88,9 @@ export function StatGridPreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live block">
       <StatGrid columns={3}>
-        <StatCard label="MRR" value="$84.6k" delta="+8.2%" icon={<Wallet class="size-4.5" />} />
-        <StatCard label="Trial conversion" value="14.8%" delta="+2.1%" accent="highlight" icon={<Sparkles class="size-4.5" />} />
-        <StatCard label="Open opportunities" value="128" delta="-4" trend="negative" accent="neutral" icon={<BriefcaseBusiness class="size-4.5" />} />
+        <StatCard label="MRR" value="$84.6k" delta="+8.2%" footer="vs previous month" icon={<Wallet class="size-4.5" />} />
+        <StatCard label="Trial conversion" value="14.8%" delta="+2.1%" footer="26 qualified signups" accent="highlight" icon={<Sparkles class="size-4.5" />} />
+        <StatCard label="Open opportunities" value="128" delta="-4" footer="Needs pipeline review" trend="negative" accent="neutral" icon={<BriefcaseBusiness class="size-4.5" />} />
       </StatGrid>
     </DemoFrame>
   );
@@ -89,8 +100,9 @@ export function EmptyStatePreview(props: { item: RegistryItem }) {
   return (
     <DemoFrame item={props.item} title="Live block">
       <EmptyState
+        eyebrow="Empty workspace"
         title="No saved views yet"
-        description="Offer the first meaningful action and explain what appears here once the user gets started."
+        description="Offer the first meaningful action, explain what appears here once the user gets started, and keep the surface optimistic rather than apologetic."
         actions={
           <>
             <Button type="button">Create first view</Button>
@@ -107,7 +119,7 @@ export function ErrorStatePreview(props: { item: RegistryItem }) {
     <DemoFrame item={props.item} title="Live block">
       <ErrorState
         title="Failed to load analytics feed"
-        detail="The reporting service returned an upstream timeout. Keep the surface actionable and specific so the operator can recover quickly."
+        detail="The reporting service returned an upstream timeout. Keep the surface actionable and specific so the operator can recover quickly without opening dev tools."
         actions={
           <>
             <Button type="button" leftIcon={<RefreshCw />}>Retry sync</Button>
@@ -124,7 +136,7 @@ export function LoadingStatePreview(props: { item: RegistryItem }) {
     <DemoFrame item={props.item} title="Live block">
       <LoadingState
         title="Generating forecast model"
-        description="Focused loading treatment for longer-running work, with optional progress and a clear escape hatch."
+        description="Focused loading treatment for longer-running work, with explicit progress, a short explanation of what is happening, and a clear escape hatch."
         progress={62}
         cancelAction={<Button type="button" tone="outline" intent="neutral">Cancel job</Button>}
       />
