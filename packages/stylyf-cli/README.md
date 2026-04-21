@@ -1,8 +1,8 @@
-# @stylyf/cli
+# @depths/stylyf-cli
 
 Stylyf is a JSON-driven frontend assembly line for SolidStart. Its job is to let a coding agent describe the intended app once, generate a real working source tree, and then keep iterating inside that emitted app without redoing the repetitive setup work by hand.
 
-`@stylyf/cli` is the publishable CLI package. The generated app is a separate destination project and does not depend on this repo or on `@stylyf/cli` at runtime.
+`@depths/stylyf-cli` is the publishable CLI package. The generated app is a separate destination project and does not depend on this repo or on `@depths/stylyf-cli` at runtime.
 
 ## What Stylyf Does
 
@@ -32,13 +32,13 @@ Yes. The intended operator is a coding agent with little or no prior project con
 ## Install
 
 ```bash
-npm install -g @stylyf/cli
+npm install -g @depths/stylyf-cli
 ```
 
 Or use it directly:
 
 ```bash
-npx @stylyf/cli --help
+npx @depths/stylyf-cli --help
 ```
 
 ## Core Commands

@@ -1,5 +1,5 @@
 {
-  "name": "@stylyf/cli",
+  "name": "@depths/stylyf-cli",
   "version": "0.1.0",
   "description": "JSON-driven frontend assembly line CLI for generating SolidStart apps.",
   "license": "MIT",
@@ -17,7 +17,7 @@
     "assembly-line"
   ],
   "bin": {
-    "stylyf": "./dist/bin.js"
+    "stylyf": "dist/bin.js"
   },
   "exports": {
     ".": {
