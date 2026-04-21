@@ -30,19 +30,12 @@ export function helpText() {
     "  -v, --version  Show version",
     "",
     "Phase 1 status:",
-    "  Manifests, validation, and search are implemented.",
-    "  Generation is scaffolded and lands next.",
+    "  Manifests, validation, search, and source generation are implemented.",
+    "  Style emission and dependency installation land next.",
   ].join("\n");
 }
-
-function commandStub(command: "generate") {
-  return [
-    `The '${command}' command is scaffolded but not implemented yet.`,
-    "Next implementation steps live in FRONTEND_ASSEMBLY_LINE_PLAN.md.",
-  ].join("\n");
-}
-
 import { runBuildIndexCommand } from "./commands/build-index.js";
+import { runGenerateCommand } from "./commands/generate.js";
 import { runSearchCommand } from "./commands/search.js";
 import { runServeSearchCommand } from "./commands/serve-search.js";
 import { runValidateCommand } from "./commands/validate.js";
@@ -62,8 +55,7 @@ export async function runCli(argv: string[] = process.argv.slice(2)) {
   }
 
   if (command === "generate") {
-    process.stdout.write(`${commandStub(command)}\n`);
-    return 0;
+    return runGenerateCommand(commandArgs(argv));
   }
 
   if (command === "validate") {

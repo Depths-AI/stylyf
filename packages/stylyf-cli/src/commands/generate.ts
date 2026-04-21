@@ -1,0 +1,35 @@
+import { resolve } from "node:path";
+import { generateFrontendDraft } from "../generators/generate.js";
+
+export async function runGenerateCommand(args: string[]) {
+  const irIndex = args.findIndex(arg => arg === "--ir");
+  const targetIndex = args.findIndex(arg => arg === "--target");
+  const irPath = irIndex >= 0 ? args[irIndex + 1] : undefined;
+  const targetPath = targetIndex >= 0 ? args[targetIndex + 1] : undefined;
+
+  if (!irPath) {
+    process.stderr.write("Missing required option: --ir <path>\n");
+    return 1;
+  }
+
+  if (!targetPath) {
+    process.stderr.write("Missing required option: --target <path>\n");
+    return 1;
+  }
+
+  const result = await generateFrontendDraft(irPath, resolve(process.cwd(), targetPath));
+
+  process.stdout.write(
+    [
+      `Generated frontend draft in ${resolve(process.cwd(), targetPath)}`,
+      `  routes: ${result.routes}`,
+      `  app shells: ${result.appShells}`,
+      `  page shells: ${result.pageShells}`,
+      `  layouts: ${result.layouts}`,
+      `  copied source files: ${result.copiedFiles}`,
+      "Style emission and dependency installation land in the next plan steps.",
+    ].join("\n") + "\n",
+  );
+
+  return 0;
+}
