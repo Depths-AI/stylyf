@@ -54,14 +54,13 @@ Completed on branch `assembly-tool`:
 - Step 9: add style emission
 - Step 10: add project scaffold and dependency installation
 - Step 11: add `stylyf intro`
+- Step 12: dogfood with two generated example apps
 
 The next allowed implementation target is:
 
-- Step 12: dogfood with two generated example apps
-
-After Step 12, continue in order:
-
 - Step 13: publishability pass
+
+After Step 13, continue by tightening docs and release readiness rather than adding new Phase 1 features.
 
 ## Validation Gates
 
