@@ -32,8 +32,8 @@ export function helpText() {
     "  -v, --version  Show version",
     "",
     "Phase 1 status:",
-    "  Intro output and frontend generation are implemented through dependency installation.",
-    "  Dogfooding and publishability validation land next.",
+    "  Frontend generation, intro output, dogfooding, and publishability validation are complete.",
+    "  The CLI is ready for Phase 2 refinement and release hardening.",
   ].join("\n");
 }
 import { runBuildIndexCommand } from "./commands/build-index.js";

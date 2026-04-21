@@ -55,12 +55,16 @@ Completed on branch `assembly-tool`:
 - Step 10: add project scaffold and dependency installation
 - Step 11: add `stylyf intro`
 - Step 12: dogfood with two generated example apps
-
-The next allowed implementation target is:
-
 - Step 13: publishability pass
 
-After Step 13, continue by tightening docs and release readiness rather than adding new Phase 1 features.
+Phase 1 is now implemented and validated end to end.
+
+The next allowed work is:
+
+- tighten docs
+- improve release ergonomics
+- refine generated app quality
+- start Phase 2 planning
 
 ## Validation Gates
 
