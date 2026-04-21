@@ -16,7 +16,6 @@ const clusterPreviewLoaders: Record<string, () => Promise<PreviewModule>> = {
   "tier-2-data-views": () => import("../components/registry/data-views/demos"),
   "tier-2-information-states": () => import("../components/registry/information-states/demos"),
   "tier-2-navigation-workflow": () => import("../components/registry/navigation-workflow/demos"),
-  "tier-2-commercial-content": () => import("../components/registry/commercial-content/demos"),
 };
 
 export const eagerClusterIds = new Set(["tier-1-actions-navigation"]);

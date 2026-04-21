@@ -1,4 +1,4 @@
-import { ChevronDown, Filter, FolderOpen, Image as ImageIcon, Mail, Search, ShieldCheck, SlidersHorizontal, UserPlus } from "lucide-solid";
+import { ChevronDown, Filter, Image as ImageIcon, Search, SlidersHorizontal, UserPlus } from "lucide-solid";
 import { createSignal } from "solid-js";
 import type { JSX } from "solid-js";
 import type { RegistryItem } from "~/lib/registry";
@@ -9,7 +9,6 @@ import { Select } from "~/components/registry/form-inputs/select";
 import { Switch } from "~/components/registry/form-inputs/switch";
 import { TextArea } from "~/components/registry/form-inputs/text-area";
 import { TextField } from "~/components/registry/form-inputs/text-field";
-import { AuthCardShell } from "~/components/registry/form-systems/auth-card-shell";
 import { FieldRow } from "~/components/registry/form-systems/field-row";
 import { FieldsetCard } from "~/components/registry/form-systems/fieldset-card";
 import { FileUploader } from "~/components/registry/form-systems/file-uploader";
@@ -211,46 +210,7 @@ export function MediaUploaderPreview(props: { item: RegistryItem }) {
   );
 }
 
-export function AuthCardShellPreview(props: { item: RegistryItem }) {
-  return (
-    <DemoFrame item={props.item} title="Live block">
-      <AuthCardShell
-        visual={
-          <div class="rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-background/75 p-[var(--space-4)] backdrop-blur-sm">
-            <div class="flex items-center gap-2 text-sm font-medium text-foreground">
-              <ShieldCheck class="size-4 text-primary" />
-              <span>Protected by workspace access policies</span>
-            </div>
-            <div class="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <FolderOpen class="size-4" />
-              <span>Stylyf internal design registry</span>
-            </div>
-          </div>
-        }
-        body={
-          <>
-            <TextField label="Email" type="email" placeholder="you@stylyf.com" prefix={<Mail class="size-4" />} />
-            <TextField label="Password" type="password" placeholder="Enter your password" />
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <Checkbox label="Remember this device" />
-              <Button type="button" tone="ghost" intent="neutral">Forgot password?</Button>
-            </div>
-            <Button type="button" fullWidth>Continue</Button>
-          </>
-        }
-        footer={
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <span>By continuing, you agree to the service terms.</span>
-            <Button type="button" tone="ghost" intent="neutral" size="sm">Need an invite?</Button>
-          </div>
-        }
-      />
-    </DemoFrame>
-  );
-}
-
 export const previewBySlug = {
-  "auth-card-shell": AuthCardShellPreview,
   "field-row": FieldRowPreview,
   "fieldset-card": FieldsetCardPreview,
   "file-uploader": FileUploaderPreview,

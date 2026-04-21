@@ -178,7 +178,7 @@ export function BreadcrumbPreview(props: { item: RegistryItem }) {
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
-              <Breadcrumb.Link href="#tier-3-app-shells-dashboards">Workspace</Breadcrumb.Link>
+              <Breadcrumb.Link href="#navigation-workflow">Workspace</Breadcrumb.Link>
             </Breadcrumb.Item>
             <Breadcrumb.Separator />
             <Breadcrumb.Item>
