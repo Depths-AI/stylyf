@@ -1,0 +1,31 @@
+{
+  "name": "@stylyf/cli",
+  "version": "0.1.0",
+  "description": "JSON-driven frontend assembly line CLI for generating SolidStart apps.",
+  "type": "module",
+  "bin": {
+    "stylyf": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev": "node --experimental-strip-types src/bin.ts",
+    "prepublishOnly": "npm run clean && npm run build"
+  }
+}
+
