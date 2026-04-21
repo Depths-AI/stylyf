@@ -59,6 +59,11 @@ export function renderGeneratedPackageJson(app: AppIR) {
     scripts["auth:secret"] = "npx @better-auth/cli@latest secret";
   }
 
+  if (app.storage) {
+    dependencies["@aws-sdk/client-s3"] = "^3.883.0";
+    dependencies["@aws-sdk/s3-request-presigner"] = "^3.883.0";
+  }
+
   return JSON.stringify(
     {
       name: slugify(app.name),

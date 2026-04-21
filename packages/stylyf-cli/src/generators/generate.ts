@@ -20,6 +20,7 @@ import {
 import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder } from "./backend/auth-schema.js";
 import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
+import { renderGeneratedStorageModule } from "./backend/storage.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
 import { installGeneratedProjectDependencies, writeProjectScaffold } from "./project.js";
@@ -351,6 +352,10 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     await writeGeneratedFile(resolve(targetPath, "src/lib/db/auth-schema.ts"), renderGeneratedAuthSchemaPlaceholder());
     await writeGeneratedFile(resolve(targetPath, "src/lib/server/guards.ts"), renderGeneratedAuthGuards());
     await writeGeneratedFile(resolve(targetPath, "src/routes/api/auth/[...auth].ts"), renderGeneratedAuthHandlerRoute());
+  }
+
+  if (app.storage) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/storage.ts"), renderGeneratedStorageModule());
   }
 
   for (const route of app.routes) {
