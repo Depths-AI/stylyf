@@ -14,9 +14,9 @@ import { assertValidAppIr } from "../ir/validate.js";
 import {
   renderGeneratedAuthClientModule,
   renderGeneratedAuthGuards,
-  renderGeneratedAuthHandlerRoute,
   renderGeneratedAuthModule,
 } from "./backend/auth.js";
+import { renderGeneratedAuthHandlerRoute, writeGeneratedApiRoutes } from "./backend/api-routes.js";
 import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder } from "./backend/auth-schema.js";
 import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
@@ -352,7 +352,10 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     await writeGeneratedFile(resolve(targetPath, "src/lib/auth-schema.config.ts"), renderGeneratedAuthSchemaConfig(app));
     await writeGeneratedFile(resolve(targetPath, "src/lib/db/auth-schema.ts"), renderGeneratedAuthSchemaPlaceholder());
     await writeGeneratedFile(resolve(targetPath, "src/lib/server/guards.ts"), renderGeneratedAuthGuards());
-    await writeGeneratedFile(resolve(targetPath, "src/routes/api/auth/[...auth].ts"), renderGeneratedAuthHandlerRoute());
+    await writeGeneratedFile(
+      resolve(targetPath, "src/routes/api/auth/[...auth].ts"),
+      await renderGeneratedAuthHandlerRoute(),
+    );
   }
 
   if (app.storage) {
@@ -360,6 +363,7 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   }
 
   const generatedServerModules = await writeGeneratedServerModules(app, targetPath);
+  const generatedApiRoutes = await writeGeneratedApiRoutes(app, targetPath);
 
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
@@ -411,6 +415,7 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     pageShells: usedPageShells.size,
     layouts: usedLayouts.size,
     copiedFiles: seenImports.size,
+    apiRoutes: generatedApiRoutes,
     serverModules: generatedServerModules,
     installed: install,
   };

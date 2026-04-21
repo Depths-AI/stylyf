@@ -33,16 +33,6 @@ export function renderGeneratedAuthClientModule() {
   ].join("\n");
 }
 
-export function renderGeneratedAuthHandlerRoute() {
-  return [
-    'import { toSolidStartHandler } from "better-auth/solid-start";',
-    'import { auth } from "~/lib/auth";',
-    "",
-    "export const { GET, POST } = toSolidStartHandler(auth);",
-    "",
-  ].join("\n");
-}
-
 export function renderGeneratedAuthGuards() {
   return [
     'import { redirect } from "@solidjs/router";',

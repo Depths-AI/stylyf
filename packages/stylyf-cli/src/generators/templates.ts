@@ -42,7 +42,15 @@ const serverFunctionTemplateFiles = {
   "generic-action": "server-functions/generic-action.ts.tpl",
 } as const;
 
+const apiRouteTemplateFiles = {
+  "auth-mount": "api-routes/auth-mount.ts.tpl",
+  json: "api-routes/json.ts.tpl",
+  webhook: "api-routes/webhook.ts.tpl",
+  "presign-upload": "api-routes/presign-upload.ts.tpl",
+} as const;
+
 export type ServerFunctionTemplateId = keyof typeof serverFunctionTemplateFiles;
+export type ApiRouteTemplateId = keyof typeof apiRouteTemplateFiles;
 
 function templateUrl(relativePath: string) {
   return new URL(`../templates/${relativePath}`, import.meta.url);
@@ -73,6 +81,10 @@ export function listServerFunctionTemplates() {
   return Object.keys(serverFunctionTemplateFiles) as ServerFunctionTemplateId[];
 }
 
+export function listApiRouteTemplates() {
+  return Object.keys(apiRouteTemplateFiles) as ApiRouteTemplateId[];
+}
+
 export function templatePathForAppShell(id: AppShellId) {
   return appShellTemplateFiles[id];
 }
@@ -89,6 +101,10 @@ export function templatePathForServerFunction(id: ServerFunctionTemplateId) {
   return serverFunctionTemplateFiles[id];
 }
 
+export function templatePathForApiRoute(id: ApiRouteTemplateId) {
+  return apiRouteTemplateFiles[id];
+}
+
 export function renderAppShellTemplate(id: AppShellId, replacements?: TemplateReplacements) {
   return readTemplate(templatePathForAppShell(id), replacements);
 }
@@ -103,4 +119,8 @@ export function renderLayoutTemplate(id: LayoutNodeId, replacements?: TemplateRe
 
 export function renderServerFunctionTemplate(id: ServerFunctionTemplateId, replacements?: TemplateReplacements) {
   return readTemplate(templatePathForServerFunction(id), replacements);
+}
+
+export function renderApiRouteTemplate(id: ApiRouteTemplateId, replacements?: TemplateReplacements) {
+  return readTemplate(templatePathForApiRoute(id), replacements);
 }

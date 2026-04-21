@@ -276,7 +276,14 @@ function validateStorage(value: Record<string, unknown>, errors: string[]) {
   }
 }
 
-function validateApiRoute(route: ApiRouteIR, path: string, errors: string[], seenPaths: Set<string>, authEnabled: boolean) {
+function validateApiRoute(
+  route: ApiRouteIR,
+  path: string,
+  errors: string[],
+  seenPaths: Set<string>,
+  authEnabled: boolean,
+  storageEnabled: boolean,
+) {
   if (!route.path || !route.path.startsWith("/api/")) {
     errors.push(`${path}.path must start with '/api/'`);
   } else if (route.path === "/api/auth/[...auth]") {
@@ -293,6 +300,18 @@ function validateApiRoute(route: ApiRouteIR, path: string, errors: string[], see
 
   if (!apiRouteTypes.has(route.type)) {
     errors.push(`${path}.type must be one of ${[...apiRouteTypes].join(", ")}`);
+  }
+
+  if (route.type === "webhook" && route.method !== "POST") {
+    errors.push(`${path}.method must be POST for webhook routes`);
+  }
+
+  if (route.type === "presign-upload" && route.method !== "POST") {
+    errors.push(`${path}.method must be POST for presign-upload routes`);
+  }
+
+  if (route.type === "presign-upload" && !storageEnabled) {
+    errors.push(`${path}.type cannot be presign-upload when storage is not enabled`);
   }
 
   if (!route.name.trim()) {
@@ -422,6 +441,7 @@ export function validateAppIr(value: unknown): ValidationResult {
   }
 
   const authEnabled = isRecord(value.auth);
+  const storageEnabled = isRecord(value.storage);
 
   if (value.apis !== undefined) {
     if (!Array.isArray(value.apis)) {
@@ -434,7 +454,7 @@ export function validateAppIr(value: unknown): ValidationResult {
           return;
         }
 
-        validateApiRoute(route as ApiRouteIR, `apis[${index}]`, errors, seenApiPaths, authEnabled);
+        validateApiRoute(route as ApiRouteIR, `apis[${index}]`, errors, seenApiPaths, authEnabled, storageEnabled);
       });
     }
   }
