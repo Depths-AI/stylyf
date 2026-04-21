@@ -1,5 +1,5 @@
-import { FileUp, Files, RefreshCw, TriangleAlert } from "lucide-solid";
-import { For, Show, mergeProps, splitProps } from "solid-js";
+import { FilePlus2, FileUp, Files, RefreshCw, TriangleAlert } from "lucide-solid";
+import { For, Show, createSignal, mergeProps, splitProps } from "solid-js";
 import type { JSX } from "solid-js";
 import { Button } from "~/components/registry/actions-navigation/button";
 import { Badge } from "~/components/registry/feedback-display/badge";
@@ -20,6 +20,10 @@ export type FileUploaderProps = Omit<JSX.HTMLAttributes<HTMLDivElement>, "childr
   title?: JSX.Element;
 };
 
+type UploadEntry = UploadItem & {
+  id: string;
+};
+
 const defaultItems: UploadItem[] = [
   { name: "customer-export.csv", status: "uploading", progress: 72, subtitle: "Mapping headers…" },
   { name: "workspace-members.csv", status: "complete", progress: 100, subtitle: "Ready to import" },
@@ -30,16 +34,108 @@ export function FileUploader(userProps: FileUploaderProps) {
   const props = mergeProps(
     {
       compact: false,
-      items: defaultItems,
       title: "Upload files",
     },
     userProps,
   );
 
   const [local, others] = splitProps(props, ["class", "compact", "items", "title"]);
+  const [dragging, setDragging] = createSignal(false);
+  const [items, setItems] = createSignal<UploadEntry[]>(
+    (local.items ?? defaultItems).map((item, index) => ({
+      ...item,
+      id: `seed-file-${index}`,
+    })),
+  );
+  let inputRef: HTMLInputElement | undefined;
+  let uploadSequence = 0;
+
+  const formatBytes = (size: number) => {
+    if (size >= 1024 * 1024) {
+      return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    return `${Math.max(1, Math.round(size / 1024))} KB`;
+  };
+
+  const scheduleUploadLifecycle = (entryId: string, file: File, index: number) => {
+    window.setTimeout(() => {
+      setItems(current =>
+        current.map(item =>
+          item.id === entryId
+            ? {
+                ...item,
+                progress: 66 + Math.min(index * 7, 18),
+                subtitle: `${formatBytes(file.size)} • validating columns`,
+              }
+            : item,
+        ),
+      );
+    }, 380 + index * 120);
+
+    window.setTimeout(() => {
+      setItems(current =>
+        current.map(item =>
+          item.id === entryId
+            ? {
+                ...item,
+                status: "complete",
+                progress: 100,
+                subtitle: `${formatBytes(file.size)} • ready to import`,
+              }
+            : item,
+        ),
+      );
+    }, 980 + index * 160);
+  };
+
+  const ingestFiles = (fileList: FileList | File[]) => {
+    const nextFiles = Array.from(fileList);
+
+    if (!nextFiles.length) {
+      return;
+    }
+
+    const entries = nextFiles.map((file, index) => {
+      const entryId = `upload-${Date.now()}-${uploadSequence++}`;
+      scheduleUploadLifecycle(entryId, file, index);
+
+      return {
+        id: entryId,
+        name: file.name,
+        progress: 18 + Math.min(index * 6, 16),
+        status: "uploading" as const,
+        subtitle: `${formatBytes(file.size)} • staging upload`,
+      } satisfies UploadEntry;
+    });
+
+    setItems(current => [...entries, ...current]);
+  };
+
+  const openPicker = () => inputRef?.click();
+
+  const ingestSampleData = () => {
+    ingestFiles([
+      new File(["company,workspace\nStylyf,Registry"], "sample-workspaces.csv", { type: "text/csv" }),
+      new File(['{"workspace":"stylyf","status":"ready"}'], "sample-state.json", { type: "application/json" }),
+    ]);
+  };
 
   return (
     <div class={cn("ui-card space-y-[var(--space-5)] p-[var(--space-6)]", local.class)} {...others}>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        class="sr-only"
+        onChange={event => {
+          if (event.currentTarget.files) {
+            ingestFiles(event.currentTarget.files);
+            event.currentTarget.value = "";
+          }
+        }}
+      />
+
       <div class="flex items-center justify-between gap-3">
         <div>
           <div class="text-base font-semibold tracking-[-0.02em] text-foreground">{local.title}</div>
@@ -50,20 +146,73 @@ export function FileUploader(userProps: FileUploaderProps) {
         </Badge>
       </div>
 
-      <div class={cn("rounded-[calc(var(--radius)*1.2)] border border-dashed border-primary/28 bg-accent/30 text-center", local.compact ? "p-[var(--space-5)]" : "p-[var(--space-8)]")}>
+      <div
+        role="button"
+        tabIndex={0}
+        class={cn(
+          "rounded-[calc(var(--radius)*1.2)] border border-dashed border-primary/28 bg-accent/30 text-center transition",
+          dragging() && "border-primary/46 bg-accent/55 shadow-soft",
+          local.compact ? "p-[var(--space-5)]" : "p-[var(--space-8)]",
+        )}
+        onClick={() => openPicker()}
+        onKeyDown={event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openPicker();
+          }
+        }}
+        onDragEnter={event => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragOver={event => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={event => {
+          event.preventDefault();
+          if (event.currentTarget === event.target) {
+            setDragging(false);
+          }
+        }}
+        onDrop={event => {
+          event.preventDefault();
+          setDragging(false);
+          if (event.dataTransfer?.files?.length) {
+            ingestFiles(event.dataTransfer.files);
+          }
+        }}
+      >
         <div class="mx-auto inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft">
-          <FileUp class="size-5" />
+          {dragging() ? <FilePlus2 class="size-5" /> : <FileUp class="size-5" />}
         </div>
-        <div class="mt-4 text-sm font-semibold text-foreground">Drop files here or browse</div>
-        <div class="mt-2 text-sm text-muted-foreground">Uploads remain source-owned. This shell only defines the staging and status treatment.</div>
+        <div class="mt-4 text-sm font-semibold text-foreground">
+          {dragging() ? "Release to add files" : "Drop files here or browse"}
+        </div>
+        <div class="mt-2 text-sm text-muted-foreground">Uploads remain source-owned. This shell defines interactive staging, status, and progress treatment.</div>
         <div class="mt-4 flex justify-center gap-2">
-          <Button type="button">Choose files</Button>
-          <Button type="button" tone="outline" intent="neutral">Use sample data</Button>
+          <Button type="button" onClick={event => {
+            event.stopPropagation();
+            openPicker();
+          }}>
+            Choose files
+          </Button>
+          <Button
+            type="button"
+            tone="outline"
+            intent="neutral"
+            onClick={event => {
+              event.stopPropagation();
+              ingestSampleData();
+            }}
+          >
+            Use sample data
+          </Button>
         </div>
       </div>
 
       <div class="space-y-3">
-        <For each={local.items}>
+        <For each={items()}>
           {item => (
             <div class="rounded-[calc(var(--radius)*1.05)] border border-border/70 bg-background-subtle/55 p-[var(--space-4)]">
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
