@@ -27,6 +27,7 @@ export async function runGenerateCommand(args: string[]) {
       `  app shells: ${result.appShells}`,
       `  page shells: ${result.pageShells}`,
       `  layouts: ${result.layouts}`,
+      `  server modules: ${result.serverModules}`,
       `  copied source files: ${result.copiedFiles}`,
       `  npm install: ${result.installed ? "completed" : "skipped"}`,
     ].join("\n") + "\n",

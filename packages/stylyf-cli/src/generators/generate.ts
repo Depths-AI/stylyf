@@ -20,6 +20,7 @@ import {
 import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder } from "./backend/auth-schema.js";
 import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
+import { writeGeneratedServerModules } from "./backend/server-functions.js";
 import { renderGeneratedStorageModule } from "./backend/storage.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
@@ -358,6 +359,8 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     await writeGeneratedFile(resolve(targetPath, "src/lib/storage.ts"), renderGeneratedStorageModule());
   }
 
+  const generatedServerModules = await writeGeneratedServerModules(app, targetPath);
+
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
     usedPageShells.add(route.page);
@@ -408,6 +411,7 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     pageShells: usedPageShells.size,
     layouts: usedLayouts.size,
     copiedFiles: seenImports.size,
+    serverModules: generatedServerModules,
     installed: install,
   };
 }
