@@ -32,7 +32,7 @@ export function CommentThread(userProps: CommentThreadProps) {
   const [local, others] = splitProps(props, ["class", "comments"]);
 
   return (
-    <section class={cn("ui-card space-y-[var(--space-5)] p-[var(--space-6)]", local.class)} {...others}>
+    <section class={cn("ui-shell-muted space-y-[var(--space-5)] border border-border/80 p-[var(--space-6)] shadow-soft", local.class)} {...others}>
       <div class="space-y-[var(--space-4)]">
         <For each={local.comments}>
           {comment => (
@@ -50,7 +50,7 @@ export function CommentThread(userProps: CommentThreadProps) {
         </For>
       </div>
 
-      <div class="rounded-[calc(var(--radius)*1.08)] border border-border/70 bg-card p-[var(--space-4)]">
+      <div class="rounded-[calc(var(--radius)*1.08)] border border-border/70 bg-card p-[var(--space-4)] shadow-inset">
         <TextArea label="Reply" autoResize defaultValue="I’ll review the next cluster after build completes." />
         <div class="mt-[var(--space-4)] flex justify-end">
           <Button type="button">Post reply</Button>

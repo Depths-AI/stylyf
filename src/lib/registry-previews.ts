@@ -9,7 +9,6 @@ type PreviewModule = {
 };
 
 const clusterPreviewLoaders: Record<string, () => Promise<PreviewModule>> = {
-  "tier-1-data-structure": () => import("../components/registry/data-structure/demos"),
   "tier-1-disclosure-overlay": () => import("../components/registry/disclosure-overlay/demos"),
   "tier-1-feedback-display": () => import("../components/registry/feedback-display/demos"),
   "tier-1-form-inputs": () => import("../components/registry/form-inputs/demos"),

@@ -25,17 +25,22 @@ export function BulkActionBar(userProps: BulkActionBarProps) {
     <Show when={local.visible}>
       <section
         class={cn(
-          "ui-card flex flex-col gap-3 border-primary/18 bg-accent/22 px-[var(--space-5)] py-[var(--space-4)] sm:flex-row sm:items-center sm:justify-between",
+          "ui-shell-muted flex flex-col gap-4 border border-border/80 bg-[linear-gradient(90deg,color-mix(in_oklab,var(--info)_10%,var(--card)_90%),var(--card))] px-[var(--space-5)] py-[var(--space-4)] shadow-soft sm:flex-row sm:items-center sm:justify-between",
           local.class,
         )}
         {...others}
       >
         <div class="flex items-center gap-3">
           <Badge tone="accent">{local.count} selected</Badge>
-          <div class="text-sm text-foreground">Apply bulk actions without leaving the data context.</div>
+          <div>
+            <div class="text-sm font-semibold text-foreground">Bulk actions ready</div>
+            <div class="text-sm text-muted-foreground">Apply changes without leaving the current data context.</div>
+          </div>
         </div>
         <Show when={local.actions}>
-          <div class="flex flex-wrap gap-2">{local.actions}</div>
+          <div class="flex flex-wrap gap-2 rounded-[calc(var(--radius-lg)+2px)] border border-border/70 bg-card/92 p-2 shadow-inset">
+            {local.actions}
+          </div>
         </Show>
       </section>
     </Show>

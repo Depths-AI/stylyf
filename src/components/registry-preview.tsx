@@ -45,7 +45,7 @@ import {
   SkeletonPreview,
   ToastPreview,
 } from "~/components/registry/feedback-display/demos";
-import { TablePreview } from "~/components/registry/data-structure/demos";
+import { TablePreview } from "~/components/registry/data-views/demos";
 import type { RegistryItem } from "~/lib/registry";
 
 const implementedPreviewBySlug: Record<string, Component<{ item: RegistryItem }>> = {

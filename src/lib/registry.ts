@@ -520,23 +520,6 @@ const registryTierInventory: RegistryTier[] = [
           },
         ]),
       },
-      {
-        id: "tier-1-data-structure",
-        title: "Data & Structure",
-        description:
-          "Foundational structure for dense information displays that should stay semantic and low-magic before data logic is layered on top.",
-        items: withContext("tier-1", "Tier 1", "tier-1-data-structure", "Data & Structure", [
-          {
-            name: "Table",
-            description: "Semantic table scaffold.",
-            pattern: "Table, Head, Body, Row, Cell, Caption.",
-            styleParams: ["density", "zebra", "sticky header", "numeric alignment"],
-            stateParams: ["selected", "sorted", "hover", "loading"],
-            registryShape: "registry:ui",
-            notes: "Keep raw table separate from data grid.",
-          },
-        ]),
-      },
     ],
   },
   {
@@ -739,6 +722,15 @@ const registryTierInventory: RegistryTier[] = [
         description:
           "List, detail, activity, and inbox-style compositions used to structure dense operational interfaces with predictable affordances.",
         items: withContext("tier-2", "Tier 2", "tier-2-data-views", "Data Views", [
+          {
+            name: "Table",
+            description: "Semantic table scaffold.",
+            pattern: "Table, Head, Body, Row, Cell, Caption.",
+            styleParams: ["density", "zebra", "sticky header", "numeric alignment"],
+            stateParams: ["selected", "sorted", "hover", "loading"],
+            registryShape: "registry:ui",
+            notes: "Keep raw table separate from data grid.",
+          },
           {
             name: "DataList",
             description: "Opinionated vertical list.",

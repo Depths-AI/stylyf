@@ -73,7 +73,6 @@ const clusterVisuals: Record<string, ClusterVisual> = {
   "tier-1-form-inputs": { color: "var(--info)", contrast: "var(--info-foreground)", icon: FormInput },
   "tier-1-disclosure-overlay": { color: "var(--accent-strong)", contrast: "var(--primary-foreground)", icon: SquareStack },
   "tier-1-feedback-display": { color: "var(--success)", contrast: "var(--success-foreground)", icon: BellRing },
-  "tier-1-data-structure": { color: "var(--warning)", contrast: "var(--warning-foreground)", icon: Table2 },
   "tier-2-form-systems": { color: "var(--info)", contrast: "var(--info-foreground)", icon: ClipboardCheck },
   "tier-2-information-states": { color: "var(--secondary-foreground)", contrast: "var(--secondary)", icon: Gauge },
   "tier-2-data-views": { color: "var(--primary)", contrast: "var(--primary-foreground)", icon: ChartColumnBig },
