@@ -13,35 +13,50 @@ function slugify(value: string) {
 }
 
 export function renderGeneratedPackageJson(app: AppIR) {
+  const scripts: Record<string, string> = {
+    dev: "vinxi dev",
+    build: "vinxi build",
+    start: "vinxi start",
+    preview: "vinxi preview",
+    check: "tsc --noEmit",
+  };
+
+  const dependencies: Record<string, string> = {
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.15.0",
+    "@solidjs/start": "1.3.2",
+    "class-variance-authority": "^0.7.1",
+    clsx: "^2.1.1",
+    "lucide-solid": "^1.8.0",
+    "solid-js": "^1.9.12",
+    "tailwind-merge": "^3.5.0",
+    vinxi: "^0.5.7",
+  };
+
+  const devDependencies: Record<string, string> = {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.6.0",
+    tailwindcss: "^4.2.2",
+    typescript: "^5.9.3",
+  };
+
+  if (app.database) {
+    dependencies["drizzle-orm"] = "^0.44.5";
+    dependencies.postgres = "^3.4.7";
+    devDependencies["drizzle-kit"] = "^0.31.4";
+    scripts["db:generate"] = "drizzle-kit generate";
+    scripts["db:migrate"] = "drizzle-kit migrate";
+    scripts["db:studio"] = "drizzle-kit studio";
+  }
+
   return JSON.stringify(
     {
       name: slugify(app.name),
       private: true,
       type: "module",
-      scripts: {
-        dev: "vinxi dev",
-        build: "vinxi build",
-        start: "vinxi start",
-        preview: "vinxi preview",
-        check: "tsc --noEmit",
-      },
-      dependencies: {
-        "@solidjs/meta": "^0.29.4",
-        "@solidjs/router": "^0.15.0",
-        "@solidjs/start": "1.3.2",
-        "class-variance-authority": "^0.7.1",
-        clsx: "^2.1.1",
-        "lucide-solid": "^1.8.0",
-        "solid-js": "^1.9.12",
-        "tailwind-merge": "^3.5.0",
-        vinxi: "^0.5.7",
-      },
-      devDependencies: {
-        "@tailwindcss/postcss": "^4.2.2",
-        "@types/node": "^25.6.0",
-        tailwindcss: "^4.2.2",
-        typescript: "^5.9.3",
-      },
+      scripts,
+      dependencies,
+      devDependencies,
       engines: {
         node: ">=22",
       },

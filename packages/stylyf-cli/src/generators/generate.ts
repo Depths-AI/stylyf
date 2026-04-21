@@ -11,6 +11,7 @@ import type {
   SectionIR,
 } from "../ir/types.js";
 import { assertValidAppIr } from "../ir/validate.js";
+import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
@@ -329,6 +330,12 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   await writeGeneratedFile(resolve(targetPath, "src/lib/theme-system.ts"), renderGeneratedThemeSystem(app));
   await writeGeneratedFile(resolve(targetPath, ".env.example"), renderGeneratedEnvExample(app));
   await writeGeneratedFile(resolve(targetPath, "src/lib/env.ts"), renderGeneratedEnvModule(app));
+
+  if (app.database) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/db.ts"), renderGeneratedDbModule());
+    await writeGeneratedFile(resolve(targetPath, "src/lib/db/schema.ts"), renderGeneratedDbSchema(app));
+    await writeGeneratedFile(resolve(targetPath, "drizzle.config.ts"), renderGeneratedDrizzleConfig());
+  }
 
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
