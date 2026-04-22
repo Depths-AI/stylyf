@@ -64,8 +64,17 @@ function filePathFor(module: ServerModuleIR) {
   return `src/lib/server/${folder}/${slugify(module.name)}.ts`;
 }
 
+function effectiveModuleAuth(module: ServerModuleIR, app: AppIR) {
+  if (module.auth) {
+    return module.auth;
+  }
+
+  const protectedEntry = app.auth?.protect?.find(entry => entry.kind === "server" && entry.target === module.name);
+  return protectedEntry?.access ?? "public";
+}
+
 function authImport(module: ServerModuleIR, app: AppIR) {
-  if (module.auth === "user" && app.auth) {
+  if (effectiveModuleAuth(module, app) === "user" && app.auth) {
     return 'import { requireSession } from "~/lib/server/guards";';
   }
 
@@ -73,7 +82,7 @@ function authImport(module: ServerModuleIR, app: AppIR) {
 }
 
 function authCall(module: ServerModuleIR, app: AppIR) {
-  if (module.auth === "user" && app.auth) {
+  if (effectiveModuleAuth(module, app) === "user" && app.auth) {
     return "  await requireSession();";
   }
 
@@ -89,7 +98,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
   const inputType = `${pascalCase(module.resource ?? "Resource")}Input`;
   const imports = [
     module.type === "query" ? 'import { query } from "@solidjs/router";' : 'import { action } from "@solidjs/router";',
-    'import { createSupabaseAdminClient } from "~/lib/supabase";',
+    'import { createSupabaseServerClient } from "~/lib/supabase";',
     authImportLine,
     "",
   ]
@@ -105,7 +114,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
         `export const ${exportSymbol} = query(async (id: string) => {`,
         '  "use server";',
         authLines.trimEnd(),
-        "  const supabase = createSupabaseAdminClient();",
+        "  const supabase = createSupabaseServerClient();",
         `  const { data, error } = await supabase.from(${JSON.stringify(resourceName)}).select("*").eq("id", id).limit(1);`,
         "  if (error) throw error;",
         "  return data?.[0] ?? null;",
@@ -121,7 +130,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
       `export const ${exportSymbol} = query(async () => {`,
       '  "use server";',
       authLines.trimEnd(),
-      "  const supabase = createSupabaseAdminClient();",
+      "  const supabase = createSupabaseServerClient();",
       `  const { data, error } = await supabase.from(${JSON.stringify(resourceName)}).select("*");`,
       "  if (error) throw error;",
       "  return data ?? [];",
@@ -152,7 +161,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
       `export const ${exportSymbol} = action(async (id: string) => {`,
       '  "use server";',
       authLines.trimEnd(),
-      "  const supabase = createSupabaseAdminClient();",
+      "  const supabase = createSupabaseServerClient();",
       `  const { data, error } = await supabase.from(${JSON.stringify(resourceName)}).delete().eq("id", id).select("*");`,
       "  if (error) throw error;",
       "  return data ?? [];",
@@ -171,7 +180,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
       `export const ${exportSymbol} = action(async (input: ${typeName}) => {`,
       '  "use server";',
       authLines.trimEnd(),
-      "  const supabase = createSupabaseAdminClient();",
+      "  const supabase = createSupabaseServerClient();",
       "  const { id, ...changes } = input;",
       `  const { data, error } = await supabase.from(${JSON.stringify(resourceName)}).update(changes).eq("id", id).select("*");`,
       "  if (error) throw error;",
@@ -190,7 +199,7 @@ function renderSupabaseServerModule(module: ServerModuleIR, app: AppIR) {
     `export const ${exportSymbol} = action(async (input: ${inputType}) => {`,
     '  "use server";',
     authLines.trimEnd(),
-    "  const supabase = createSupabaseAdminClient();",
+    "  const supabase = createSupabaseServerClient();",
     `  const { data, error } = await supabase.from(${JSON.stringify(resourceName)}).insert(input).select("*");`,
     "  if (error) throw error;",
     "  return data ?? [];",

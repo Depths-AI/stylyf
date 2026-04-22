@@ -45,6 +45,13 @@ const verifyIr = {
     features: {
       emailPassword: true,
     },
+    protect: [
+      {
+        target: "/",
+        kind: "route",
+        access: "user",
+      },
+    ],
   },
   storage: {
     provider: "s3",
@@ -122,6 +129,13 @@ const verifySupabaseIr = {
       emailPassword: true,
       emailOtp: true,
     },
+    protect: [
+      {
+        target: "/",
+        kind: "route",
+        access: "user",
+      },
+    ],
   },
   storage: {
     provider: "s3",
@@ -242,6 +256,7 @@ async function main() {
     "generated-app/src/routes/api/uploads/presign.ts",
     "generated-app/src/lib/storage.ts",
     "generated-app/src/lib/server/queries/records-list.ts",
+    "generated-app/src/middleware.ts",
   ];
 
   for (const relativePath of requiredGeneratedFiles) {

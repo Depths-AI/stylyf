@@ -29,6 +29,7 @@ Stylyf is a JSON-driven full-stack assembly line for SolidStart. Its job is to l
 4. Generate the app into a clean target directory.
 5. Move into the generated app and iterate there like a normal SolidStart codebase.
 6. Use `stylyf intro --project <path>` whenever a coding agent needs a compact refresher on the generated app structure.
+7. Treat `auth.protect` as the route/API/server default policy surface; explicit `auth` fields on API routes and server modules still win when set.
 
 ## Can An Agent Start Cold With This?
 
@@ -145,6 +146,8 @@ Stylyf uses a shallow JSON IR. The root shape is:
 - use `props` when a component or layout needs named values
 - use `items` when a component expects repeatable data collections
 - add `database`, `auth`, `storage`, `apis`, and `server` only when the app actually needs those backend capabilities
+- `auth.protect` supplies default protection rules for generated routes, API routes, and server modules
+- for API routes and server modules, an explicit `auth` field on the item overrides any matching `auth.protect` entry
 
 ### Backend Capability DSL
 
@@ -421,6 +424,7 @@ Current grammar surface:
 - storage: `s3` with presigned PUT upload helpers and AWS-compatible aliases that fit Tigris
 - api route types: `json`, `webhook`, `presign-upload`, plus generated auth routes for the selected auth provider
 - server module types: `query`, `action`
+- generated route protection is enforced in middleware rather than by embedding auth checks into page components
 
 ### App Shell Intent
 
@@ -481,6 +485,7 @@ curl 'http://127.0.0.1:4310/item/data-views/table'
 - preserve the styling grammar unless there is a clear reason to extend it
 - prefer composing from copied registry components before inventing new base primitives
 - choose one backend branch per generated app: portable (`better-auth + drizzle`) or hosted (`supabase + tigris`)
+- prefer request-scoped auth/data clients by default; treat the Supabase secret/admin client as an explicit escape hatch for privileged operations only
 - keep changes source-owned in the generated app rather than trying to reintroduce runtime abstraction
 
 ## How To Efficiently Scaffold An App With Zero Prior Context

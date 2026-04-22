@@ -66,3 +66,43 @@ export function renderGeneratedAuthGuards() {
     "",
   ].join("\n");
 }
+
+export function renderGeneratedAuthMiddleware(app: AppIR) {
+  const protectedRoutes = (app.auth?.protect ?? [])
+    .filter(entry => entry.kind === "route" && entry.access === "user")
+    .map(entry => entry.target)
+    .sort();
+
+  return [
+    'import { defineMiddleware, getRequestHeaders, sendRedirect } from "vinxi/http";',
+    'import { auth } from "~/lib/auth";',
+    "",
+    `const protectedRoutes = new Set(${JSON.stringify(protectedRoutes)});`,
+    "",
+    "function shouldSkip(path: string) {",
+    '  return path.startsWith("/_build") || path === "/favicon.ico" || path.startsWith("/api/");',
+    "}",
+    "",
+    "export default defineMiddleware({",
+    "  async onRequest(event) {",
+    "    if (shouldSkip(event.path)) {",
+    "      return;",
+    "    }",
+    "",
+    "    if (!protectedRoutes.has(event.path)) {",
+    "      return;",
+    "    }",
+    "",
+    "    const session = await auth.api.getSession({",
+    "      headers: new Headers(getRequestHeaders(event) as HeadersInit),",
+    "    });",
+    "",
+    "    if (!session) {",
+    '      await sendRedirect(event, "/login", 302);',
+    "      return;",
+    "    }",
+    "  },",
+    "});",
+    "",
+  ].join("\n");
+}

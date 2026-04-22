@@ -1,7 +1,7 @@
 {
   "name": "@depths/stylyf-cli",
-  "version": "0.1.0",
-  "description": "JSON-driven full-stack assembly line CLI for generating SolidStart apps.",
+  "version": "0.2.0",
+  "description": "JSON-driven full-stack assembly line CLI for generating standalone SolidStart apps.",
   "license": "MIT",
   "author": "Depths AI",
   "type": "module",
@@ -14,6 +14,11 @@
     "ui",
     "design-system",
     "frontend",
+    "backend",
+    "supabase",
+    "drizzle",
+    "better-auth",
+    "tigris",
     "assembly-line"
   ],
   "bin": {

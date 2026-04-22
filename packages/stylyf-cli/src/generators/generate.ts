@@ -14,6 +14,7 @@ import { assertValidAppIr } from "../ir/validate.js";
 import {
   renderGeneratedAuthClientModule,
   renderGeneratedAuthGuards,
+  renderGeneratedAuthMiddleware,
   renderGeneratedAuthModule,
 } from "./backend/auth.js";
 import { renderGeneratedAuthHandlerRoute, writeGeneratedApiRoutes } from "./backend/api-routes.js";
@@ -87,6 +88,10 @@ function routeFilePath(pathname: string) {
 function routeComponentName(pathname: string) {
   const clean = pathname.replace(/^\/+|\/+$/g, "");
   return `${pascalCase(clean || "index")}Route`;
+}
+
+function hasProtectedRoutes(app: AppIR) {
+  return (app.auth?.protect ?? []).some(entry => entry.kind === "route" && entry.access === "user");
 }
 
 function escapeString(value: string) {
@@ -370,7 +375,7 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
       await writeGeneratedFile(resolve(targetPath, "src/lib/auth.ts"), renderGeneratedSupabaseAuthModule(app));
       await writeGeneratedFile(resolve(targetPath, "src/lib/auth-client.ts"), renderGeneratedSupabaseAuthClientModule(app));
       await writeGeneratedFile(resolve(targetPath, "src/lib/server/guards.ts"), renderGeneratedSupabaseAuthGuards());
-      await writeGeneratedFile(resolve(targetPath, "src/middleware.ts"), renderGeneratedSupabaseMiddleware());
+      await writeGeneratedFile(resolve(targetPath, "src/middleware.ts"), renderGeneratedSupabaseMiddleware(app));
       await writeGeneratedFile(resolve(targetPath, "src/routes/auth/callback.ts"), renderGeneratedSupabaseAuthCallbackRoute());
       for (const [relativePath, source] of Object.entries(renderGeneratedSupabaseAuthApiRoutes())) {
         await writeGeneratedFile(resolve(targetPath, relativePath), source);
@@ -385,6 +390,9 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
         resolve(targetPath, "src/routes/api/auth/[...auth].ts"),
         await renderGeneratedAuthHandlerRoute(),
       );
+      if (hasProtectedRoutes(app)) {
+        await writeGeneratedFile(resolve(targetPath, "src/middleware.ts"), renderGeneratedAuthMiddleware(app));
+      }
     }
   } else if (usesSupabaseBackend) {
     await writeGeneratedFile(resolve(targetPath, "src/lib/supabase.ts"), renderGeneratedSupabaseServerModule());

@@ -332,13 +332,20 @@ export function renderGeneratedSupabaseAuthGuards() {
   ].join("\n");
 }
 
-export function renderGeneratedSupabaseMiddleware() {
+export function renderGeneratedSupabaseMiddleware(app: AppIR) {
+  const protectedRoutes = (app.auth?.protect ?? [])
+    .filter(entry => entry.kind === "route" && entry.access === "user")
+    .map(entry => entry.target)
+    .sort();
+
   return [
-    'import { defineMiddleware } from "vinxi/http";',
+    'import { defineMiddleware, sendRedirect } from "vinxi/http";',
     'import { createSupabaseServerClient } from "~/lib/supabase";',
     "",
+    `const protectedRoutes = new Set(${JSON.stringify(protectedRoutes)});`,
+    "",
     "function shouldSkip(path: string) {",
-    '  return path.startsWith("/_build") || path === "/favicon.ico";',
+    '  return path.startsWith("/_build") || path === "/favicon.ico" || path.startsWith("/api/");',
     "}",
     "",
     "export default defineMiddleware({",
@@ -348,7 +355,12 @@ export function renderGeneratedSupabaseMiddleware() {
     "    }",
     "",
     "    const supabase = createSupabaseServerClient(event);",
-    "    await supabase.auth.getUser();",
+    "    const { data: userData } = await supabase.auth.getUser();",
+    "",
+    "    if (protectedRoutes.has(event.path) && !userData.user) {",
+    '      await sendRedirect(event, "/login", 302);',
+    "      return;",
+    "    }",
     "  },",
     "});",
     "",

@@ -94,8 +94,12 @@ export function renderGeneratedPackageJson(app: AppIR) {
   );
 }
 
+function hasRouteProtection(app: AppIR) {
+  return (app.auth?.protect ?? []).some(entry => entry.kind === "route" && entry.access === "user");
+}
+
 export function renderGeneratedAppConfig(app: AppIR) {
-  if (app.auth?.provider === "supabase") {
+  if (app.auth?.provider === "supabase" || hasRouteProtection(app)) {
     return [
       'import { defineConfig } from "@solidjs/start/config";',
       "",

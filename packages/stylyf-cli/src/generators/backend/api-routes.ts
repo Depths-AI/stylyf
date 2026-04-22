@@ -8,16 +8,25 @@ function apiRouteFilePath(pathname: string) {
   return `src/routes/${clean}.ts`;
 }
 
-function authImportBlock(route: ApiRouteIR) {
-  if (route.auth !== "user") {
+function effectiveRouteAuth(route: ApiRouteIR, app: AppIR) {
+  if (route.auth) {
+    return route.auth;
+  }
+
+  const protectedEntry = app.auth?.protect?.find(entry => entry.kind === "api" && entry.target === route.path);
+  return protectedEntry?.access ?? "public";
+}
+
+function authImportBlock(route: ApiRouteIR, app: AppIR) {
+  if (effectiveRouteAuth(route, app) !== "user") {
     return "";
   }
 
   return 'import { getSession } from "~/lib/server/guards";';
 }
 
-function authGuardBlock(route: ApiRouteIR) {
-  if (route.auth !== "user") {
+function authGuardBlock(route: ApiRouteIR, app: AppIR) {
+  if (effectiveRouteAuth(route, app) !== "user") {
     return "";
   }
 
@@ -51,8 +60,8 @@ export async function writeGeneratedApiRoutes(app: AppIR, targetPath: string) {
       METHOD: route.method,
       ROUTE_NAME: route.name,
       ROUTE_PATH: route.path,
-      AUTH_IMPORT: authImportBlock(route),
-      AUTH_GUARD: authGuardBlock(route),
+      AUTH_IMPORT: authImportBlock(route, app),
+      AUTH_GUARD: authGuardBlock(route, app),
     });
 
     await writeGeneratedFile(resolve(targetPath, apiRouteFilePath(route.path)), rendered);
