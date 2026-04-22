@@ -11,9 +11,32 @@ import type {
   SectionIR,
 } from "../ir/types.js";
 import { assertValidAppIr } from "../ir/validate.js";
+import {
+  renderGeneratedAuthClientModule,
+  renderGeneratedAuthGuards,
+  renderGeneratedAuthMiddleware,
+  renderGeneratedAuthModule,
+} from "./backend/auth.js";
+import { renderGeneratedAuthHandlerRoute, writeGeneratedApiRoutes } from "./backend/api-routes.js";
+import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder } from "./backend/auth-schema.js";
+import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
+import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
+import { writeGeneratedServerModules } from "./backend/server-functions.js";
+import { renderGeneratedStorageModule } from "./backend/storage.js";
+import {
+  renderGeneratedSupabaseAuthApiRoutes,
+  renderGeneratedSupabaseAuthCallbackRoute,
+  renderGeneratedSupabaseAuthClientModule,
+  renderGeneratedSupabaseAuthGuards,
+  renderGeneratedSupabaseAuthModule,
+  renderGeneratedSupabaseBrowserModule,
+  renderGeneratedSupabaseMiddleware,
+  renderGeneratedSupabaseServerModule,
+  renderGeneratedSupabaseSqlSchema,
+} from "./backend/supabase.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 import { bundledSourcePathExists, readBundledSourceFile, writeGeneratedFile } from "./assets.js";
-import { installGeneratedProjectDependencies, writeProjectScaffold } from "./project.js";
+import { installGeneratedProjectDependencies, runGeneratedProjectScript, writeProjectScaffold } from "./project.js";
 import {
   renderGeneratedAppCss,
   renderGeneratedAppRoot,
@@ -65,6 +88,10 @@ function routeFilePath(pathname: string) {
 function routeComponentName(pathname: string) {
   const clean = pathname.replace(/^\/+|\/+$/g, "");
   return `${pascalCase(clean || "index")}Route`;
+}
+
+function hasProtectedRoutes(app: AppIR) {
+  return (app.auth?.protect ?? []).some(entry => entry.kind === "route" && entry.access === "user");
 }
 
 function escapeString(value: string) {
@@ -319,6 +346,8 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   const usedPageShells = new Set<PageShellId>();
   const usedLayouts = new Set<LayoutNodeId>(listLayoutTemplates());
   const registryImportsToCopy = new Set<string>(["~/lib/cn"]);
+  const postGenerateSteps: string[] = [];
+  const usesSupabaseBackend = app.database?.provider === "supabase" || app.auth?.provider === "supabase";
 
   await writeProjectScaffold(app, targetPath);
   await writeGeneratedFile(resolve(targetPath, "src/app.tsx"), renderGeneratedAppRoot(app));
@@ -326,6 +355,56 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   await writeGeneratedFile(resolve(targetPath, "src/entry-server.tsx"), renderGeneratedEntryServer());
   await writeGeneratedFile(resolve(targetPath, "src/app.css"), await renderGeneratedAppCss(app));
   await writeGeneratedFile(resolve(targetPath, "src/lib/theme-system.ts"), renderGeneratedThemeSystem(app));
+  await writeGeneratedFile(resolve(targetPath, ".env.example"), renderGeneratedEnvExample(app));
+  await writeGeneratedFile(resolve(targetPath, "src/lib/env.ts"), renderGeneratedEnvModule(app));
+
+  if (app.database) {
+    if (app.database.provider === "supabase") {
+      await writeGeneratedFile(resolve(targetPath, "supabase/schema.sql"), renderGeneratedSupabaseSqlSchema(app));
+    } else {
+      await writeGeneratedFile(resolve(targetPath, "src/lib/db.ts"), renderGeneratedDbModule(app));
+      await writeGeneratedFile(resolve(targetPath, "src/lib/db/schema.ts"), renderGeneratedDbSchema(app));
+      await writeGeneratedFile(resolve(targetPath, "drizzle.config.ts"), renderGeneratedDrizzleConfig(app));
+    }
+  }
+
+  if (app.auth) {
+    if (app.auth.provider === "supabase") {
+      await writeGeneratedFile(resolve(targetPath, "src/lib/supabase.ts"), renderGeneratedSupabaseServerModule());
+      await writeGeneratedFile(resolve(targetPath, "src/lib/supabase-browser.ts"), renderGeneratedSupabaseBrowserModule());
+      await writeGeneratedFile(resolve(targetPath, "src/lib/auth.ts"), renderGeneratedSupabaseAuthModule(app));
+      await writeGeneratedFile(resolve(targetPath, "src/lib/auth-client.ts"), renderGeneratedSupabaseAuthClientModule(app));
+      await writeGeneratedFile(resolve(targetPath, "src/lib/server/guards.ts"), renderGeneratedSupabaseAuthGuards());
+      await writeGeneratedFile(resolve(targetPath, "src/middleware.ts"), renderGeneratedSupabaseMiddleware(app));
+      await writeGeneratedFile(resolve(targetPath, "src/routes/auth/callback.ts"), renderGeneratedSupabaseAuthCallbackRoute());
+      for (const [relativePath, source] of Object.entries(renderGeneratedSupabaseAuthApiRoutes())) {
+        await writeGeneratedFile(resolve(targetPath, relativePath), source);
+      }
+    } else {
+      await writeGeneratedFile(resolve(targetPath, "src/lib/auth.ts"), renderGeneratedAuthModule(app));
+      await writeGeneratedFile(resolve(targetPath, "src/lib/auth-client.ts"), renderGeneratedAuthClientModule());
+      await writeGeneratedFile(resolve(targetPath, "src/lib/auth-schema.config.ts"), renderGeneratedAuthSchemaConfig(app));
+      await writeGeneratedFile(resolve(targetPath, "src/lib/db/auth-schema.ts"), renderGeneratedAuthSchemaPlaceholder());
+      await writeGeneratedFile(resolve(targetPath, "src/lib/server/guards.ts"), renderGeneratedAuthGuards());
+      await writeGeneratedFile(
+        resolve(targetPath, "src/routes/api/auth/[...auth].ts"),
+        await renderGeneratedAuthHandlerRoute(),
+      );
+      if (hasProtectedRoutes(app)) {
+        await writeGeneratedFile(resolve(targetPath, "src/middleware.ts"), renderGeneratedAuthMiddleware(app));
+      }
+    }
+  } else if (usesSupabaseBackend) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/supabase.ts"), renderGeneratedSupabaseServerModule());
+    await writeGeneratedFile(resolve(targetPath, "src/lib/supabase-browser.ts"), renderGeneratedSupabaseBrowserModule());
+  }
+
+  if (app.storage) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/storage.ts"), renderGeneratedStorageModule());
+  }
+
+  const generatedServerModules = await writeGeneratedServerModules(app, targetPath);
+  const generatedApiRoutes = await writeGeneratedApiRoutes(app, targetPath);
 
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
@@ -369,6 +448,16 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
 
   if (install) {
     await installGeneratedProjectDependencies(targetPath);
+
+    if (app.auth?.provider === "better-auth") {
+      await runGeneratedProjectScript(targetPath, "auth:generate");
+      postGenerateSteps.push("auth:generate");
+    }
+
+    if (app.database?.provider !== "supabase" && app.database?.migrations === "drizzle-kit") {
+      await runGeneratedProjectScript(targetPath, "db:generate");
+      postGenerateSteps.push("db:generate");
+    }
   }
 
   return {
@@ -377,6 +466,9 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     pageShells: usedPageShells.size,
     layouts: usedLayouts.size,
     copiedFiles: seenImports.size,
+    apiRoutes: generatedApiRoutes,
+    serverModules: generatedServerModules,
+    postGenerateSteps,
     installed: install,
   };
 }

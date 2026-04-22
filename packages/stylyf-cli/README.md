@@ -1,30 +1,41 @@
 # @depths/stylyf-cli
 
-Stylyf is a JSON-driven frontend assembly line for SolidStart. Its job is to let a coding agent describe the intended app once, generate a real working source tree, and then keep iterating inside that emitted app without redoing the repetitive setup work by hand.
+Stylyf is a JSON-driven full-stack assembly line for SolidStart. Its job is to let a coding agent describe the intended app once, generate a real working source tree, and then keep iterating inside that emitted app without redoing the repetitive setup work by hand.
 
 `@depths/stylyf-cli` is the publishable CLI package. The generated app is a separate destination project and does not depend on this repo or on `@depths/stylyf-cli` at runtime.
+
+## Backend Modes
+
+- portable mode: `better-auth + drizzle + postgres/sqlite + s3-compatible storage`
+- hosted mode: `supabase auth + supabase data sdk + tigris-compatible s3 storage`
+- storage stays presigned-URL based in both modes, so the browser never receives raw object-storage credentials
 
 ## What Stylyf Does
 
 - turns a shallow JSON IR into a standalone SolidStart app
 - emits app shell, route files, page shells, layout wrappers, global styling, and copied registry components
-- installs dependencies so the target app is runnable immediately
+- emits backend capability files for both supported backend branches when requested
+- the portable branch uses PostgreSQL or SQLite via Drizzle plus Better Auth
+- the hosted branch uses Supabase SDKs for both auth and data access, and emits `supabase/schema.sql` instead of Drizzle files
+- emits S3-compatible storage helpers for both branches, including AWS-compatible aliases that fit Tigris well
+- installs dependencies and runs post-generate auth/db scaffolding so the target app is runnable immediately
 - exposes search and intro commands so an agent can orient itself quickly during follow-up work
 
 ## Operator Workflow
 
 1. Search the bundled inventory to find the right building blocks.
-2. Write or refine a shallow JSON IR describing app shell, routes, page shells, layout wrappers, and component composition.
+2. Write or refine a shallow JSON IR describing app shell, routes, page shells, layout wrappers, component composition, and any required backend capabilities.
 3. Validate the IR before generation.
 4. Generate the app into a clean target directory.
 5. Move into the generated app and iterate there like a normal SolidStart codebase.
 6. Use `stylyf intro --project <path>` whenever a coding agent needs a compact refresher on the generated app structure.
+7. Treat `auth.protect` as the route/API/server default policy surface; explicit `auth` fields on API routes and server modules still win when set.
 
 ## Can An Agent Start Cold With This?
 
 Yes. The intended operator is a coding agent with little or no prior project context. Stylyf is meant to provide enough structure that an agent can:
 
-- understand the available shells, layouts, themes, and components
+- understand the available shells, layouts, themes, components, and backend capabilities
 - write valid JSON IR without reopening the full Stylyf source tree first
 - generate a SolidStart scaffold quickly
 - continue iterative UI development inside the emitted app
@@ -72,6 +83,23 @@ Stylyf uses a shallow JSON IR. The root shape is:
       "mono": "string"
     }
   },
+  "database": {
+    "provider": ["drizzle", "supabase"],
+    "dialect": ["postgres", "sqlite", "(omit for supabase)"],
+    "migrations": ["drizzle-kit", "(omit for supabase)"],
+    "schema": "DatabaseSchemaIR[]"
+  },
+  "auth": {
+    "provider": ["better-auth", "supabase"],
+    "mode": ["session"],
+    "features": { "emailPassword": "boolean", "emailOtp": "boolean", "magicLink": "boolean" }
+  },
+  "storage": {
+    "provider": ["s3"],
+    "mode": ["presigned-put"]
+  },
+  "apis": "ApiRouteIR[]",
+  "server": "ServerModuleIR[]",
   "routes": [
     {
       "path": "string",
@@ -117,12 +145,64 @@ Stylyf uses a shallow JSON IR. The root shape is:
 - string component children are shorthand for `{ "component": "..." }`
 - use `props` when a component or layout needs named values
 - use `items` when a component expects repeatable data collections
+- add `database`, `auth`, `storage`, `apis`, and `server` only when the app actually needs those backend capabilities
+- `auth.protect` supplies default protection rules for generated routes, API routes, and server modules
+- for API routes and server modules, an explicit `auth` field on the item overrides any matching `auth.protect` entry
 
-### Example IR
+### Backend Capability DSL
 
 ```json
 {
-  "name": "Atlas",
+  "database": {
+    "provider": "drizzle",
+    "dialect": "sqlite",
+    "migrations": "drizzle-kit",
+    "schema": [
+      {
+        "table": "records",
+        "columns": [
+          { "name": "id", "type": "uuid", "primaryKey": true },
+          { "name": "name", "type": "varchar" }
+        ],
+        "timestamps": true
+      }
+    ]
+  },
+  "auth": {
+    "provider": "better-auth",
+    "mode": "session",
+    "features": { "emailPassword": true, "emailOtp": false }
+  },
+  "storage": {
+    "provider": "s3",
+    "mode": "presigned-put",
+    "bucketAlias": "uploads"
+  },
+  "apis": [
+    {
+      "path": "/api/uploads/presign",
+      "method": "POST",
+      "type": "presign-upload",
+      "name": "create-record-upload",
+      "auth": "user"
+    }
+  ],
+  "server": [
+    {
+      "name": "records.list",
+      "type": "query",
+      "resource": "records",
+      "auth": "user"
+    }
+  ]
+}
+```
+
+### Hosted Supabase + Tigris Example IR
+
+```json
+{
+  "name": "Atlas Hosted",
   "shell": "sidebar-app",
   "theme": {
     "preset": "opal",
@@ -136,6 +216,54 @@ Stylyf uses a shallow JSON IR. The root shape is:
       "mono": "IBM Plex Mono"
     }
   },
+  "database": {
+    "provider": "supabase",
+    "schema": [
+      {
+        "table": "records",
+        "timestamps": true,
+        "columns": [
+          { "name": "id", "type": "uuid", "primaryKey": true },
+          { "name": "name", "type": "varchar" },
+          { "name": "status", "type": "varchar" },
+          { "name": "owner_id", "type": "uuid" }
+        ]
+      }
+    ]
+  },
+  "auth": {
+    "provider": "supabase",
+    "mode": "session",
+    "features": { "emailPassword": true, "emailOtp": true }
+  },
+  "storage": {
+    "provider": "s3",
+    "mode": "presigned-put",
+    "bucketAlias": "uploads"
+  },
+  "apis": [
+    {
+      "path": "/api/uploads/presign",
+      "method": "POST",
+      "type": "presign-upload",
+      "name": "create-record-upload",
+      "auth": "user"
+    }
+  ],
+  "server": [
+    {
+      "name": "records.list",
+      "type": "query",
+      "resource": "records",
+      "auth": "user"
+    },
+    {
+      "name": "records.create",
+      "type": "action",
+      "resource": "records",
+      "auth": "user"
+    }
+  ],
   "routes": [
     {
       "path": "/",
@@ -162,6 +290,12 @@ Stylyf uses a shallow JSON IR. The root shape is:
 }
 ```
 
+Portable local development: use `database.provider: "drizzle"`, `database.dialect: "sqlite"`, and `DATABASE_URL=file:./local.db`. `DATABASE_AUTH_TOKEN` stays optional and is only needed later for remote libsql providers such as Turso.
+
+Hosted fast path: pair `database.provider: "supabase"` with `auth.provider: "supabase"`. That branch emits `src/lib/supabase.ts`, `src/lib/supabase-browser.ts`, auth API routes, middleware, and `supabase/schema.sql` instead of Drizzle files.
+
+For email OTP on the Supabase branch, Stylyf scaffolds the code path with `signInWithOtp` and `verifyOtp`. Per Supabase's current docs, whether users receive an OTP code or a magic link depends on the email template variables configured in Supabase.
+
 ## Quick Start
 
 ```bash
@@ -180,10 +314,27 @@ src/
   app.css
   entry-client.tsx
   entry-server.tsx
+  .env.example
   lib/
+    env.ts
     theme-system.ts
     cn.ts
+    auth.ts
+    auth-client.ts
+    storage.ts
+    # portable branch:
+    db.ts
+    db/schema.ts
+    # hosted branch:
+    supabase.ts
+    supabase-browser.ts
+    server/
+      guards.ts
+      queries/
+      actions/
   routes/
+    api/
+    auth/callback.ts
   components/
     layout/
     shells/
@@ -200,6 +351,10 @@ src/
 - inspect `src/components/layout/` for spatial composition wrappers
 - inspect `src/components/registry/` for the copied UI building blocks used by the generated routes
 - inspect `src/app.css` and `src/lib/theme-system.ts` for the styling grammar and default theme behavior
+- inspect `src/lib/env.ts`, `src/lib/auth.ts`, and `src/lib/storage.ts` for the generated backend capability surface
+- if the app uses the portable branch, inspect `src/lib/db.ts`, `src/lib/db/schema.ts`, and `drizzle.config.ts`
+- if the app uses the hosted branch, inspect `src/lib/supabase.ts`, `src/lib/supabase-browser.ts`, and `supabase/schema.sql`
+- inspect `src/routes/api/` and `src/lib/server/` for explicit machine-facing API routes and server functions
 
 ## Iterative UI Development With Stylyf
 
@@ -260,6 +415,17 @@ Current grammar surface:
 - page shells: `dashboard`, `resource-index`, `resource-detail`, `settings`, `auth`, `blank`
 - layouts: `stack`, `row`, `column`, `grid`, `split`, `panel`, `section`, `toolbar`, `content-frame`
 
+### Backend Capability Inventory
+
+- portable database: `drizzle` provider with `postgres` or `sqlite`
+- hosted database: `supabase` provider using generated Supabase SDK clients
+- portable auth: `better-auth` in session mode, wired to Drizzle
+- hosted auth: `supabase` in session mode, with `emailPassword` and optional `emailOtp` scaffolding
+- storage: `s3` with presigned PUT upload helpers and AWS-compatible aliases that fit Tigris
+- api route types: `json`, `webhook`, `presign-upload`, plus generated auth routes for the selected auth provider
+- server module types: `query`, `action`
+- generated route protection is enforced in middleware rather than by embedding auth checks into page components
+
 ### App Shell Intent
 
 - `sidebar-app`: internal tools, dashboards, admin products
@@ -318,6 +484,8 @@ curl 'http://127.0.0.1:4310/item/data-views/table'
 - treat the emitted app as a normal SolidStart codebase
 - preserve the styling grammar unless there is a clear reason to extend it
 - prefer composing from copied registry components before inventing new base primitives
+- choose one backend branch per generated app: portable (`better-auth + drizzle`) or hosted (`supabase + tigris`)
+- prefer request-scoped auth/data clients by default; treat the Supabase secret/admin client as an explicit escape hatch for privileged operations only
 - keep changes source-owned in the generated app rather than trying to reintroduce runtime abstraction
 
 ## How To Efficiently Scaffold An App With Zero Prior Context

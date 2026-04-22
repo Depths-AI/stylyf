@@ -31,6 +31,27 @@ const layoutTemplateFiles: Record<LayoutNodeId, string> = {
   "content-frame": "layouts/content-frame.tsx.tpl",
 };
 
+const serverFunctionTemplateFiles = {
+  "list-query": "server-functions/list-query.ts.tpl",
+  "detail-query": "server-functions/detail-query.ts.tpl",
+  "create-action": "server-functions/create-action.ts.tpl",
+  "update-action": "server-functions/update-action.ts.tpl",
+  "delete-action": "server-functions/delete-action.ts.tpl",
+  "upload-handshake-action": "server-functions/upload-handshake-action.ts.tpl",
+  "generic-query": "server-functions/generic-query.ts.tpl",
+  "generic-action": "server-functions/generic-action.ts.tpl",
+} as const;
+
+const apiRouteTemplateFiles = {
+  "auth-mount": "api-routes/auth-mount.ts.tpl",
+  json: "api-routes/json.ts.tpl",
+  webhook: "api-routes/webhook.ts.tpl",
+  "presign-upload": "api-routes/presign-upload.ts.tpl",
+} as const;
+
+export type ServerFunctionTemplateId = keyof typeof serverFunctionTemplateFiles;
+export type ApiRouteTemplateId = keyof typeof apiRouteTemplateFiles;
+
 function templateUrl(relativePath: string) {
   return new URL(`../templates/${relativePath}`, import.meta.url);
 }
@@ -56,6 +77,14 @@ export function listLayoutTemplates() {
   return Object.keys(layoutTemplateFiles) as LayoutNodeId[];
 }
 
+export function listServerFunctionTemplates() {
+  return Object.keys(serverFunctionTemplateFiles) as ServerFunctionTemplateId[];
+}
+
+export function listApiRouteTemplates() {
+  return Object.keys(apiRouteTemplateFiles) as ApiRouteTemplateId[];
+}
+
 export function templatePathForAppShell(id: AppShellId) {
   return appShellTemplateFiles[id];
 }
@@ -66,6 +95,14 @@ export function templatePathForPageShell(id: PageShellId) {
 
 export function templatePathForLayout(id: LayoutNodeId) {
   return layoutTemplateFiles[id];
+}
+
+export function templatePathForServerFunction(id: ServerFunctionTemplateId) {
+  return serverFunctionTemplateFiles[id];
+}
+
+export function templatePathForApiRoute(id: ApiRouteTemplateId) {
+  return apiRouteTemplateFiles[id];
 }
 
 export function renderAppShellTemplate(id: AppShellId, replacements?: TemplateReplacements) {
@@ -80,3 +117,10 @@ export function renderLayoutTemplate(id: LayoutNodeId, replacements?: TemplateRe
   return readTemplate(templatePathForLayout(id), replacements);
 }
 
+export function renderServerFunctionTemplate(id: ServerFunctionTemplateId, replacements?: TemplateReplacements) {
+  return readTemplate(templatePathForServerFunction(id), replacements);
+}
+
+export function renderApiRouteTemplate(id: ApiRouteTemplateId, replacements?: TemplateReplacements) {
+  return readTemplate(templatePathForApiRoute(id), replacements);
+}

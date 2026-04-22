@@ -13,35 +13,78 @@ function slugify(value: string) {
 }
 
 export function renderGeneratedPackageJson(app: AppIR) {
+  const scripts: Record<string, string> = {
+    dev: "vinxi dev",
+    build: "vinxi build",
+    start: "vinxi start",
+    preview: "vinxi preview",
+    check: "tsc --noEmit",
+  };
+
+  const dependencies: Record<string, string> = {
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.15.0",
+    "@solidjs/start": "1.3.2",
+    "class-variance-authority": "^0.7.1",
+    clsx: "^2.1.1",
+    "lucide-solid": "^1.8.0",
+    "solid-js": "^1.9.12",
+    "tailwind-merge": "^3.5.0",
+    vinxi: "^0.5.7",
+  };
+
+  const devDependencies: Record<string, string> = {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.6.0",
+    tailwindcss: "^4.2.2",
+    typescript: "^5.9.3",
+  };
+
+  if (app.database) {
+    if (app.database.provider === "supabase") {
+      dependencies["@supabase/ssr"] = "^0.10.2";
+      dependencies["@supabase/supabase-js"] = "^2.104.0";
+    } else {
+      dependencies["drizzle-orm"] = "^0.45.2";
+      if (app.database.dialect === "sqlite") {
+        dependencies["@libsql/client"] = "^0.17.2";
+      } else {
+        dependencies.postgres = "^3.4.9";
+      }
+      devDependencies["drizzle-kit"] = "^0.31.10";
+      scripts["db:generate"] = "drizzle-kit generate";
+      scripts["db:migrate"] = "drizzle-kit migrate";
+      scripts["db:studio"] = "drizzle-kit studio";
+    }
+  }
+
+  if (app.auth) {
+    if (app.auth.provider === "better-auth") {
+      dependencies["better-auth"] = "^1.6.6";
+      dependencies["@better-auth/drizzle-adapter"] = "^1.6.6";
+      devDependencies["@better-auth/cli"] = "^1.4.21";
+      scripts["auth:generate"] = "better-auth generate --config ./src/lib/auth-schema.config.ts --output ./src/lib/db/auth-schema.ts --yes";
+      scripts["auth:sync"] = "npm run auth:generate && npm run db:generate";
+      scripts["auth:secret"] = "better-auth secret";
+    } else {
+      dependencies["@supabase/ssr"] = "^0.10.2";
+      dependencies["@supabase/supabase-js"] = "^2.104.0";
+    }
+  }
+
+  if (app.storage) {
+    dependencies["@aws-sdk/client-s3"] = "^3.883.0";
+    dependencies["@aws-sdk/s3-request-presigner"] = "^3.883.0";
+  }
+
   return JSON.stringify(
     {
       name: slugify(app.name),
       private: true,
       type: "module",
-      scripts: {
-        dev: "vinxi dev",
-        build: "vinxi build",
-        start: "vinxi start",
-        preview: "vinxi preview",
-        check: "tsc --noEmit",
-      },
-      dependencies: {
-        "@solidjs/meta": "^0.29.4",
-        "@solidjs/router": "^0.15.0",
-        "@solidjs/start": "1.3.2",
-        "class-variance-authority": "^0.7.1",
-        clsx: "^2.1.1",
-        "lucide-solid": "^1.8.0",
-        "solid-js": "^1.9.12",
-        "tailwind-merge": "^3.5.0",
-        vinxi: "^0.5.7",
-      },
-      devDependencies: {
-        "@tailwindcss/postcss": "^4.2.2",
-        "@types/node": "^25.6.0",
-        tailwindcss: "^4.2.2",
-        typescript: "^5.9.3",
-      },
+      scripts,
+      dependencies,
+      devDependencies,
       engines: {
         node: ">=22",
       },
@@ -51,7 +94,22 @@ export function renderGeneratedPackageJson(app: AppIR) {
   );
 }
 
-export function renderGeneratedAppConfig() {
+function hasRouteProtection(app: AppIR) {
+  return (app.auth?.protect ?? []).some(entry => entry.kind === "route" && entry.access === "user");
+}
+
+export function renderGeneratedAppConfig(app: AppIR) {
+  if (app.auth?.provider === "supabase" || hasRouteProtection(app)) {
+    return [
+      'import { defineConfig } from "@solidjs/start/config";',
+      "",
+      "export default defineConfig({",
+      '  middleware: "./src/middleware.ts",',
+      "});",
+      "",
+    ].join("\n");
+  }
+
   return ['import { defineConfig } from "@solidjs/start/config";', "", "export default defineConfig({});", ""].join("\n");
 }
 
@@ -92,7 +150,7 @@ export function renderGeneratedGitignore() {
 
 export async function writeProjectScaffold(app: AppIR, targetPath: string) {
   await writeGeneratedFile(`${targetPath}/package.json`, `${renderGeneratedPackageJson(app)}\n`);
-  await writeGeneratedFile(`${targetPath}/app.config.ts`, renderGeneratedAppConfig());
+  await writeGeneratedFile(`${targetPath}/app.config.ts`, renderGeneratedAppConfig(app));
   await writeGeneratedFile(`${targetPath}/postcss.config.mjs`, renderGeneratedPostcssConfig());
   await writeGeneratedFile(`${targetPath}/tsconfig.json`, `${renderGeneratedTsConfig()}\n`);
   await writeGeneratedFile(`${targetPath}/.gitignore`, renderGeneratedGitignore());
@@ -100,6 +158,13 @@ export async function writeProjectScaffold(app: AppIR, targetPath: string) {
 
 export async function installGeneratedProjectDependencies(targetPath: string) {
   await execFileAsync("npm", ["install"], {
+    cwd: targetPath,
+    maxBuffer: 1024 * 1024 * 20,
+  });
+}
+
+export async function runGeneratedProjectScript(targetPath: string, scriptName: string) {
+  await execFileAsync("npm", ["run", scriptName], {
     cwd: targetPath,
     maxBuffer: 1024 * 1024 * 20,
   });

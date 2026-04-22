@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +25,56 @@ const verifyIr = {
       mono: "IBM Plex Mono",
     },
   },
+  database: {
+    dialect: "sqlite",
+    migrations: "drizzle-kit",
+    schema: [
+      {
+        table: "records",
+        timestamps: true,
+        columns: [
+          { name: "id", type: "uuid", primaryKey: true },
+          { name: "name", type: "varchar" },
+        ],
+      },
+    ],
+  },
+  auth: {
+    provider: "better-auth",
+    mode: "session",
+    features: {
+      emailPassword: true,
+    },
+    protect: [
+      {
+        target: "/",
+        kind: "route",
+        access: "user",
+      },
+    ],
+  },
+  storage: {
+    provider: "s3",
+    mode: "presigned-put",
+    bucketAlias: "uploads",
+  },
+  apis: [
+    {
+      path: "/api/uploads/presign",
+      method: "POST",
+      type: "presign-upload",
+      name: "create-record-upload",
+      auth: "user",
+    },
+  ],
+  server: [
+    {
+      name: "records.list",
+      type: "query",
+      resource: "records",
+      auth: "user",
+    },
+  ],
   routes: [
     {
       path: "/",
@@ -38,6 +88,86 @@ const verifyIr = {
         {
           layout: "stack",
           children: [{ component: "activity-feed" }, { component: "notification-list" }],
+        },
+      ],
+    },
+  ],
+};
+
+const verifySupabaseIr = {
+  name: "Pack Verify Hosted",
+  shell: "sidebar-app",
+  theme: {
+    preset: "opal",
+    mode: "light",
+    radius: "trim",
+    density: "comfortable",
+    spacing: "tight",
+    fonts: {
+      fancy: "Fraunces",
+      sans: "Manrope",
+      mono: "IBM Plex Mono",
+    },
+  },
+  database: {
+    provider: "supabase",
+    schema: [
+      {
+        table: "records",
+        timestamps: true,
+        columns: [
+          { name: "id", type: "uuid", primaryKey: true },
+          { name: "name", type: "varchar" },
+        ],
+      },
+    ],
+  },
+  auth: {
+    provider: "supabase",
+    mode: "session",
+    features: {
+      emailPassword: true,
+      emailOtp: true,
+    },
+    protect: [
+      {
+        target: "/",
+        kind: "route",
+        access: "user",
+      },
+    ],
+  },
+  storage: {
+    provider: "s3",
+    mode: "presigned-put",
+    bucketAlias: "uploads",
+  },
+  apis: [
+    {
+      path: "/api/uploads/presign",
+      method: "POST",
+      type: "presign-upload",
+      name: "create-record-upload",
+      auth: "user",
+    },
+  ],
+  server: [
+    {
+      name: "records.list",
+      type: "query",
+      resource: "records",
+      auth: "user",
+    },
+  ],
+  routes: [
+    {
+      path: "/",
+      page: "dashboard",
+      title: "Hosted Verification",
+      sections: [
+        {
+          layout: "grid",
+          children: [{ component: "stat-card" }, { component: "stat-grid" }],
         },
       ],
     },
@@ -74,7 +204,10 @@ async function main() {
     "package/dist/bin.js",
     "package/dist/manifests/generated/theme-grammar.json",
     "package/dist/manifests/generated/assembly-registry.json",
+    "package/dist/manifests/generated/backend-manifests.json",
     "package/dist/templates/app-shells/sidebar-app.tsx.tpl",
+    "package/dist/templates/server-functions/list-query.ts.tpl",
+    "package/dist/templates/api-routes/presign-upload.ts.tpl",
     "package/dist/assets/source/src/app.css",
     "package/dist/assets/source/src/components/registry/actions-navigation/button.tsx",
   ];
@@ -107,9 +240,105 @@ async function main() {
   }
 
   await run(stylyfBin, ["intro", "--output", "STYLYF_INTRO.md"], verifyRoot);
+  const intro = await readFile(resolve(verifyRoot, "STYLYF_INTRO.md"), "utf8");
+  if (!intro.includes("Better Auth") || !intro.includes("sqlite") || !intro.includes("Supabase") || !intro.includes("Tigris")) {
+    throw new Error("Generated intro output does not mention the backend capability surface");
+  }
+
   await writeFile(resolve(verifyRoot, "verify-ir.json"), `${JSON.stringify(verifyIr, null, 2)}\n`);
   await run(stylyfBin, ["generate", "--ir", "verify-ir.json", "--target", "./generated-app"], verifyRoot);
+  await run("npm", ["run", "check"], resolve(verifyRoot, "generated-app"));
   await run("npm", ["run", "build"], resolve(verifyRoot, "generated-app"));
+
+  const requiredGeneratedFiles = [
+    "generated-app/drizzle.config.ts",
+    "generated-app/src/routes/api/auth/[...auth].ts",
+    "generated-app/src/routes/api/uploads/presign.ts",
+    "generated-app/src/lib/storage.ts",
+    "generated-app/src/lib/server/queries/records-list.ts",
+    "generated-app/src/middleware.ts",
+  ];
+
+  for (const relativePath of requiredGeneratedFiles) {
+    const absolutePath = resolve(verifyRoot, relativePath);
+    try {
+      await readFile(absolutePath, "utf8");
+    } catch {
+      throw new Error(`Generated packaged app is missing required file: ${relativePath}`);
+    }
+  }
+
+  const { stdout: importScan } = await run(
+    "rg",
+    ["-n", "/root/stylyf|@depths/stylyf-cli|@stylyf/cli", "generated-app"],
+    verifyRoot,
+  ).catch(error => {
+    if (error.code === 1) {
+      return { stdout: "" };
+    }
+    throw error;
+  });
+
+  if (importScan.trim()) {
+    throw new Error(`Generated packaged app still references the repo or CLI package:\n${importScan}`);
+  }
+
+  await writeFile(resolve(verifyRoot, "verify-supabase-ir.json"), `${JSON.stringify(verifySupabaseIr, null, 2)}\n`);
+  await run(stylyfBin, ["generate", "--ir", "verify-supabase-ir.json", "--target", "./generated-hosted-app"], verifyRoot);
+  await writeFile(
+    resolve(verifyRoot, "generated-hosted-app/.env"),
+    [
+      "APP_BASE_URL=http://127.0.0.1:3000",
+      "NODE_ENV=development",
+      "SUPABASE_URL=https://example.supabase.co",
+      "SUPABASE_PUBLISHABLE_KEY=sb_publishable_example",
+      "SUPABASE_SECRET_KEY=sb_secret_example",
+      "VITE_SUPABASE_URL=https://example.supabase.co",
+      "VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_example",
+      "S3_BUCKET=verify-bucket",
+      "AWS_REGION=auto",
+      "AWS_ACCESS_KEY_ID=test-access-key",
+      "AWS_SECRET_ACCESS_KEY=test-secret-key",
+      "AWS_ENDPOINT_URL_S3=https://t3.storage.dev",
+      "",
+    ].join("\n"),
+  );
+  await run("npm", ["run", "check"], resolve(verifyRoot, "generated-hosted-app"));
+  await run("npm", ["run", "build"], resolve(verifyRoot, "generated-hosted-app"));
+
+  const requiredHostedFiles = [
+    "generated-hosted-app/src/lib/supabase.ts",
+    "generated-hosted-app/src/lib/supabase-browser.ts",
+    "generated-hosted-app/src/routes/api/auth/sign-up/password.ts",
+    "generated-hosted-app/src/routes/api/auth/sign-in/password.ts",
+    "generated-hosted-app/src/routes/api/auth/sign-in/otp.ts",
+    "generated-hosted-app/src/routes/auth/callback.ts",
+    "generated-hosted-app/supabase/schema.sql",
+  ];
+
+  for (const relativePath of requiredHostedFiles) {
+    const absolutePath = resolve(verifyRoot, relativePath);
+    try {
+      await readFile(absolutePath, "utf8");
+    } catch {
+      throw new Error(`Generated hosted packaged app is missing required file: ${relativePath}`);
+    }
+  }
+
+  const { stdout: hostedImportScan } = await run(
+    "rg",
+    ["-n", "/root/stylyf|@depths/stylyf-cli|@stylyf/cli", "generated-hosted-app"],
+    verifyRoot,
+  ).catch(error => {
+    if (error.code === 1) {
+      return { stdout: "" };
+    }
+    throw error;
+  });
+
+  if (hostedImportScan.trim()) {
+    throw new Error(`Generated hosted packaged app still references the repo or CLI package:\n${hostedImportScan}`);
+  }
 
   process.stdout.write(
     [
@@ -118,9 +347,14 @@ async function main() {
       "Verified:",
       "  - tarball bundles dist manifests, templates, and source assets",
       "  - installed stylyf binary runs outside the repo",
-      "  - packaged intro command works",
+      "  - packaged intro command reflects backend capabilities",
       "  - packaged generate command works in a clean temp directory",
-      "  - generated app builds successfully",
+      "  - generated backend files are present",
+      "  - generated hosted Supabase/Tigris files are present",
+      "  - generated app does not import the repo or CLI package",
+      "  - generated hosted app does not import the repo or CLI package",
+      "  - generated app checks and builds successfully",
+      "  - generated hosted app checks and builds successfully",
     ].join("\n") + "\n",
   );
 

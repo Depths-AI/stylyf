@@ -27,7 +27,12 @@ export async function runGenerateCommand(args: string[]) {
       `  app shells: ${result.appShells}`,
       `  page shells: ${result.pageShells}`,
       `  layouts: ${result.layouts}`,
+      `  api routes: ${result.apiRoutes}`,
+      `  server modules: ${result.serverModules}`,
       `  copied source files: ${result.copiedFiles}`,
+      `  post-generate steps: ${
+        result.postGenerateSteps.length > 0 ? result.postGenerateSteps.join(", ") : install ? "none" : "skipped"
+      }`,
       `  npm install: ${result.installed ? "completed" : "skipped"}`,
     ].join("\n") + "\n",
   );

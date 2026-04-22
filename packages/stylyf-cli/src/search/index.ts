@@ -1,14 +1,32 @@
+import {
+  backendApiRouteCatalog,
+  backendCapabilityCatalog,
+  backendEnvCatalog,
+  backendServerTemplateCatalog,
+  backendSnippetCatalog,
+  type BackendCatalogEntry,
+} from "../manifests/backend.js";
 import { appShellCatalog, layoutCatalog, pageShellCatalog, type CatalogEntry } from "../manifests/catalog.js";
 import { loadAssemblyRegistry, type AssemblyItem } from "../manifests/index.js";
 
 export type SearchableEntry = {
   id: string;
   label: string;
-  kind: "component" | "layout" | "page-shell" | "app-shell";
+  kind:
+    | "component"
+    | "layout"
+    | "page-shell"
+    | "app-shell"
+    | "capability"
+    | "server-function"
+    | "api-route"
+    | "env-block"
+    | "backend-snippet";
   area: string;
   description: string;
   summary: string;
   keywords: string[];
+  props?: string[];
   sourcePath?: string;
   importPath?: string;
   snippet?: string;
@@ -22,6 +40,7 @@ export type SearchResult = {
   score: number;
   area: string;
   reason: string[];
+  props?: string[];
   importPath?: string;
   sourcePath?: string;
   summary: string;
@@ -45,6 +64,7 @@ function toSearchableComponent(item: AssemblyItem): SearchableEntry {
     description: item.description,
     summary: item.notes || item.pattern || item.description,
     keywords: item.keywords,
+    props: [],
     sourcePath: item.sourcePath,
     importPath: item.importPath,
     snippet: item.snippet,
@@ -61,6 +81,23 @@ function toSearchableCatalog(item: CatalogEntry): SearchableEntry {
     description: item.description,
     summary: item.summary,
     keywords: item.keywords,
+    props: item.props,
+    snippet: item.snippet,
+    searchText: [item.label, item.description, item.summary, ...item.keywords, ...(item.props ?? [])].join(" ").toLowerCase(),
+  };
+}
+
+function toSearchableBackend(item: BackendCatalogEntry): SearchableEntry {
+  return {
+    id: item.id,
+    label: item.label,
+    kind: item.kind,
+    area: item.area,
+    description: item.description,
+    summary: item.summary,
+    keywords: item.keywords,
+    props: item.props,
+    sourcePath: item.sourcePath,
     snippet: item.snippet,
     searchText: [item.label, item.description, item.summary, ...item.keywords, ...(item.props ?? [])].join(" ").toLowerCase(),
   };
@@ -132,6 +169,12 @@ function scoreEntry(entry: SearchableEntry, query: string) {
     reason.push(`keywords:${keywordHits}`);
   }
 
+  const propHits = (entry.props ?? []).filter(prop => queryTokens.includes(prop.toLowerCase())).length;
+  if (propHits > 0) {
+    score += propHits * 5;
+    reason.push(`props:${propHits}`);
+  }
+
   return { score, reason };
 }
 
@@ -143,6 +186,11 @@ export async function buildSearchEntries() {
     ...appShellCatalog.map(toSearchableCatalog),
     ...pageShellCatalog.map(toSearchableCatalog),
     ...layoutCatalog.map(toSearchableCatalog),
+    ...backendCapabilityCatalog.map(toSearchableBackend),
+    ...backendServerTemplateCatalog.map(toSearchableBackend),
+    ...backendApiRouteCatalog.map(toSearchableBackend),
+    ...backendEnvCatalog.map(toSearchableBackend),
+    ...backendSnippetCatalog.map(toSearchableBackend),
   ];
 }
 
@@ -174,6 +222,7 @@ export async function querySearchIndex(query: string, options?: { limit?: number
         score: scored.score,
         area: entry.area,
         reason: scored.reason,
+        props: entry.props,
         importPath: entry.importPath,
         sourcePath: entry.sourcePath,
         summary: entry.summary,
@@ -184,4 +233,3 @@ export async function querySearchIndex(query: string, options?: { limit?: number
     .sort((left, right) => right.score - left.score || left.label.localeCompare(right.label))
     .slice(0, limit);
 }
-
