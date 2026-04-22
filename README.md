@@ -1,42 +1,112 @@
 # Stylyf
 
-Stylyf is a source-owned SolidJS component registry project for building a
-serious application and marketing UI system on top of SolidStart and Tailwind
-CSS v4. The repo is meant to produce open code artifacts, not a sealed package
-library. Every primitive, composition, and route-ready block should remain
-inspectable, editable, and directly owned by the product team that adopts it.
+Stylyf is the authoring repo for [`@depths/stylyf-cli`](https://www.npmjs.com/package/@depths/stylyf-cli), a JSON-driven assembly-line CLI for generating standalone full-stack SolidStart apps.
 
-The project is organized around a three-tier registry model:
+The intended operator is a coding agent. Stylyf exists to remove repeatable setup work so an agent can describe an app once, emit a real source tree, and then keep iterating inside the generated app instead of redoing scaffolding by hand.
 
-1. Tier 1 establishes the foundational primitives. These are the most stable
-   pieces in the system and define interaction, accessibility, and override
-   contracts.
-2. Tier 2 assembles those primitives into product-agnostic compositions such as
-   field systems, navigation shells, data views, and workflow containers.
-3. Tier 3 turns the lower tiers into opinionated blocks and route-ready modules
-   for authentication, app workspaces, settings, marketing, docs, and trust
-   surfaces.
+Generated apps:
 
-The registry is intended to follow a few hard principles:
+- are ordinary checked-in SolidStart source code
+- run on their own
+- do not import from this repo
+- do not depend on `@depths/stylyf-cli` at runtime
 
-1. Styling is controlled globally through Tailwind CSS v4 theme variables and
-   CSS custom properties so the entire registry can shift brand, density, tone,
-   and surface language from a central system.
-2. Component APIs should favor slot and anatomy composition over oversized prop
-   bags. State should be explicit, inspectable, and styleable through semantic
-   attributes and data-state hooks.
-3. Solid-specific ergonomics matter. Prop forwarding, hydration-safe IDs,
-   explicit portals, and disciplined state control are part of the design of
-   the registry, not implementation details to bolt on later.
-4. Tier 3 blocks are templates with a point of view. They should be strong
-   enough to drop into real routes while still being composed from the lower
-   tiers instead of bypassing them.
+## What The CLI Generates
 
-The canonical handoff specification for the registry lives in
-[solidjs_registry_handoff_spec.md](./solidjs_registry_handoff_spec.md). That
-document defines the intended scope, component catalog, design standards, and
-implementation waves for the project.
+- app shell, route files, page shells, layout wrappers, and global styling
+- copied registry components and composition-ready UI surfaces
+- backend capability files when requested by the IR
+- typed env scaffolding for frontend and backend capabilities
+- explicit API routes and server modules
 
-Stylyf exists to make a SolidJS registry feel like a real design and product
-system from the start: structured, themed, source-owned, and ready for gradual
-promotion from empty shell to stable implementation.
+## Backend Paths
+
+Stylyf currently supports two full-stack branches.
+
+### Portable
+
+- Better Auth
+- Drizzle ORM
+- PostgreSQL or SQLite/libsql
+- S3-compatible object storage via AWS SDK v3 presigned URLs
+
+This is the provider-agnostic path.
+
+### Hosted
+
+- Supabase Auth
+- Supabase SDK data access
+- Tigris-compatible S3 object storage via AWS SDK v3 presigned URLs
+
+This is the fastest deployment path.
+
+In both branches, object storage stays presigned-URL based so the browser never receives raw bucket credentials.
+
+## Package
+
+Install globally:
+
+```bash
+npm install -g @depths/stylyf-cli
+```
+
+Or use it directly:
+
+```bash
+npx @depths/stylyf-cli --help
+```
+
+Core commands:
+
+```bash
+stylyf intro
+stylyf search dashboard filters table
+stylyf validate --ir app.json
+stylyf generate --ir app.json --target ./my-app
+stylyf serve-search --port 4310
+```
+
+## Repo Structure
+
+- [packages/stylyf-cli](./packages/stylyf-cli): publishable CLI package
+- [src](./src): Stylyf registry site and source-owned component inventory used to build bundled manifests/assets
+- [scripts](./scripts): manifest sync, package verification, and related build tooling
+- [WEB_CODING_ASSEMBLY_LINE.md](./WEB_CODING_ASSEMBLY_LINE.md): broader assembly-line direction beyond the current CLI release
+- [DEPLOYMENT.md](./DEPLOYMENT.md): deployment notes for the Stylyf site
+
+## Local Development
+
+Build the published CLI from this repo:
+
+```bash
+npm run cli:build
+```
+
+Verify the packaged CLI end to end:
+
+```bash
+npm run cli:verify-pack
+```
+
+Run the registry site locally:
+
+```bash
+npm run dev
+```
+
+Run the local UI review loop:
+
+```bash
+npm run dev:ui
+npm run ui:interact
+```
+
+## Release Status
+
+- npm package: [`@depths/stylyf-cli`](https://www.npmjs.com/package/@depths/stylyf-cli)
+- current shipped milestone: `v0.2.0`
+- GitHub releases: [Depths-AI/stylyf releases](https://github.com/Depths-AI/stylyf/releases)
+
+## License
+
+The CLI package is released under MIT. See [packages/stylyf-cli/LICENSE](./packages/stylyf-cli/LICENSE).
