@@ -4,7 +4,7 @@ import { FileRoutes } from "@solidjs/start/router";
 import { GitBranch, Package2 } from "lucide-solid";
 import { Suspense } from "solid-js";
 import { ThemeToggle } from "~/components/theme-toggle";
-import "./app.css";
+import "./main.css";
 
 export default function App() {
   return (
