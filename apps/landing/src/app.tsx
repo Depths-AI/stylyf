@@ -1,7 +1,7 @@
 import { Meta, MetaProvider, Title } from "@solidjs/meta";
 import { Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
-import { GitBranch, Layers3, Package2 } from "lucide-solid";
+import { GitBranch, Package2 } from "lucide-solid";
 import { Suspense } from "solid-js";
 import { ThemeToggle } from "~/components/theme-toggle";
 import "./app.css";
@@ -21,8 +21,17 @@ export default function App() {
             <header class="sticky top-0 z-40 border-b border-border/80 bg-background/92 backdrop-blur-xl">
               <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
                 <a href="/" class="inline-flex items-center gap-3">
-                  <span class="inline-flex size-11 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card text-primary shadow-soft">
-                    <Layers3 class="size-5" />
+                  <span class="inline-flex size-11 overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card shadow-soft">
+                    <img
+                      src="/depths-logo-light.jpg"
+                      alt="Depths AI"
+                      class="block h-full w-full object-cover dark:hidden"
+                    />
+                    <img
+                      src="/depths-logo-dark.jpg"
+                      alt="Depths AI"
+                      class="hidden h-full w-full object-cover dark:block"
+                    />
                   </span>
                   <span>
                     <span class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
