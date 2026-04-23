@@ -790,6 +790,17 @@ export function validateAppIr(value: unknown): ValidationResult {
 
   const authEnabled = isRecord(value.auth);
   const storageEnabled = isRecord(value.storage);
+  const attachmentsEnabled = Array.isArray(value.resources)
+    ? value.resources.some(resource => isRecord(resource) && Array.isArray(resource.attachments) && resource.attachments.length > 0)
+    : false;
+
+  if (attachmentsEnabled && !isRecord(value.database)) {
+    errors.push("attachments require database to be enabled");
+  }
+
+  if (attachmentsEnabled && !storageEnabled) {
+    errors.push("attachments require storage to be enabled");
+  }
 
   if (value.apis !== undefined) {
     if (!Array.isArray(value.apis)) {

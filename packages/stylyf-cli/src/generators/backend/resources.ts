@@ -30,8 +30,12 @@ function uniqueByName<T extends { name: string }>(items: T[]) {
   });
 }
 
-function tableNameFor(resource: ResourceIR) {
+export function tableNameFor(resource: ResourceIR) {
   return resource.table ?? resource.name;
+}
+
+export function assetTableNameFor(resource: ResourceIR) {
+  return `${tableNameFor(resource)}_assets`;
 }
 
 function toDatabaseColumnType(field: ResourceFieldIR): DatabaseColumnType {
@@ -119,6 +123,86 @@ function deriveSchemaTable(resource: ResourceIR): DatabaseSchemaIR {
   };
 }
 
+function deriveAttachmentSchemaTables(resource: ResourceIR): DatabaseSchemaIR[] {
+  if (!resource.attachments || resource.attachments.length === 0) {
+    return [];
+  }
+
+  return [
+    {
+      table: assetTableNameFor(resource),
+      columns: [
+        {
+          name: "id",
+          type: "uuid",
+          primaryKey: true,
+        },
+        {
+          name: "resource_id",
+          type: "uuid",
+        },
+        {
+          name: "attachment_name",
+          type: "varchar",
+        },
+        {
+          name: "bucket_alias",
+          type: "varchar",
+        },
+        {
+          name: "object_key",
+          type: "varchar",
+          unique: true,
+        },
+        {
+          name: "object_url",
+          type: "text",
+          nullable: true,
+        },
+        {
+          name: "file_name",
+          type: "varchar",
+          nullable: true,
+        },
+        {
+          name: "content_type",
+          type: "varchar",
+          nullable: true,
+        },
+        {
+          name: "file_size",
+          type: "integer",
+          nullable: true,
+        },
+        {
+          name: "kind",
+          type: "varchar",
+        },
+        {
+          name: "status",
+          type: "varchar",
+        },
+        {
+          name: "metadata",
+          type: "jsonb",
+          nullable: true,
+        },
+        {
+          name: "replaced_by_asset_id",
+          type: "uuid",
+          nullable: true,
+        },
+        {
+          name: "deleted_at",
+          type: "timestamp",
+          nullable: true,
+        },
+      ],
+      timestamps: true,
+    },
+  ];
+}
+
 function accessToAuth(access?: ResourceAccessPreset): AuthAccess {
   return access === undefined || access === "public" ? "public" : "user";
 }
@@ -167,7 +251,7 @@ export function materializeAppForGeneration(app: AppIR): AppIR {
   const existingSchema = app.database?.schema ?? [];
   const existingTables = new Set(existingSchema.map(table => table.table));
   const derivedSchema = app.resources
-    .map(resource => deriveSchemaTable(resource))
+    .flatMap(resource => [deriveSchemaTable(resource), ...deriveAttachmentSchemaTables(resource)])
     .filter(table => !existingTables.has(table.table));
 
   const existingServer = app.server ?? [];
@@ -191,13 +275,23 @@ export function materializeAppForGeneration(app: AppIR): AppIR {
 export function renderGeneratedResourcesModule(app: AppIR) {
   const resources = app.resources ?? [];
   const workflows = app.workflows ?? [];
+  const attachments = resources
+    .filter(resource => (resource.attachments?.length ?? 0) > 0)
+    .map(resource => ({
+      resource: resource.name,
+      table: assetTableNameFor(resource),
+      attachments: resource.attachments ?? [],
+    }));
 
   return [
     "export const resourceDefinitions = " + JSON.stringify(resources, null, 2) + " as const;",
     "",
+    "export const attachmentDefinitions = " + JSON.stringify(attachments, null, 2) + " as const;",
+    "",
     "export const workflowDefinitions = " + JSON.stringify(workflows, null, 2) + " as const;",
     "",
     "export const resourcesByName = Object.fromEntries(resourceDefinitions.map(resource => [resource.name, resource]));",
+    "export const attachmentsByResource = Object.fromEntries(attachmentDefinitions.map(entry => [entry.resource, entry]));",
     "export const workflowsByName = Object.fromEntries(workflowDefinitions.map(workflow => [workflow.name, workflow]));",
     "",
   ].join("\n");

@@ -22,6 +22,13 @@ import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder }
 import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
 import {
+  hasGeneratedAttachments,
+  renderGeneratedAttachmentApiRoutes,
+  renderGeneratedAttachmentModule,
+  renderGeneratedAttachmentServerModule,
+  renderGeneratedSupabaseAttachmentPoliciesSql,
+} from "./backend/attachments.js";
+import {
   materializeAppForGeneration,
   renderGeneratedResourcePolicyModule,
   renderGeneratedRelationsModule,
@@ -368,12 +375,19 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     await writeGeneratedFile(resolve(targetPath, "src/lib/resources.ts"), renderGeneratedResourcesModule(app));
     await writeGeneratedFile(resolve(targetPath, "src/lib/server/resource-policy.ts"), renderGeneratedResourcePolicyModule(app));
   }
+  if (hasGeneratedAttachments(app)) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/attachments.ts"), renderGeneratedAttachmentModule(app));
+    await writeGeneratedFile(resolve(targetPath, "src/lib/server/attachments.ts"), renderGeneratedAttachmentServerModule(app));
+  }
 
   if (app.database) {
     if (app.database.provider === "supabase") {
       await writeGeneratedFile(resolve(targetPath, "supabase/schema.sql"), renderGeneratedSupabaseSqlSchema(app));
       if ((app.resources?.length ?? 0) > 0) {
-        await writeGeneratedFile(resolve(targetPath, "supabase/policies.sql"), renderGeneratedSupabasePoliciesSql(app));
+        const policies = [renderGeneratedSupabasePoliciesSql(app), renderGeneratedSupabaseAttachmentPoliciesSql(app)]
+          .filter(Boolean)
+          .join("\n");
+        await writeGeneratedFile(resolve(targetPath, "supabase/policies.sql"), policies);
       }
     } else {
       await writeGeneratedFile(resolve(targetPath, "src/lib/db.ts"), renderGeneratedDbModule(app));
@@ -422,7 +436,14 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   }
 
   const generatedServerModules = await writeGeneratedServerModules(app, targetPath);
-  const generatedApiRoutes = await writeGeneratedApiRoutes(app, targetPath);
+  let generatedApiRoutes = await writeGeneratedApiRoutes(app, targetPath);
+  if (hasGeneratedAttachments(app)) {
+    const attachmentRoutes = renderGeneratedAttachmentApiRoutes();
+    for (const [relativePath, source] of Object.entries(attachmentRoutes)) {
+      await writeGeneratedFile(resolve(targetPath, relativePath), source);
+    }
+    generatedApiRoutes += Object.keys(attachmentRoutes).length;
+  }
 
   for (const route of app.routes) {
     usedAppShells.add(route.shell ?? app.shell);
