@@ -55,6 +55,9 @@ Local portable v0.3 validation example covering:
 - Better Auth
 - resource-driven schema and CRUD generation
 - owner/public policy defaults on a local development stack
+- generated create/edit routes and resource form scaffolds
+- attachment metadata plus presign/confirm/delete lifecycles
+- workflow transitions, event logging, and notifications
 
 ## `atlas-dashboard-v0.3-supabase.json`
 
@@ -64,6 +67,15 @@ Hosted v0.3 foundation example covering:
 - derived `supabase/schema.sql` from `resources`
 - derived query/action server modules from `resources`
 - ownership, relation, attachment, and workflow declarations
+- generated create/edit routes and resource form scaffolds
+- hosted RLS policy SQL plus request-scoped server clients
+- workflow transitions, event logging, and notifications
+
+## Recommended v0.3 starting points
+
+- portable branch: `atlas-dashboard-v0.3-local.json`
+- hosted branch: `atlas-dashboard-v0.3-supabase.json`
+- broad contract reference: `atlas-dashboard-v0.3.json`
 
 ## `field-manual-docs-fullstack.json`
 

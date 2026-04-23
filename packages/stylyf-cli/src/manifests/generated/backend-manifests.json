@@ -39,6 +39,9 @@
   ],
   "snippets": [
     "snippet-v0-resource-grammar",
+    "snippet-v0-resource-form-routes",
+    "snippet-v0-attachment-lifecycle",
+    "snippet-v0-workflow-events-notifications",
     "snippet-drizzle-db-module",
     "snippet-libsql-db-module",
     "snippet-better-auth-module",
