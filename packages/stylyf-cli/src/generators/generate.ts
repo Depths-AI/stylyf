@@ -21,6 +21,11 @@ import { renderGeneratedAuthHandlerRoute, writeGeneratedApiRoutes } from "./back
 import { renderGeneratedAuthSchemaConfig, renderGeneratedAuthSchemaPlaceholder } from "./backend/auth-schema.js";
 import { renderGeneratedDbModule, renderGeneratedDbSchema, renderGeneratedDrizzleConfig } from "./backend/database.js";
 import { renderGeneratedEnvExample, renderGeneratedEnvModule } from "./backend/env.js";
+import {
+  materializeAppForGeneration,
+  renderGeneratedRelationsModule,
+  renderGeneratedResourcesModule,
+} from "./backend/resources.js";
 import { writeGeneratedServerModules } from "./backend/server-functions.js";
 import { renderGeneratedStorageModule } from "./backend/storage.js";
 import {
@@ -339,7 +344,7 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   const parsed = JSON.parse(raw) as unknown;
   assertValidAppIr(parsed);
 
-  const app = parsed as AppIR;
+  const app = materializeAppForGeneration(parsed as AppIR);
   const install = options?.install ?? true;
   const assemblyLookup = createAssemblyLookup(await loadAssemblyRegistry());
   const usedAppShells = new Set<AppShellId>([app.shell]);
@@ -357,6 +362,9 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   await writeGeneratedFile(resolve(targetPath, "src/lib/theme-system.ts"), renderGeneratedThemeSystem(app));
   await writeGeneratedFile(resolve(targetPath, ".env.example"), renderGeneratedEnvExample(app));
   await writeGeneratedFile(resolve(targetPath, "src/lib/env.ts"), renderGeneratedEnvModule(app));
+  if ((app.resources?.length ?? 0) > 0 || (app.workflows?.length ?? 0) > 0) {
+    await writeGeneratedFile(resolve(targetPath, "src/lib/resources.ts"), renderGeneratedResourcesModule(app));
+  }
 
   if (app.database) {
     if (app.database.provider === "supabase") {
@@ -364,6 +372,10 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     } else {
       await writeGeneratedFile(resolve(targetPath, "src/lib/db.ts"), renderGeneratedDbModule(app));
       await writeGeneratedFile(resolve(targetPath, "src/lib/db/schema.ts"), renderGeneratedDbSchema(app));
+      const relationsModule = renderGeneratedRelationsModule(app);
+      if (relationsModule) {
+        await writeGeneratedFile(resolve(targetPath, "src/lib/db/relations.ts"), relationsModule);
+      }
       await writeGeneratedFile(resolve(targetPath, "drizzle.config.ts"), renderGeneratedDrizzleConfig(app));
     }
   }

@@ -47,6 +47,15 @@ Validation-first v0.3 foundation example covering:
 - workflow transitions with emitted events and notification audiences
 - compatibility with the existing portable full-stack scaffold
 
+## `atlas-dashboard-v0.3-supabase.json`
+
+Hosted v0.3 foundation example covering:
+
+- resource-first IR with Supabase data/auth
+- derived `supabase/schema.sql` from `resources`
+- derived query/action server modules from `resources`
+- ownership, relation, attachment, and workflow declarations
+
 ## `field-manual-docs-fullstack.json`
 
 Content/docs baseline covering:

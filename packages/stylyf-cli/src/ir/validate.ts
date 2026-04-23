@@ -747,6 +747,10 @@ export function validateAppIr(value: unknown): ValidationResult {
     }
   }
 
+  if (Array.isArray(value.resources) && value.resources.length > 0 && !isRecord(value.database)) {
+    errors.push("resources require database to be enabled");
+  }
+
   if (value.auth !== undefined) {
     if (!isRecord(value.auth)) {
       errors.push("auth must be an object when provided");
