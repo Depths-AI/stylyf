@@ -7,12 +7,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "vinxi dev",
-    "dev:ui": "vinxi dev --host 127.0.0.1 --port 4173",
-    "build": "vinxi build",
-    "start": "vinxi start",
-    "preview": "vinxi preview",
-    "check": "tsc --noEmit",
+    "dev": "npm --prefix apps/landing run dev",
+    "dev:ui": "npm --prefix apps/landing run dev:ui",
+    "build": "npm --prefix apps/landing run build",
+    "start": "npm --prefix apps/landing run start",
+    "preview": "npm --prefix apps/landing run preview",
+    "check": "npm --prefix apps/landing run check",
     "cli:build-manifests": "node --experimental-strip-types scripts/build-stylyf-cli-manifests.ts",
     "cli:sync-assets": "node --experimental-strip-types scripts/sync-stylyf-cli-assets.ts",
     "cli:build": "npm run cli:build-manifests && npm run cli:sync-assets && npm --prefix packages/stylyf-cli run build",
