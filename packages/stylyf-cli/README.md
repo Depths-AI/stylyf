@@ -89,6 +89,8 @@ Stylyf uses a shallow JSON IR. The root shape is:
     "migrations": ["drizzle-kit", "(omit for supabase)"],
     "schema": "DatabaseSchemaIR[]"
   },
+  "resources": "ResourceIR[]",
+  "workflows": "WorkflowIR[]",
   "auth": {
     "provider": ["better-auth", "supabase"],
     "mode": ["session"],
@@ -146,8 +148,71 @@ Stylyf uses a shallow JSON IR. The root shape is:
 - use `props` when a component or layout needs named values
 - use `items` when a component expects repeatable data collections
 - add `database`, `auth`, `storage`, `apis`, and `server` only when the app actually needs those backend capabilities
+- add `resources` and `workflows` when you want Stylyf's v0.3 generalized app-mechanics layer instead of only raw backend primitives
 - `auth.protect` supplies default protection rules for generated routes, API routes, and server modules
 - for API routes and server modules, an explicit `auth` field on the item overrides any matching `auth.protect` entry
+
+### v0.3 Resource And Workflow DSL
+
+The v0.3 surface is deliberately broad. It is meant to describe generalized app mechanics, not a niche product category.
+
+```json
+{
+  "resources": [
+    {
+      "name": "records",
+      "visibility": "mixed",
+      "fields": [
+        { "name": "title", "type": "varchar", "required": true },
+        { "name": "status", "type": "enum", "enumValues": ["draft", "review", "published"] }
+      ],
+      "ownership": { "model": "user", "ownerField": "owner_id" },
+      "access": {
+        "list": "owner-or-public",
+        "read": "owner-or-public",
+        "create": "user",
+        "update": "owner",
+        "delete": "owner"
+      },
+      "relations": [{ "target": "profiles", "kind": "belongs-to", "field": "owner_id" }],
+      "attachments": [{ "name": "coverImage", "kind": "image" }],
+      "workflow": "recordLifecycle"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "recordLifecycle",
+      "resource": "records",
+      "field": "status",
+      "initial": "draft",
+      "states": ["draft", "review", "published"],
+      "transitions": [
+        {
+          "name": "submitForReview",
+          "from": "draft",
+          "to": "review",
+          "actor": "owner",
+          "emits": ["record.submitted"],
+          "notifies": ["owner", "admins"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### v0.3 Mechanics Semantics
+
+- `resources`: generalized app entities that later generator steps can map to schema, CRUD surfaces, and route scaffolds
+- `ownership`: whether a resource is unowned, user-owned, or workspace-owned
+- `access`: broad policy presets for list/read/create/update/delete surfaces
+- `relations`: explicit links between resources without forcing a deep ORM-specific DSL into the top-level IR
+- `attachments`: generalized file/media attachment declarations on top of the shared S3/Tigris substrate
+- `workflows`: state machines for approvals, publishing, onboarding, or other repeatable transitions
+- `transitions.emits`: event names that later steps can map to logs and notifications
+- `transitions.notifies`: notification audiences kept broad so they fit internal apps as well as customer-facing products
+
+At this stage, treat these v0.3 blocks as the generalized mechanics contract. Later Stylyf steps turn them into schema, policy, form, and workflow source output.
 
 ### Backend Capability DSL
 

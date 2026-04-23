@@ -12,6 +12,12 @@ import type {
   LayoutNodeIR,
   LayoutNodeId,
   PageShellId,
+  ResourceAccessPreset,
+  ResourceAttachmentKind,
+  ResourceFieldType,
+  ResourceOwnershipModel,
+  ResourceRelationKind,
+  ResourceVisibilityPreset,
   RouteIR,
   SectionIR,
   ServerModuleType,
@@ -45,6 +51,24 @@ const apiRouteTypes = new Set<ApiRouteType>(["json", "webhook", "presign-upload"
 const serverModuleTypes = new Set<ServerModuleType>(["query", "action"]);
 const authAccess = new Set<AuthAccess>(["public", "user"]);
 const databaseColumnTypes = new Set(["text", "varchar", "integer", "boolean", "timestamp", "jsonb", "uuid"]);
+const resourceFieldTypes = new Set<ResourceFieldType>([
+  "text",
+  "varchar",
+  "integer",
+  "boolean",
+  "timestamp",
+  "jsonb",
+  "uuid",
+  "longtext",
+  "date",
+  "enum",
+]);
+const resourceOwnershipModels = new Set<ResourceOwnershipModel>(["none", "user", "workspace"]);
+const resourceAccessPresets = new Set<ResourceAccessPreset>(["public", "user", "owner", "owner-or-public", "workspace-member", "admin"]);
+const resourceVisibilityPresets = new Set<ResourceVisibilityPreset>(["private", "public", "mixed"]);
+const resourceRelationKinds = new Set<ResourceRelationKind>(["belongs-to", "has-many", "many-to-many"]);
+const resourceAttachmentKinds = new Set<ResourceAttachmentKind>(["file", "image", "video", "audio", "document"]);
+const workflowNotificationAudiences = new Set(["owner", "workspace", "watchers", "admins"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -231,6 +255,268 @@ function validateDatabase(value: Record<string, unknown>, errors: string[]) {
       });
     }
   }
+}
+
+function validateResources(resources: unknown[], errors: string[]) {
+  const seenNames = new Set<string>();
+  const resourceNames = new Set<string>();
+
+  resources.forEach((resource, index) => {
+    if (!isRecord(resource)) {
+      errors.push(`resources[${index}] must be an object`);
+      return;
+    }
+
+    if (typeof resource.name !== "string" || !resource.name.trim()) {
+      errors.push(`resources[${index}].name must be a non-empty string`);
+    } else if (seenNames.has(resource.name)) {
+      errors.push(`resources[${index}].name duplicates an earlier resource: ${resource.name}`);
+    } else {
+      seenNames.add(resource.name);
+      resourceNames.add(resource.name);
+    }
+
+    if (resource.table !== undefined && (typeof resource.table !== "string" || !resource.table.trim())) {
+      errors.push(`resources[${index}].table must be a non-empty string when provided`);
+    }
+
+    if (resource.visibility !== undefined && !resourceVisibilityPresets.has(resource.visibility as ResourceVisibilityPreset)) {
+      errors.push(`resources[${index}].visibility must be one of ${[...resourceVisibilityPresets].join(", ")}`);
+    }
+
+    if (resource.fields !== undefined) {
+      if (!Array.isArray(resource.fields)) {
+        errors.push(`resources[${index}].fields must be an array when provided`);
+      } else {
+        const seenFieldNames = new Set<string>();
+        resource.fields.forEach((field, fieldIndex) => {
+          if (!isRecord(field)) {
+            errors.push(`resources[${index}].fields[${fieldIndex}] must be an object`);
+            return;
+          }
+
+          if (typeof field.name !== "string" || !field.name.trim()) {
+            errors.push(`resources[${index}].fields[${fieldIndex}].name must be a non-empty string`);
+          } else if (seenFieldNames.has(field.name)) {
+            errors.push(`resources[${index}].fields[${fieldIndex}].name duplicates an earlier field: ${field.name}`);
+          } else {
+            seenFieldNames.add(field.name);
+          }
+
+          if (!resourceFieldTypes.has(field.type as ResourceFieldType)) {
+            errors.push(
+              `resources[${index}].fields[${fieldIndex}].type must be one of ${[...resourceFieldTypes].join(", ")}`,
+            );
+          }
+
+          if (field.type === "enum") {
+            if (!Array.isArray(field.enumValues) || field.enumValues.length === 0) {
+              errors.push(`resources[${index}].fields[${fieldIndex}].enumValues must be a non-empty array when type is enum`);
+            }
+          } else if (field.enumValues !== undefined) {
+            errors.push(`resources[${index}].fields[${fieldIndex}].enumValues is only valid when type is enum`);
+          }
+        });
+      }
+    }
+
+    if (resource.ownership !== undefined) {
+      if (!isRecord(resource.ownership)) {
+        errors.push(`resources[${index}].ownership must be an object when provided`);
+      } else {
+        if (!resourceOwnershipModels.has(resource.ownership.model as ResourceOwnershipModel)) {
+          errors.push(`resources[${index}].ownership.model must be one of ${[...resourceOwnershipModels].join(", ")}`);
+        }
+
+        if (resource.ownership.model === "user" && resource.ownership.workspaceField !== undefined) {
+          errors.push(`resources[${index}].ownership.workspaceField is not used when model is user`);
+        }
+
+        if (resource.ownership.model !== "workspace" && resource.ownership.membershipTable !== undefined) {
+          errors.push(`resources[${index}].ownership.membershipTable is only valid for workspace ownership`);
+        }
+      }
+    }
+
+    if (resource.access !== undefined) {
+      if (!isRecord(resource.access)) {
+        errors.push(`resources[${index}].access must be an object when provided`);
+      } else {
+        for (const key of ["list", "read", "create", "update", "delete"] as const) {
+          const value = resource.access[key];
+          if (value !== undefined && !resourceAccessPresets.has(value as ResourceAccessPreset)) {
+            errors.push(`resources[${index}].access.${key} must be one of ${[...resourceAccessPresets].join(", ")}`);
+          }
+        }
+      }
+    }
+
+    if (resource.relations !== undefined) {
+      if (!Array.isArray(resource.relations)) {
+        errors.push(`resources[${index}].relations must be an array when provided`);
+      }
+    }
+
+    if (resource.attachments !== undefined) {
+      if (!Array.isArray(resource.attachments)) {
+        errors.push(`resources[${index}].attachments must be an array when provided`);
+      } else {
+        const seenAttachmentNames = new Set<string>();
+        resource.attachments.forEach((attachment, attachmentIndex) => {
+          if (!isRecord(attachment)) {
+            errors.push(`resources[${index}].attachments[${attachmentIndex}] must be an object`);
+            return;
+          }
+
+          if (typeof attachment.name !== "string" || !attachment.name.trim()) {
+            errors.push(`resources[${index}].attachments[${attachmentIndex}].name must be a non-empty string`);
+          } else if (seenAttachmentNames.has(attachment.name)) {
+            errors.push(
+              `resources[${index}].attachments[${attachmentIndex}].name duplicates an earlier attachment: ${attachment.name}`,
+            );
+          } else {
+            seenAttachmentNames.add(attachment.name);
+          }
+
+          if (!resourceAttachmentKinds.has(attachment.kind as ResourceAttachmentKind)) {
+            errors.push(
+              `resources[${index}].attachments[${attachmentIndex}].kind must be one of ${[...resourceAttachmentKinds].join(", ")}`,
+            );
+          }
+        });
+      }
+    }
+  });
+
+  resources.forEach((resource, index) => {
+    if (!isRecord(resource) || resource.relations === undefined) {
+      return;
+    }
+
+    if (!Array.isArray(resource.relations)) {
+      return;
+    }
+
+    resource.relations.forEach((relation, relationIndex) => {
+      if (!isRecord(relation)) {
+        errors.push(`resources[${index}].relations[${relationIndex}] must be an object`);
+        return;
+      }
+
+      if (typeof relation.target !== "string" || !relation.target.trim()) {
+        errors.push(`resources[${index}].relations[${relationIndex}].target must be a non-empty string`);
+      } else if (!resourceNames.has(relation.target)) {
+        errors.push(`resources[${index}].relations[${relationIndex}].target must reference a declared resource`);
+      }
+
+      if (!resourceRelationKinds.has(relation.kind as ResourceRelationKind)) {
+        errors.push(
+          `resources[${index}].relations[${relationIndex}].kind must be one of ${[...resourceRelationKinds].join(", ")}`,
+        );
+      }
+
+      if (relation.kind === "many-to-many" && (typeof relation.through !== "string" || !relation.through.trim())) {
+        errors.push(`resources[${index}].relations[${relationIndex}].through must be provided for many-to-many relations`);
+      }
+    });
+  });
+}
+
+function validateWorkflows(workflows: unknown[], errors: string[], resourceNames: Set<string>) {
+  const seenNames = new Set<string>();
+
+  workflows.forEach((workflow, index) => {
+    if (!isRecord(workflow)) {
+      errors.push(`workflows[${index}] must be an object`);
+      return;
+    }
+
+    if (typeof workflow.name !== "string" || !workflow.name.trim()) {
+      errors.push(`workflows[${index}].name must be a non-empty string`);
+    } else if (seenNames.has(workflow.name)) {
+      errors.push(`workflows[${index}].name duplicates an earlier workflow: ${workflow.name}`);
+    } else {
+      seenNames.add(workflow.name);
+    }
+
+    if (typeof workflow.resource !== "string" || !workflow.resource.trim()) {
+      errors.push(`workflows[${index}].resource must be a non-empty string`);
+    } else if (resourceNames.size > 0 && !resourceNames.has(workflow.resource)) {
+      errors.push(`workflows[${index}].resource must reference a declared resource`);
+    }
+
+    if (!Array.isArray(workflow.states) || workflow.states.length === 0) {
+      errors.push(`workflows[${index}].states must be a non-empty array`);
+    }
+
+    if (typeof workflow.initial !== "string" || !workflow.initial.trim()) {
+      errors.push(`workflows[${index}].initial must be a non-empty string`);
+    } else if (Array.isArray(workflow.states) && !workflow.states.includes(workflow.initial)) {
+      errors.push(`workflows[${index}].initial must be present in workflows[${index}].states`);
+    }
+
+    if (!Array.isArray(workflow.transitions) || workflow.transitions.length === 0) {
+      errors.push(`workflows[${index}].transitions must be a non-empty array`);
+      return;
+    }
+
+    const states = new Set(Array.isArray(workflow.states) ? workflow.states.filter(state => typeof state === "string") : []);
+    const seenTransitionNames = new Set<string>();
+
+    workflow.transitions.forEach((transition, transitionIndex) => {
+      if (!isRecord(transition)) {
+        errors.push(`workflows[${index}].transitions[${transitionIndex}] must be an object`);
+        return;
+      }
+
+      if (typeof transition.name !== "string" || !transition.name.trim()) {
+        errors.push(`workflows[${index}].transitions[${transitionIndex}].name must be a non-empty string`);
+      } else if (seenTransitionNames.has(transition.name)) {
+        errors.push(
+          `workflows[${index}].transitions[${transitionIndex}].name duplicates an earlier transition: ${transition.name}`,
+        );
+      } else {
+        seenTransitionNames.add(transition.name);
+      }
+
+      const fromStates = Array.isArray(transition.from) ? transition.from : [transition.from];
+      if (fromStates.some(state => typeof state !== "string" || !state.trim())) {
+        errors.push(`workflows[${index}].transitions[${transitionIndex}].from must be a string or non-empty array of strings`);
+      } else if (states.size > 0) {
+        for (const fromState of fromStates as string[]) {
+          if (!states.has(fromState)) {
+            errors.push(`workflows[${index}].transitions[${transitionIndex}].from must reference declared states`);
+          }
+        }
+      }
+
+      if (typeof transition.to !== "string" || !transition.to.trim()) {
+        errors.push(`workflows[${index}].transitions[${transitionIndex}].to must be a non-empty string`);
+      } else if (states.size > 0 && !states.has(transition.to)) {
+        errors.push(`workflows[${index}].transitions[${transitionIndex}].to must reference a declared state`);
+      }
+
+      if (transition.actor !== undefined && !resourceAccessPresets.has(transition.actor as ResourceAccessPreset)) {
+        errors.push(
+          `workflows[${index}].transitions[${transitionIndex}].actor must be one of ${[...resourceAccessPresets].join(", ")}`,
+        );
+      }
+
+      if (transition.notifies !== undefined) {
+        if (!Array.isArray(transition.notifies)) {
+          errors.push(`workflows[${index}].transitions[${transitionIndex}].notifies must be an array when provided`);
+        } else {
+          transition.notifies.forEach((audience, audienceIndex) => {
+            if (!workflowNotificationAudiences.has(String(audience))) {
+              errors.push(
+                `workflows[${index}].transitions[${transitionIndex}].notifies[${audienceIndex}] must be one of ${[...workflowNotificationAudiences].join(", ")}`,
+              );
+            }
+          });
+        }
+      }
+    });
+  });
 }
 
 function validateAuth(value: Record<string, unknown>, errors: string[]) {
@@ -435,6 +721,29 @@ export function validateAppIr(value: unknown): ValidationResult {
       errors.push("database must be an object when provided");
     } else {
       validateDatabase(value.database, errors);
+    }
+  }
+
+  let resourceNames = new Set<string>();
+  if (value.resources !== undefined) {
+    if (!Array.isArray(value.resources)) {
+      errors.push("resources must be an array when provided");
+    } else {
+      validateResources(value.resources, errors);
+      resourceNames = new Set(
+        value.resources
+          .filter(isRecord)
+          .map(resource => resource.name)
+          .filter((name): name is string => typeof name === "string" && name.trim().length > 0),
+      );
+    }
+  }
+
+  if (value.workflows !== undefined) {
+    if (!Array.isArray(value.workflows)) {
+      errors.push("workflows must be an array when provided");
+    } else {
+      validateWorkflows(value.workflows, errors, resourceNames);
     }
   }
 

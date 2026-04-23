@@ -77,6 +77,19 @@ export type DatabaseColumnType =
   | "jsonb"
   | "uuid";
 
+export type ResourceFieldType =
+  | DatabaseColumnType
+  | "longtext"
+  | "date"
+  | "enum";
+
+export type ResourceOwnershipModel = "none" | "user" | "workspace";
+export type ResourceAccessPreset = "public" | "user" | "owner" | "owner-or-public" | "workspace-member" | "admin";
+export type ResourceVisibilityPreset = "private" | "public" | "mixed";
+export type ResourceRelationKind = "belongs-to" | "has-many" | "many-to-many";
+export type ResourceAttachmentKind = "file" | "image" | "video" | "audio" | "document";
+export type WorkflowNotificationAudience = "owner" | "workspace" | "watchers" | "admins";
+
 export type DatabaseSchemaIR = {
   table: string;
   columns: Array<{
@@ -94,6 +107,78 @@ export type DatabaseIR = {
   dialect?: DatabaseDialect;
   migrations?: "drizzle-kit";
   schema?: DatabaseSchemaIR[];
+};
+
+export type ResourceFieldIR = {
+  name: string;
+  type: ResourceFieldType;
+  required?: boolean;
+  unique?: boolean;
+  indexed?: boolean;
+  primaryKey?: boolean;
+  enumValues?: string[];
+};
+
+export type ResourceOwnershipIR = {
+  model: ResourceOwnershipModel;
+  ownerField?: string;
+  workspaceField?: string;
+  membershipTable?: string;
+  roleField?: string;
+};
+
+export type ResourceAccessIR = {
+  list?: ResourceAccessPreset;
+  read?: ResourceAccessPreset;
+  create?: ResourceAccessPreset;
+  update?: ResourceAccessPreset;
+  delete?: ResourceAccessPreset;
+};
+
+export type ResourceRelationIR = {
+  target: string;
+  kind: ResourceRelationKind;
+  field?: string;
+  through?: string;
+};
+
+export type ResourceAttachmentIR = {
+  name: string;
+  kind: ResourceAttachmentKind;
+  multiple?: boolean;
+  required?: boolean;
+  bucketAlias?: string;
+  metadataTable?: string;
+};
+
+export type ResourceIR = {
+  name: string;
+  table?: string;
+  visibility?: ResourceVisibilityPreset;
+  fields?: ResourceFieldIR[];
+  ownership?: ResourceOwnershipIR;
+  access?: ResourceAccessIR;
+  relations?: ResourceRelationIR[];
+  attachments?: ResourceAttachmentIR[];
+  workflow?: string;
+};
+
+export type WorkflowTransitionIR = {
+  name: string;
+  from: string | string[];
+  to: string;
+  actor?: ResourceAccessPreset;
+  emits?: string[];
+  notifies?: WorkflowNotificationAudience[];
+};
+
+export type WorkflowIR = {
+  name: string;
+  resource: string;
+  field?: string;
+  initial: string;
+  states: string[];
+  transitions: WorkflowTransitionIR[];
 };
 
 export type AuthProtectionIR = {
@@ -141,6 +226,8 @@ export type AppIR = {
   routes: RouteIR[];
   env?: EnvIR;
   database?: DatabaseIR;
+  resources?: ResourceIR[];
+  workflows?: WorkflowIR[];
   auth?: AuthIR;
   storage?: StorageIR;
   apis?: ApiRouteIR[];

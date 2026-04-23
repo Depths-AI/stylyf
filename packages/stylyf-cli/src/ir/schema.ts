@@ -94,6 +94,145 @@ export const appIrSchema = {
         },
       },
     },
+    resources: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["name"],
+        additionalProperties: false,
+        properties: {
+          name: { type: "string", minLength: 1 },
+          table: { type: "string", minLength: 1 },
+          visibility: { enum: ["private", "public", "mixed"] },
+          workflow: { type: "string", minLength: 1 },
+          fields: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["name", "type"],
+              additionalProperties: false,
+              properties: {
+                name: { type: "string", minLength: 1 },
+                type: { enum: ["text", "varchar", "integer", "boolean", "timestamp", "jsonb", "uuid", "longtext", "date", "enum"] },
+                required: { type: "boolean" },
+                unique: { type: "boolean" },
+                indexed: { type: "boolean" },
+                primaryKey: { type: "boolean" },
+                enumValues: {
+                  type: "array",
+                  minItems: 1,
+                  items: { type: "string", minLength: 1 },
+                },
+              },
+            },
+          },
+          ownership: {
+            type: "object",
+            required: ["model"],
+            additionalProperties: false,
+            properties: {
+              model: { enum: ["none", "user", "workspace"] },
+              ownerField: { type: "string", minLength: 1 },
+              workspaceField: { type: "string", minLength: 1 },
+              membershipTable: { type: "string", minLength: 1 },
+              roleField: { type: "string", minLength: 1 },
+            },
+          },
+          access: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              list: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+              read: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+              create: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+              update: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+              delete: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+            },
+          },
+          relations: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["target", "kind"],
+              additionalProperties: false,
+              properties: {
+                target: { type: "string", minLength: 1 },
+                kind: { enum: ["belongs-to", "has-many", "many-to-many"] },
+                field: { type: "string", minLength: 1 },
+                through: { type: "string", minLength: 1 },
+              },
+            },
+          },
+          attachments: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["name", "kind"],
+              additionalProperties: false,
+              properties: {
+                name: { type: "string", minLength: 1 },
+                kind: { enum: ["file", "image", "video", "audio", "document"] },
+                multiple: { type: "boolean" },
+                required: { type: "boolean" },
+                bucketAlias: { type: "string", minLength: 1 },
+                metadataTable: { type: "string", minLength: 1 },
+              },
+            },
+          },
+        },
+      },
+    },
+    workflows: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["name", "resource", "initial", "states", "transitions"],
+        additionalProperties: false,
+        properties: {
+          name: { type: "string", minLength: 1 },
+          resource: { type: "string", minLength: 1 },
+          field: { type: "string", minLength: 1 },
+          initial: { type: "string", minLength: 1 },
+          states: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", minLength: 1 },
+          },
+          transitions: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["name", "from", "to"],
+              additionalProperties: false,
+              properties: {
+                name: { type: "string", minLength: 1 },
+                from: {
+                  oneOf: [
+                    { type: "string", minLength: 1 },
+                    {
+                      type: "array",
+                      minItems: 1,
+                      items: { type: "string", minLength: 1 },
+                    },
+                  ],
+                },
+                to: { type: "string", minLength: 1 },
+                actor: { enum: ["public", "user", "owner", "owner-or-public", "workspace-member", "admin"] },
+                emits: {
+                  type: "array",
+                  items: { type: "string", minLength: 1 },
+                },
+                notifies: {
+                  type: "array",
+                  items: { enum: ["owner", "workspace", "watchers", "admins"] },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     auth: {
       type: "object",
       required: ["provider"],

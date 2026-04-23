@@ -1,7 +1,7 @@
 # Stylyf CLI Examples
 
-These example IR files are the primary dogfood targets for the `v0.2.0`
-backend scaffolding pass.
+These example IR files are the primary dogfood targets for the current Stylyf
+scaffolding passes.
 
 ## `atlas-dashboard-local.json`
 
@@ -35,6 +35,17 @@ Hosted fast-path baseline covering:
 - Tigris-friendly S3-compatible storage wiring
 - generated `supabase/schema.sql` instead of Drizzle files
 - query + action server modules backed by the Supabase SDK
+
+## `atlas-dashboard-v0.3.json`
+
+Validation-first v0.3 foundation example covering:
+
+- generalized `resources` grammar
+- ownership and access presets
+- resource relations
+- attachment declarations
+- workflow transitions with emitted events and notification audiences
+- compatibility with the existing portable full-stack scaffold
 
 ## `field-manual-docs-fullstack.json`
 
