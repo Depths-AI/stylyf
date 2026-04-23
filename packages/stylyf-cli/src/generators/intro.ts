@@ -697,6 +697,8 @@ export async function renderIntroMarkdown(options: IntroOptions = {}) {
     "- `dashboard`: overview-heavy operational or analytics pages",
     "- `resource-index`: lists, tables, collections, and filtered indexes",
     "- `resource-detail`: detail pages and article-like surfaces",
+    "- `resource-create`: create flows with a generated resource form surface",
+    "- `resource-edit`: edit flows with data loading and a generated resource form surface",
     "- `settings`: grouped forms and configuration pages",
     "- `auth`: focused authentication and entry flows",
     "- `blank`: minimal frame when the route wants to control most of its own structure",

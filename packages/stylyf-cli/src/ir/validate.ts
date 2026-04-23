@@ -35,7 +35,16 @@ export type ValidationResult = {
 };
 
 const appShellIds = new Set<AppShellId>(["sidebar-app", "topbar-app", "docs-shell", "marketing-shell"]);
-const pageShellIds = new Set<PageShellId>(["dashboard", "resource-index", "resource-detail", "settings", "auth", "blank"]);
+const pageShellIds = new Set<PageShellId>([
+  "dashboard",
+  "resource-index",
+  "resource-detail",
+  "resource-create",
+  "resource-edit",
+  "settings",
+  "auth",
+  "blank",
+]);
 const layoutIds = new Set<LayoutNodeId>(["stack", "row", "column", "grid", "split", "panel", "section", "toolbar", "content-frame"]);
 const themePresets = new Set<ThemePresetId>(["amber", "emerald", "pearl", "opal"]);
 const themeModes = new Set<ThemeMode>(["light", "dark", "system"]);
@@ -139,7 +148,7 @@ function validateSection(section: SectionIR, path: string, errors: string[]) {
   section.children.forEach((child, index) => validateChild(child, `${path}.children[${index}]`, errors));
 }
 
-function validateRoute(route: RouteIR, path: string, errors: string[], seenPaths: Set<string>) {
+function validateRoute(route: RouteIR, path: string, errors: string[], seenPaths: Set<string>, resourceNames: Set<string>) {
   if (!route.path || !route.path.startsWith("/")) {
     errors.push(`${path}.path must start with '/'`);
   } else if (route.path === "/api" || route.path.startsWith("/api/")) {
@@ -158,9 +167,29 @@ function validateRoute(route: RouteIR, path: string, errors: string[], seenPaths
     errors.push(`${path}.shell must be one of ${[...appShellIds].join(", ")}`);
   }
 
-  if (!Array.isArray(route.sections) || route.sections.length === 0) {
+  const requiresResource = route.page === "resource-create" || route.page === "resource-edit";
+  if (requiresResource) {
+    if (typeof route.resource !== "string" || !route.resource.trim()) {
+      errors.push(`${path}.resource must be a non-empty string for ${route.page} pages`);
+    } else if (!resourceNames.has(route.resource)) {
+      errors.push(`${path}.resource references an unknown resource: ${route.resource}`);
+    }
+  } else if (route.resource !== undefined && (typeof route.resource !== "string" || !route.resource.trim())) {
+    errors.push(`${path}.resource must be a non-empty string when provided`);
+  }
+
+  if (!Array.isArray(route.sections)) {
+    errors.push(`${path}.sections must be an array`);
+    return;
+  }
+
+  if (!requiresResource && route.sections.length === 0) {
     errors.push(`${path}.sections must be a non-empty array`);
     return;
+  }
+
+  if (route.page === "resource-edit" && !route.path.includes(":id")) {
+    errors.push(`${path}.path must include ':id' for resource-edit pages`);
   }
 
   route.sections.forEach((section, index) => validateSection(section, `${path}.sections[${index}]`, errors));
@@ -722,13 +751,6 @@ export function validateAppIr(value: unknown): ValidationResult {
     }
   }
 
-  if (!Array.isArray(value.routes) || value.routes.length === 0) {
-    errors.push("routes must be a non-empty array");
-  } else {
-    const seenPaths = new Set<string>();
-    value.routes.forEach((route, index) => validateRoute(route as RouteIR, `routes[${index}]`, errors, seenPaths));
-  }
-
   if (value.env !== undefined) {
     if (!isRecord(value.env)) {
       errors.push("env must be an object when provided");
@@ -758,6 +780,13 @@ export function validateAppIr(value: unknown): ValidationResult {
           .filter((name): name is string => typeof name === "string" && name.trim().length > 0),
       );
     }
+  }
+
+  if (!Array.isArray(value.routes) || value.routes.length === 0) {
+    errors.push("routes must be a non-empty array");
+  } else {
+    const seenPaths = new Set<string>();
+    value.routes.forEach((route, index) => validateRoute(route as RouteIR, `routes[${index}]`, errors, seenPaths, resourceNames));
   }
 
   if (value.workflows !== undefined) {

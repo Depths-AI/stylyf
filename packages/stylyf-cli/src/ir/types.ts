@@ -13,7 +13,15 @@ export type ServerModuleType = "query" | "action";
 export type AuthAccess = "public" | "user";
 
 export type AppShellId = "sidebar-app" | "topbar-app" | "docs-shell" | "marketing-shell";
-export type PageShellId = "dashboard" | "resource-index" | "resource-detail" | "settings" | "auth" | "blank";
+export type PageShellId =
+  | "dashboard"
+  | "resource-index"
+  | "resource-detail"
+  | "resource-create"
+  | "resource-edit"
+  | "settings"
+  | "auth"
+  | "blank";
 export type LayoutNodeId = "stack" | "row" | "column" | "grid" | "split" | "panel" | "section" | "toolbar" | "content-frame";
 
 export type ThemeIR = {
@@ -52,6 +60,7 @@ export type RouteIR = {
   path: string;
   shell?: AppShellId;
   page: PageShellId;
+  resource?: string;
   title?: string;
   sections: SectionIR[];
 };

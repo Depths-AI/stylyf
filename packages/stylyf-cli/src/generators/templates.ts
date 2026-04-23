@@ -14,6 +14,8 @@ const pageShellTemplateFiles: Record<PageShellId, string> = {
   dashboard: "page-shells/dashboard.tsx.tpl",
   "resource-index": "page-shells/resource-index.tsx.tpl",
   "resource-detail": "page-shells/resource-detail.tsx.tpl",
+  "resource-create": "page-shells/resource-create.tsx.tpl",
+  "resource-edit": "page-shells/resource-edit.tsx.tpl",
   settings: "page-shells/settings.tsx.tpl",
   auth: "page-shells/auth.tsx.tpl",
   blank: "page-shells/blank.tsx.tpl",

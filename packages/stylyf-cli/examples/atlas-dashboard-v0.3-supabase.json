@@ -102,6 +102,8 @@
     "protect": [
       { "target": "/", "kind": "route", "access": "user" },
       { "target": "/records", "kind": "route", "access": "user" },
+      { "target": "/records/new", "kind": "route", "access": "user" },
+      { "target": "/records/:id/edit", "kind": "route", "access": "user" },
       { "target": "records.list", "kind": "server", "access": "user" }
     ]
   },
@@ -155,6 +157,20 @@
           ]
         }
       ]
+    },
+    {
+      "path": "/records/new",
+      "page": "resource-create",
+      "resource": "records",
+      "title": "Create record",
+      "sections": []
+    },
+    {
+      "path": "/records/:id/edit",
+      "page": "resource-edit",
+      "resource": "records",
+      "title": "Edit record",
+      "sections": []
     }
   ]
 }

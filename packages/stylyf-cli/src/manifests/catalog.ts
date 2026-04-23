@@ -86,6 +86,26 @@ export const pageShellCatalog: Array<CatalogEntry & { id: PageShellId }> = [
     props: ["title", "meta", "sections", "actions"],
   },
   {
+    id: "resource-create",
+    label: "Resource Create Shell",
+    kind: "page-shell",
+    description: "Form-first page shell for creating a new resource with restrained width and focused guidance.",
+    summary: "Use for create flows, onboarding steps, and new record entry screens.",
+    keywords: ["resource", "create", "form", "new", "entry", "mutation"],
+    snippet: `<ResourceCreatePage>\n  <PageHeader />\n  <ResourceForm />\n</ResourceCreatePage>`,
+    props: ["title", "description", "meta", "actions"],
+  },
+  {
+    id: "resource-edit",
+    label: "Resource Edit Shell",
+    kind: "page-shell",
+    description: "Form-first page shell for editing an existing resource with room for validation and support copy.",
+    summary: "Use for edit flows, mutable detail screens, and configuration forms bound to a record.",
+    keywords: ["resource", "edit", "form", "record", "mutation", "detail"],
+    snippet: `<ResourceEditPage>\n  <PageHeader />\n  <ResourceForm mode=\"edit\" />\n</ResourceEditPage>`,
+    props: ["title", "description", "meta", "actions"],
+  },
+  {
     id: "settings",
     label: "Settings Page Shell",
     kind: "page-shell",
@@ -209,4 +229,3 @@ export const layoutCatalog: Array<CatalogEntry & { id: LayoutNodeId }> = [
     props: ["width", "padding"],
   },
 ];
-

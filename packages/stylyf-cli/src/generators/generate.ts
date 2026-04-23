@@ -28,6 +28,7 @@ import {
   renderGeneratedAttachmentServerModule,
   renderGeneratedSupabaseAttachmentPoliciesSql,
 } from "./backend/attachments.js";
+import { writeGeneratedResourceForms } from "./backend/forms.js";
 import {
   materializeAppForGeneration,
   renderGeneratedResourcePolicyModule,
@@ -70,6 +71,22 @@ function pascalCase(value: string) {
     .filter(Boolean)
     .map(segment => `${segment[0]?.toUpperCase() ?? ""}${segment.slice(1)}`)
     .join("");
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function humanize(value: string) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, match => match.toUpperCase());
 }
 
 function appShellComponentName(id: AppShellId) {
@@ -278,7 +295,77 @@ function renderSection(
   return renderLayoutNode(node, assemblyLookup, imports, copiedRegistryImports, layoutImports);
 }
 
+function renderResourceFormRouteSource(route: RouteIR, app: AppIR, assemblyLookup: Map<string, AssemblyItem>) {
+  const copiedRegistryImports = new Set<string>();
+  const imports = new Map<string, Set<string>>();
+  const layoutImports = new Set<LayoutNodeId>();
+  const appShellId = route.shell ?? app.shell;
+  const pageShellId = route.page;
+  const appShellName = appShellComponentName(appShellId);
+  const pageShellName = pageShellComponentName(pageShellId);
+  const resourceName = route.resource ?? "resource";
+  const resourceComponentBase = slugify(resourceName);
+  const resourceComponentName = `${pascalCase(resourceName)}Form`;
+  const resourceLabel = humanize(resourceName).replace(/s$/, "");
+  const renderedSections = route.sections
+    .map(section => renderSection(section, assemblyLookup, imports, copiedRegistryImports, layoutImports))
+    .join("\n");
+
+  const importLines = [
+    'import { Title } from "@solidjs/meta";',
+    route.page === "resource-edit" ? 'import { useParams } from "@solidjs/router";' : "",
+    `import { ${appShellName} } from "~/components/shells/app/${appShellId}";`,
+    `import { ${pageShellName} } from "~/components/shells/page/${pageShellId}";`,
+    `import { ${resourceComponentName} } from "~/components/resource-forms/${resourceComponentBase}-form";`,
+    ...[...layoutImports]
+      .sort()
+      .map(layoutId => `import { ${layoutComponentName(layoutId)} } from "~/components/layout/${layoutId}";`),
+    ...[...imports.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([importPath, names]) => `import { ${[...names].sort().join(", ")} } from "${importPath}";`),
+  ].filter(Boolean);
+
+  const title = route.title ?? (route.page === "resource-create" ? `Create ${resourceLabel}` : `Edit ${resourceLabel}`);
+  const description =
+    route.page === "resource-create"
+      ? `Create a new ${resourceLabel.toLowerCase()} using the generated resource form scaffold.`
+      : `Edit an existing ${resourceLabel.toLowerCase()} using the generated resource form scaffold.`;
+
+  const source = [
+    ...importLines,
+    "",
+    `export default function ${routeComponentName(route.path)}() {`,
+    route.page === "resource-edit" ? "  const params = useParams();" : "",
+    "  return (",
+    "    <>",
+    `      <Title>${title}</Title>`,
+    `      <${appShellName} title=${jsxPropValue(app.name)}>`,
+    `        <${pageShellName} title=${jsxPropValue(title)} description=${jsxPropValue(description)}>`,
+    route.page === "resource-edit"
+      ? `          <${resourceComponentName} mode="edit" resourceId={params.id} />`
+      : `          <${resourceComponentName} mode="create" />`,
+    renderedSections,
+    `        </${pageShellName}>`,
+    `      </${appShellName}>`,
+    "    </>",
+    "  );",
+    "}",
+    "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    source,
+    copiedRegistryImports,
+  };
+}
+
 function renderRouteSource(route: RouteIR, app: AppIR, assemblyLookup: Map<string, AssemblyItem>) {
+  if ((route.page === "resource-create" || route.page === "resource-edit") && route.resource) {
+    return renderResourceFormRouteSource(route, app, assemblyLookup);
+  }
+
   const imports = new Map<string, Set<string>>();
   const copiedRegistryImports = new Set<string>();
   const layoutImports = new Set<LayoutNodeId>();
@@ -359,7 +446,14 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   const usedAppShells = new Set<AppShellId>([app.shell]);
   const usedPageShells = new Set<PageShellId>();
   const usedLayouts = new Set<LayoutNodeId>(listLayoutTemplates());
-  const registryImportsToCopy = new Set<string>(["~/lib/cn"]);
+  const registryImportsToCopy = new Set<string>([
+    "~/lib/cn",
+    "~/components/registry/form-inputs/text-field",
+    "~/components/registry/form-inputs/text-area",
+    "~/components/registry/form-inputs/select",
+    "~/components/registry/form-inputs/checkbox",
+    "~/components/registry/actions-navigation/button",
+  ]);
   const postGenerateSteps: string[] = [];
   const usesSupabaseBackend = app.database?.provider === "supabase" || app.auth?.provider === "supabase";
 
@@ -374,6 +468,9 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
   if ((app.resources?.length ?? 0) > 0 || (app.workflows?.length ?? 0) > 0) {
     await writeGeneratedFile(resolve(targetPath, "src/lib/resources.ts"), renderGeneratedResourcesModule(app));
     await writeGeneratedFile(resolve(targetPath, "src/lib/server/resource-policy.ts"), renderGeneratedResourcePolicyModule(app));
+  }
+  if ((app.resources?.length ?? 0) > 0) {
+    await writeGeneratedResourceForms(app, targetPath);
   }
   if (hasGeneratedAttachments(app)) {
     await writeGeneratedFile(resolve(targetPath, "src/lib/attachments.ts"), renderGeneratedAttachmentModule(app));
