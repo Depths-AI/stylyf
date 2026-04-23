@@ -108,6 +108,71 @@ export const backendCapabilityCatalog: Array<BackendCatalogEntry> = [
     props: ["app", "database", "auth", "storage"],
     sourcePath: "src/generators/backend/env.ts",
   },
+  {
+    id: "resource-recipes",
+    label: "Resource Recipe Foundations",
+    kind: "capability",
+    area: "v0.3 Foundations",
+    description: "Generalized resource grammar for repeatable app entities, relations, and baseline CRUD surfaces.",
+    summary: "Drives schema output, generated CRUD server modules, and resource-aware route/page scaffolds from one generalized source of truth.",
+    keywords: ["resource", "relation", "crud", "entity", "table", "recipe", "v0.3"],
+    snippet:
+      `resources: [\n  {\n    name: "records",\n    fields: [{ name: "title", type: "varchar", required: true }],\n    relations: [{ target: "users", kind: "belongs-to", field: "owner_id" }]\n  }\n]`,
+    props: ["name", "fields", "relations", "ownership", "access", "attachments", "workflow"],
+    sourcePath: "src/ir/types.ts",
+  },
+  {
+    id: "ownership-policy-foundations",
+    label: "Ownership And Policy Foundations",
+    kind: "capability",
+    area: "v0.3 Foundations",
+    description: "Generalized ownership and access presets for resource-oriented apps.",
+    summary: "Provides a broad policy grammar that now emits portable ownership guards and hosted Supabase RLS policy SQL without baking in product-specific semantics.",
+    keywords: ["ownership", "policy", "access", "owner", "workspace", "public", "rls", "v0.3"],
+    snippet:
+      `ownership: { model: "user", ownerField: "owner_id" },\naccess: { list: "owner-or-public", read: "owner-or-public", create: "user", update: "owner", delete: "owner" }`,
+    props: ["ownership", "access", "visibility"],
+    sourcePath: "src/ir/types.ts",
+  },
+  {
+    id: "attachment-lifecycle-foundations",
+    label: "Attachment Lifecycle Foundations",
+    kind: "capability",
+    area: "v0.3 Foundations",
+    description: "Generalized attachment grammar for file and media lifecycles on top of the shared S3/Tigris substrate.",
+    summary: "Declares attachments as resource mechanics rather than niche media-product features and emits metadata tables plus presign, confirm, replace, and delete flows.",
+    keywords: ["attachment", "asset", "upload", "metadata", "storage", "s3", "tigris", "v0.3"],
+    snippet:
+      `attachments: [\n  { name: "heroImage", kind: "image", required: false },\n  { name: "sourceFiles", kind: "document", multiple: true }\n]`,
+    props: ["name", "kind", "multiple", "required", "bucketAlias", "metadataTable"],
+    sourcePath: "src/ir/types.ts",
+  },
+  {
+    id: "form-mutation-foundations",
+    label: "Form And Mutation Foundations",
+    kind: "capability",
+    area: "v0.3 Foundations",
+    description: "Resource-first mutation surface for create/edit/delete flows and future generated forms.",
+    summary: "Keeps Stylyf aligned with Solid Router action semantics while generating repeatable create/edit page shells, form components, and server-side form handlers.",
+    keywords: ["form", "mutation", "action", "validation", "resource", "solidstart", "v0.3"],
+    snippet:
+      `server: [\n  { name: "records.create", type: "action", resource: "records", auth: "user" },\n  { name: "records.update", type: "action", resource: "records", auth: "user" }\n]`,
+    props: ["resource", "type", "auth"],
+    sourcePath: "src/ir/types.ts",
+  },
+  {
+    id: "workflow-foundations",
+    label: "Workflow And Event Foundations",
+    kind: "capability",
+    area: "v0.3 Foundations",
+    description: "Generalized state transition grammar for approvals, publishing, onboarding, and other repeatable app workflows.",
+    summary: "Declares workflows, transitions, emitted events, and notification audiences in a broad way and emits transition actions plus shared event-log and notification surfaces.",
+    keywords: ["workflow", "state", "transition", "event", "notification", "approval", "publish", "v0.3"],
+    snippet:
+      `workflows: [\n  {\n    name: "recordLifecycle",\n    resource: "records",\n    initial: "draft",\n    states: ["draft", "review", "published"],\n    transitions: [{ name: "submit", from: "draft", to: "review", actor: "owner", emits: ["record.submitted"] }]\n  }\n]`,
+    props: ["resource", "initial", "states", "transitions"],
+    sourcePath: "src/ir/types.ts",
+  },
 ];
 
 export const backendServerTemplateCatalog: Array<BackendCatalogEntry> = [
@@ -364,6 +429,58 @@ export const backendEnvCatalog: Array<BackendCatalogEntry> = [
 ];
 
 export const backendSnippetCatalog: Array<BackendCatalogEntry> = [
+  {
+    id: "snippet-v0-resource-grammar",
+    label: "v0.3 Resource Grammar",
+    kind: "backend-snippet",
+    area: "v0.3 Foundations",
+    description: "Example shallow IR block showing resources, ownership, relations, and attachments together.",
+    summary: "Useful as the starting point for resource-centric apps when you want Stylyf to derive schema, CRUD, policy, attachment, and workflow surfaces from one block.",
+    keywords: ["resource", "ownership", "attachment", "relation", "workflow", "v0.3"],
+    snippet:
+      `resources: [\n  {\n    name: "records",\n    visibility: "mixed",\n    fields: [\n      { name: "title", type: "varchar", required: true },\n      { name: "status", type: "enum", enumValues: ["draft", "review", "published"] }\n    ],\n    ownership: { model: "user", ownerField: "owner_id" },\n    access: { list: "owner-or-public", read: "owner-or-public", create: "user", update: "owner", delete: "owner" },\n    attachments: [{ name: "coverImage", kind: "image" }],\n    workflow: "recordLifecycle"\n  }\n]`,
+    props: ["resources", "fields", "ownership", "access", "attachments", "workflow"],
+    sourcePath: "src/ir/types.ts",
+  },
+  {
+    id: "snippet-v0-resource-form-routes",
+    label: "v0.3 Resource Create And Edit Routes",
+    kind: "backend-snippet",
+    area: "v0.3 Foundations",
+    description: "Example route IR for generated create and edit surfaces driven by one resource definition.",
+    summary: "Useful when you want Stylyf to emit page shells plus generated form components for ordinary resource mutations.",
+    keywords: ["resource", "create", "edit", "form", "route", "page shell", "v0.3"],
+    snippet:
+      `routes: [\n  {\n    path: "/records/new",\n    page: "resource-create",\n    resource: "records",\n    title: "Create record",\n    sections: []\n  },\n  {\n    path: "/records/:id/edit",\n    page: "resource-edit",\n    resource: "records",\n    title: "Edit record",\n    sections: []\n  }\n]`,
+    props: ["page", "resource", "path", "title"],
+    sourcePath: "src/generators/backend/forms.ts",
+  },
+  {
+    id: "snippet-v0-attachment-lifecycle",
+    label: "v0.3 Attachment Lifecycle",
+    kind: "backend-snippet",
+    area: "v0.3 Foundations",
+    description: "Example resource attachment block showing the generalized asset lifecycle surface.",
+    summary: "Maps to generated metadata tables plus presign, confirm, replace, and delete helpers while keeping storage server-owned.",
+    keywords: ["attachment", "asset", "upload", "presign", "confirm", "replace", "delete", "v0.3"],
+    snippet:
+      `attachments: [\n  {\n    name: "coverImage",\n    kind: "image",\n    required: false,\n    bucketAlias: "uploads",\n    metadataTable: "record_cover_assets"\n  }\n]`,
+    props: ["name", "kind", "required", "bucketAlias", "metadataTable"],
+    sourcePath: "src/generators/backend/storage.ts",
+  },
+  {
+    id: "snippet-v0-workflow-events-notifications",
+    label: "v0.3 Workflow Events And Notifications",
+    kind: "backend-snippet",
+    area: "v0.3 Foundations",
+    description: "Workflow transition block showing emitted events and notification audiences together.",
+    summary: "Useful when you want generated transition actions plus shared event-log and notification queries/actions in either backend branch.",
+    keywords: ["workflow", "event", "notification", "transition", "status", "audit", "v0.3"],
+    snippet:
+      `workflows: [\n  {\n    name: "recordLifecycle",\n    resource: "records",\n    field: "status",\n    initial: "draft",\n    states: ["draft", "review", "published"],\n    transitions: [\n      {\n        name: "submitForReview",\n        from: "draft",\n        to: "review",\n        actor: "owner",\n        emits: ["record.submitted"],\n        notifies: ["owner", "admins"]\n      }\n    ]\n  }\n]`,
+    props: ["name", "resource", "field", "states", "transitions"],
+    sourcePath: "src/generators/backend/workflows.ts",
+  },
   {
     id: "snippet-drizzle-db-module",
     label: "Drizzle DB Module",

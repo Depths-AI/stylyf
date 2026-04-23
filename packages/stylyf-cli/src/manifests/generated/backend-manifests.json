@@ -6,7 +6,12 @@
     "auth-better-auth",
     "auth-supabase",
     "storage-s3",
-    "env-contract"
+    "env-contract",
+    "resource-recipes",
+    "ownership-policy-foundations",
+    "attachment-lifecycle-foundations",
+    "form-mutation-foundations",
+    "workflow-foundations"
   ],
   "serverFunctions": [
     "server-list-query",
@@ -33,6 +38,10 @@
     "env-s3"
   ],
   "snippets": [
+    "snippet-v0-resource-grammar",
+    "snippet-v0-resource-form-routes",
+    "snippet-v0-attachment-lifecycle",
+    "snippet-v0-workflow-events-notifications",
     "snippet-drizzle-db-module",
     "snippet-libsql-db-module",
     "snippet-better-auth-module",

@@ -5,7 +5,7 @@ function camelCase(value: string) {
     .split(/[^a-zA-Z0-9]+/g)
     .filter(Boolean)
     .map((segment, index) =>
-      index === 0 ? segment.toLowerCase() : `${segment[0]?.toUpperCase() ?? ""}${segment.slice(1).toLowerCase()}`,
+      index === 0 ? `${segment[0]?.toLowerCase() ?? ""}${segment.slice(1)}` : `${segment[0]?.toUpperCase() ?? ""}${segment.slice(1)}`,
     )
     .join("");
 }

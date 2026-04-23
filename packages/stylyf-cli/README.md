@@ -10,6 +10,13 @@ Stylyf is a JSON-driven full-stack assembly line for SolidStart. Its job is to l
 - hosted mode: `supabase auth + supabase data sdk + tigris-compatible s3 storage`
 - storage stays presigned-URL based in both modes, so the browser never receives raw object-storage credentials
 
+### Which Mode To Choose
+
+- choose `portable` when you want provider-agnostic auth/data control, Better Auth plugins, Drizzle ownership over schema, or local SQLite smoke testing
+- choose `hosted` when you want the fastest managed deployment path and are comfortable treating Supabase as both the auth and data platform
+- choose `portable + sqlite` for the quickest local backend iteration loop
+- choose `hosted + supabase + tigris` for the fastest managed deployment path
+
 ## What Stylyf Does
 
 - turns a shallow JSON IR into a standalone SolidStart app
@@ -30,6 +37,14 @@ Stylyf is a JSON-driven full-stack assembly line for SolidStart. Its job is to l
 5. Move into the generated app and iterate there like a normal SolidStart codebase.
 6. Use `stylyf intro --project <path>` whenever a coding agent needs a compact refresher on the generated app structure.
 7. Treat `auth.protect` as the route/API/server default policy surface; explicit `auth` fields on API routes and server modules still win when set.
+
+## What Stylyf Still Expects The Agent To Decide
+
+- product-specific domain logic and ranking/moderation/business rules
+- final role and authorization design beyond the bundled access presets
+- final Supabase RLS policy shape for production-grade hosted apps
+- email delivery/provider wiring for Better Auth OTP or notification delivery
+- storage retention, moderation, and lifecycle policy beyond the generated attachment baseline
 
 ## Can An Agent Start Cold With This?
 
@@ -89,6 +104,8 @@ Stylyf uses a shallow JSON IR. The root shape is:
     "migrations": ["drizzle-kit", "(omit for supabase)"],
     "schema": "DatabaseSchemaIR[]"
   },
+  "resources": "ResourceIR[]",
+  "workflows": "WorkflowIR[]",
   "auth": {
     "provider": ["better-auth", "supabase"],
     "mode": ["session"],
@@ -146,8 +163,105 @@ Stylyf uses a shallow JSON IR. The root shape is:
 - use `props` when a component or layout needs named values
 - use `items` when a component expects repeatable data collections
 - add `database`, `auth`, `storage`, `apis`, and `server` only when the app actually needs those backend capabilities
+- add `resources` and `workflows` when you want Stylyf's v0.3 generalized app-mechanics layer instead of only raw backend primitives
 - `auth.protect` supplies default protection rules for generated routes, API routes, and server modules
 - for API routes and server modules, an explicit `auth` field on the item overrides any matching `auth.protect` entry
+
+### v0.3 Resource And Workflow DSL
+
+The v0.3 surface is deliberately broad. It is meant to describe generalized app mechanics, not a niche product category.
+
+```json
+{
+  "resources": [
+    {
+      "name": "records",
+      "visibility": "mixed",
+      "fields": [
+        { "name": "title", "type": "varchar", "required": true },
+        { "name": "status", "type": "enum", "enumValues": ["draft", "review", "published"] }
+      ],
+      "ownership": { "model": "user", "ownerField": "owner_id" },
+      "access": {
+        "list": "owner-or-public",
+        "read": "owner-or-public",
+        "create": "user",
+        "update": "owner",
+        "delete": "owner"
+      },
+      "relations": [{ "target": "profiles", "kind": "belongs-to", "field": "owner_id" }],
+      "attachments": [{ "name": "coverImage", "kind": "image" }],
+      "workflow": "recordLifecycle"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "recordLifecycle",
+      "resource": "records",
+      "field": "status",
+      "initial": "draft",
+      "states": ["draft", "review", "published"],
+      "transitions": [
+        {
+          "name": "submitForReview",
+          "from": "draft",
+          "to": "review",
+          "actor": "owner",
+          "emits": ["record.submitted"],
+          "notifies": ["owner", "admins"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### v0.3 Mechanics Semantics
+
+- `resources`: generalized app entities that Stylyf maps to schema, CRUD surfaces, route shells, and generated server modules
+- `ownership`: whether a resource is unowned, user-owned, or workspace-owned
+- `access`: broad policy presets for list/read/create/update/delete surfaces
+- `relations`: explicit links between resources without forcing a deep ORM-specific DSL into the top-level IR
+- `attachments`: generalized file/media attachment declarations on top of the shared S3/Tigris substrate
+- `workflows`: state machines for approvals, publishing, onboarding, or other repeatable transitions
+- `transitions.emits`: event names that Stylyf maps to event-log records and notification fan-out
+- `transitions.notifies`: notification audiences kept broad so they fit internal apps as well as customer-facing products
+
+### v0.3 Supported Vocabulary
+
+- ownership models: `none`, `user`, `workspace`
+- access presets: `public`, `user`, `owner`, `owner-or-public`, `workspace-member`, `admin`
+- visibility presets: `private`, `public`, `mixed`
+- relation kinds: `belongs-to`, `has-many`, `many-to-many`
+- attachment kinds: `file`, `image`, `video`, `audio`, `document`
+- workflow notification audiences: `owner`, `workspace`, `watchers`, `admins`
+- note: the `admin` access preset is reserved for explicit role-aware customization; generated defaults fail closed until you wire app-specific admin logic
+
+### What v0.3 Generates From That DSL
+
+- resource-derived schema in both backend branches
+- generated list/detail/create/update/delete server modules
+- generated `resource-create` and `resource-edit` route/page shells when requested
+- generated resource form components and server-side form parsing helpers
+- ownership-aware guard helpers for the portable branch
+- Supabase RLS policy SQL for the hosted branch
+- attachment metadata tables plus presign, confirm, replace, and delete flows
+- workflow definitions, transition actions, event log queries, and notification queries/actions
+
+### Hosted Branch Apply Checklist
+
+After generating a hosted app:
+
+1. fill in `.env` with `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and the S3/Tigris values
+2. apply the generated `supabase/schema.sql` to the target Supabase project
+3. review and apply the generated `supabase/policies.sql` before treating the hosted CRUD surface as production-ready
+4. only then run hosted auth, CRUD, and attachment smoke tests against the real project
+
+### Recommended Starting Points
+
+- portable v0.3 path: `examples/atlas-dashboard-v0.3-local.json`
+- hosted v0.3 path: `examples/atlas-dashboard-v0.3-supabase.json`
+- broad contract reference: `examples/atlas-dashboard-v0.3.json`
 
 ### Backend Capability DSL
 
@@ -295,6 +409,13 @@ Portable local development: use `database.provider: "drizzle"`, `database.dialec
 Hosted fast path: pair `database.provider: "supabase"` with `auth.provider: "supabase"`. That branch emits `src/lib/supabase.ts`, `src/lib/supabase-browser.ts`, auth API routes, middleware, and `supabase/schema.sql` instead of Drizzle files.
 
 For email OTP on the Supabase branch, Stylyf scaffolds the code path with `signInWithOtp` and `verifyOtp`. Per Supabase's current docs, whether users receive an OTP code or a magic link depends on the email template variables configured in Supabase.
+
+## Example IRs
+
+- `examples/atlas-dashboard-v0.3-local.json`: best starting point for the portable Better Auth + Drizzle path with local SQLite/libsql
+- `examples/atlas-dashboard-v0.3-supabase.json`: best starting point for the hosted Supabase + Tigris path
+- `examples/atlas-dashboard-v0.3.json`: compact contract reference for the generalized v0.3 mechanics without fully choosing one runtime path
+- `examples/field-manual-docs-fullstack.json`: docs/content-oriented example when you want a lighter backend surface
 
 ## Quick Start
 
