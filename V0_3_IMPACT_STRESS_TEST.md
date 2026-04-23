@@ -8,12 +8,14 @@ v0.3 expansion.
 It exists so that once the v0.3 work lands, we can measure the outcome against
 explicit expectations instead of relying on optimistic memory.
 
-The core question is:
+The core questions are:
 
-> If Stylyf grows from v0.2.0 into the planned v0.3 shape, how much additional
-> work does it remove for a coding agent building actual products?
+1. If Stylyf grows from v0.2.0 into the planned v0.3 shape, how much
+   additional work does it remove for a coding agent building actual products?
+2. Does the v0.3 expansion help broad SaaS categories, or does it accidentally
+   optimize for a narrow niche?
 
-This is evaluated in **agentic turns**, not wall-clock time.
+This is evaluated in agentic turns, not wall-clock time.
 
 ## Current Baseline
 
@@ -36,23 +38,24 @@ The main work still left to the agent is:
 - repeated resource CRUD structure
 - upload metadata lifecycle
 - form plumbing
-- product interaction primitives
+- workflow state transitions
+- event and notification consistency
 - policy consistency across the app
 
-That is exactly what the planned v0.3 items target.
+That is exactly what the revised v0.3 items target.
 
 ## The Proposed v0.3 Expansion
 
 The working v0.3 expansion set is:
 
 1. ownership and policy scaffolds
-2. resource recipes
-3. storage metadata and asset lifecycle patterns
-4. form and mutation recipes
-5. interaction and feed primitives
+2. resource and relation recipes
+3. asset and attachment lifecycle patterns
+4. form, mutation, and validation recipes
+5. workflow, event, and notification primitives
 
 This is not just “more scaffolding.” It is the part of the scaffold that starts
-to absorb product-grade repeatable logic.
+to absorb product-grade repeatable logic while staying broad across app types.
 
 ## Archetypes
 
@@ -60,8 +63,11 @@ We use four app archetypes for the estimate:
 
 1. simple SPA / landing / docs / utility
 2. standard authenticated CRUD app
-3. content platform with uploads and interaction
-4. sophisticated auth-gated multimedia SaaS
+3. resource-centric app with uploads and collaboration
+4. sophisticated multi-role, media-capable SaaS
+
+These are intentionally broad. v0.3 should help all of them, not just the most
+social or content-heavy ones.
 
 ## Estimated Turn Impact
 
@@ -69,8 +75,8 @@ We use four app archetypes for the estimate:
 |---|---:|---:|---:|---:|---:|
 | 1. Simple SPA / docs / utility | `8–15` | `2–5` | `2–4` | `65–80%` | `75–85%` |
 | 2. Standard auth CRUD app | `20–35` | `8–15` | `5–10` | `50–65%` | `65–80%` |
-| 3. Content platform with uploads + interaction | `35–60` | `18–32` | `10–20` | `40–55%` | `65–75%` |
-| 4. Sophisticated multimedia SaaS | `60–110` | `35–70` | `20–40` | `30–45%` | `55–70%` |
+| 3. Resource-centric app with uploads and collaboration | `35–60` | `18–32` | `10–20` | `40–55%` | `65–75%` |
+| 4. Sophisticated multi-role, media-capable SaaS | `60–110` | `35–70` | `20–40` | `30–45%` | `55–70%` |
 
 ## Why These Numbers Are Plausible
 
@@ -94,8 +100,9 @@ The new v0.3 work is mostly backend and product-logic heavy:
 
 - ownership
 - resources
+- asset lifecycle
 - forms
-- interactions
+- workflows
 
 Simple SPAs do not need much of that.
 
@@ -123,6 +130,7 @@ CRUD apps repeat these patterns constantly:
 - list/detail/create/edit/delete
 - forms
 - access control
+- simple status workflows
 
 This is exactly where resource recipes and policy scaffolds should compress
 turns.
@@ -135,10 +143,11 @@ If v0.3 still requires the agent to hand-build most of:
 - CRUD route generation
 - ownership checks
 - create/edit form scaffolds
+- status transition plumbing
 
 then the estimated savings are too optimistic.
 
-## 3. Content Platform With Uploads And Interaction
+## 3. Resource-Centric App With Uploads And Collaboration
 
 ### Why v0.2 helps, but not enough
 
@@ -147,10 +156,9 @@ for:
 
 - upload metadata
 - asset linkage
-- comment flows
-- rating/vote mechanics
+- review/approval states
 - activity surfaces
-- user-scoped access rules
+- user- and workspace-scoped access rules
 
 ### Why v0.3 should be a major jump
 
@@ -161,20 +169,21 @@ shape:
 - resource recipes
 - asset lifecycle
 - form generation
-- interaction/feed primitives
+- workflow/event primitives
 
 ### Stress test
 
 If after v0.3 the agent still spends many turns hand-writing:
 
-- comment models and endpoints
-- rating models and endpoints
 - asset metadata tables and attach flows
 - ownership-aware list/detail filters
+- review/approval transitions
+- activity/event recording
+- notification plumbing for lifecycle changes
 
 then Stylyf is not yet delivering the expected jump for this category.
 
-## 4. Sophisticated Multimedia SaaS
+## 4. Sophisticated Multi-Role, Media-Capable SaaS
 
 ### Why v0.2 still leaves a lot of work
 
@@ -194,8 +203,8 @@ Even here, large chunks are repetitive:
 - base ownership and authz
 - resource CRUD
 - upload metadata
-- interaction mechanics
 - standard forms
+- workflow transitions and event logs
 
 So the reduction is not as dominant in percentage terms, but it is large in
 absolute turns saved.
@@ -205,6 +214,30 @@ absolute turns saved.
 If the scaffold still only accelerates baseline setup, and not actual product
 mechanics, then this category will remain too expensive and the v0.3 goal will
 not be met.
+
+## Broadness Stress Test
+
+The v0.3 thesis fails if the gains only show up in one narrow product family.
+
+After implementation, we should explicitly test whether the same abstractions
+help all of these:
+
+1. internal admin app
+- owned resources
+- role-based access
+- approvals or status workflows
+
+2. customer-facing SaaS dashboard
+- accounts, settings, uploads, notifications
+
+3. marketplace or catalog app
+- resources with attachments, visibility, ownership, review states
+
+4. collaboration or review product
+- shared resources, events, notifications, richer attachment use
+
+If one or more of the top 5 only feels natural in one family, that expansion is
+too genre-shaped and should be reconsidered.
 
 ## What Could Make These Estimates Wrong
 
@@ -226,12 +259,17 @@ The main failure modes are:
 - If generated access defaults are too conservative and block common flows,
   agents will also need to rewrite them.
 
-5. Interaction primitives stop at UI and do not include backend shape
-- That would make them visually reusable but not truly assembly-line level.
-
-6. Asset lifecycle remains bucket-only
-- Without metadata and attach flows, multimedia products still require too much
+5. Asset lifecycle remains bucket-only
+- Without metadata and attach flows, upload-backed apps still require too much
   custom work.
+
+6. Workflow primitives are too narrow
+- If they only fit moderation or social products, they are not broad enough for
+  v0.3 core status.
+
+7. Provider-specific constraints leak into the IR
+- If the DSL starts reading like Supabase-only or Better-Auth-only config, the
+  abstraction has gone too low-level.
 
 ## What Would Validate The v0.3 Thesis
 
@@ -240,8 +278,9 @@ finish one app from each of the following families with materially fewer turns
 than v0.2:
 
 - dashboard/admin CRUD app
-- upload-backed content/review app
-- basic social interaction app with comments/ratings/activity
+- upload-backed resource app
+- workflow-heavy SaaS app
+- collaboration/review app
 
 And specifically, the agent should no longer need to hand-assemble most of:
 
@@ -249,7 +288,8 @@ And specifically, the agent should no longer need to hand-assemble most of:
 - resource CRUD route/server patterns
 - create/edit forms
 - upload metadata plumbing
-- comment/rating/activity scaffolds
+- workflow transitions and event logging
+- baseline notification or activity surfaces
 
 ## What To Measure Once v0.3 Lands
 
@@ -260,7 +300,7 @@ For each archetype, measure:
 3. turns spent on policy/ownership rewrites
 4. turns spent on CRUD boilerplate
 5. turns spent on upload/asset plumbing
-6. turns spent on interaction mechanics
+6. turns spent on workflow/event mechanics
 
 This matters because “turns saved” should come specifically from the new
 expansion items, not from unrelated prompt variance.
@@ -270,7 +310,7 @@ expansion items, not from unrelated prompt variance.
 My current expectation is:
 
 - v0.2 is already enough to make categories 1 and 2 clearly easier
-- v0.3 should materially move categories 3 and 4
+- v0.3 should materially move categories 2 through 4
 - if implemented cleanly, v0.3 makes the claim “basic SaaS building becomes at
   least 50% easier for coding agents” believable for categories 2 through 4
 
