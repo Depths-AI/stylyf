@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type {
   AppIR,
@@ -10,7 +9,7 @@ import type {
   RouteIR,
   SectionIR,
 } from "../ir/types.js";
-import { assertValidAppIr } from "../ir/validate.js";
+import { composeAppIrFromPaths } from "../ir/compose.js";
 import {
   renderGeneratedAuthClientModule,
   renderGeneratedAuthGuards,
@@ -462,12 +461,8 @@ async function copyBundledDependencyTree(importPath: string, targetRoot: string,
   }
 }
 
-export async function generateFrontendDraft(irPath: string, targetPath: string, options?: { install?: boolean }) {
-  const raw = await readFile(resolve(process.cwd(), irPath), "utf8");
-  const parsed = JSON.parse(raw) as unknown;
-  assertValidAppIr(parsed);
-
-  const app = materializeWorkflowSupport(materializeAppForGeneration(parsed as AppIR));
+export async function generateFrontendDraftFromApp(appIr: AppIR, targetPath: string, options?: { install?: boolean }) {
+  const app = materializeWorkflowSupport(materializeAppForGeneration(appIr));
   const install = options?.install ?? true;
   const assemblyLookup = createAssemblyLookup(await loadAssemblyRegistry());
   const usedAppShells = new Set<AppShellId>([app.shell]);
@@ -642,4 +637,9 @@ export async function generateFrontendDraft(irPath: string, targetPath: string, 
     postGenerateSteps,
     installed: install,
   };
+}
+
+export async function generateFrontendDraft(irPaths: string[], targetPath: string, options?: { install?: boolean }) {
+  const { app } = await composeAppIrFromPaths(irPaths);
+  return generateFrontendDraftFromApp(app, targetPath, options);
 }
