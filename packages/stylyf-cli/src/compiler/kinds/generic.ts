@@ -27,18 +27,20 @@ function defaultFlows(spec: StylyfSpecV04): FlowSpec[] {
 }
 
 function defaultSurfaces(_spec: StylyfSpecV04, resources: ResourceIR[]): SurfaceSpec[] {
+  const resource = resources[0]?.name;
   return [
-    { name: "Overview", kind: "dashboard", path: "/", audience: "user" },
-    ...resources.flatMap(resource => [
-      { name: titleFor(resource.name), kind: "list" as const, object: resource.name, path: `/${slugify(resource.name)}`, audience: "user" as const },
-      { name: `Create ${singularTitle(resource.name)}`, kind: "create" as const, object: resource.name, path: `/${slugify(resource.name)}/new`, audience: "user" as const },
-      { name: `Edit ${singularTitle(resource.name)}`, kind: "edit" as const, object: resource.name, path: `/${slugify(resource.name)}/:id/edit`, audience: "user" as const },
-    ]),
-    { name: "Settings", kind: "settings", path: "/settings", audience: "user" },
+    { name: "Home", kind: resource ? "dashboard" : "landing", path: "/", audience: resource ? "user" : "public" },
+    ...(resource
+      ? [
+          { name: titleFor(resource), kind: "list" as const, object: resource, path: `/${slugify(resource)}`, audience: "user" as const },
+          { name: `Create ${singularTitle(resource)}`, kind: "create" as const, object: resource, path: `/${slugify(resource)}/new`, audience: "user" as const },
+          { name: "Settings", kind: "settings" as const, path: "/settings", audience: "user" as const },
+        ]
+      : []),
   ];
 }
 
-export const internalToolExpansion: KindExpansion = {
+export const genericExpansion: KindExpansion = {
   shell: "sidebar-app",
   defaultObjects,
   defaultFlows,

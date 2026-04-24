@@ -148,51 +148,47 @@ trees or route files, but they do drive generated routes.
 Supported surface kinds are `dashboard`, `list`, `detail`, `create`, `edit`,
 `settings`, `landing`, `content-index`, `content-detail`, and `tool`.
 
-## Portable Quick Sketch
+## Backend DSL Examples
+
+Portable mode is authored in the public spec as `backend.mode: "portable"`.
+Use SQLite for the fastest local smoke path, or Postgres when the generated app
+should target a production database from the start.
 
 ```json
 {
-  "database": {
-    "dialect": "sqlite",
-    "migrations": "drizzle-kit"
-  },
-  "auth": {
-    "provider": "better-auth",
-    "mode": "session",
-    "features": {
-      "emailPassword": true
+  "backend": {
+    "mode": "portable",
+    "portable": {
+      "database": "sqlite"
     }
   },
-  "storage": {
-    "provider": "s3",
-    "mode": "presigned-put",
-    "bucketAlias": "uploads"
+  "media": {
+    "mode": "rich"
   }
 }
 ```
 
-## Hosted Quick Sketch
+This compiles to Better Auth, Drizzle, SQLite/libsql, generated auth/database
+modules, and Tigris/S3-compatible presigned storage when media is enabled.
+
+Hosted mode is authored as `backend.mode: "hosted"`. Supabase owns auth and
+data access; Tigris/S3-compatible storage remains the object substrate.
 
 ```json
 {
-  "database": {
-    "provider": "supabase"
+  "backend": {
+    "mode": "hosted"
   },
-  "auth": {
-    "provider": "supabase",
-    "mode": "session",
-    "features": {
-      "emailPassword": true,
-      "emailOtp": true
-    }
-  },
-  "storage": {
-    "provider": "s3",
-    "mode": "presigned-put",
-    "bucketAlias": "uploads"
+  "media": {
+    "mode": "rich"
   }
 }
 ```
+
+This compiles to Supabase Auth, Supabase SDK data helpers, generated Supabase
+SQL/policy files, and Tigris/S3-compatible presigned storage when media is
+enabled. The generated compiler model is intentionally private; do not author
+`database`, `auth`, or `storage` blocks directly in the public spec.
 
 ## App Mechanics Layer
 

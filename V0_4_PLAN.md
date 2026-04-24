@@ -506,9 +506,9 @@ packages/stylyf-cli/examples/v0.4/free-saas-tool.basic.json
 Run:
 
 ```bash
-node packages/stylyf-cli/src/bin.ts validate --spec packages/stylyf-cli/examples/v0.4/internal-tool.basic.json
-node packages/stylyf-cli/src/bin.ts validate --spec packages/stylyf-cli/examples/v0.4/cms-site.basic.json
-node packages/stylyf-cli/src/bin.ts validate --spec packages/stylyf-cli/examples/v0.4/free-saas-tool.basic.json
+node packages/stylyf-cli/dist/bin.js validate --spec packages/stylyf-cli/examples/v0.4/internal-tool.basic.json
+node packages/stylyf-cli/dist/bin.js validate --spec packages/stylyf-cli/examples/v0.4/cms-site.basic.json
+node packages/stylyf-cli/dist/bin.js validate --spec packages/stylyf-cli/examples/v0.4/free-saas-tool.basic.json
 ```
 
 ### Local smoke
@@ -563,8 +563,8 @@ stylyf new free-saas-tool --name "Resize Kit" --backend portable --media basic -
 ```bash
 rm -rf /tmp/stylyf-v04-new
 mkdir -p /tmp/stylyf-v04-new
-node packages/stylyf-cli/src/bin.ts new internal-tool --name "Acme Ops" --backend portable --media rich --output /tmp/stylyf-v04-new/internal.json
-node packages/stylyf-cli/src/bin.ts validate --spec /tmp/stylyf-v04-new/internal.json
+node packages/stylyf-cli/dist/bin.js new internal-tool --name "Acme Ops" --backend portable --media rich --output /tmp/stylyf-v04-new/internal.json
+node packages/stylyf-cli/dist/bin.js validate --spec /tmp/stylyf-v04-new/internal.json
 ```
 
 ### Local smoke
@@ -755,8 +755,8 @@ If saved results enabled by default, generate `tool_runs`:
 Add `plan --json` temporarily or direct debug script to inspect expanded model.
 
 ```bash
-node packages/stylyf-cli/src/bin.ts validate --spec examples/v0.4/internal-tool.basic.json
-node packages/stylyf-cli/src/bin.ts plan --spec examples/v0.4/internal-tool.basic.json --json
+node packages/stylyf-cli/dist/bin.js validate --spec examples/v0.4/internal-tool.basic.json
+node packages/stylyf-cli/dist/bin.js plan --spec examples/v0.4/internal-tool.basic.json --json
 ```
 
 ### Local smoke
@@ -833,8 +833,8 @@ JSON plan should be stable and testable.
 ### Acceptance
 
 ```bash
-node packages/stylyf-cli/src/bin.ts plan --spec examples/v0.4/internal-tool.basic.json
-node packages/stylyf-cli/src/bin.ts plan --spec examples/v0.4/internal-tool.basic.json --json
+node packages/stylyf-cli/dist/bin.js plan --spec examples/v0.4/internal-tool.basic.json
+node packages/stylyf-cli/dist/bin.js plan --spec examples/v0.4/internal-tool.basic.json --json
 ```
 
 ### Local smoke
@@ -895,7 +895,7 @@ stylyf.plan.json
 
 ```bash
 rm -rf /tmp/stylyf-v04-internal
-node packages/stylyf-cli/src/bin.ts generate \
+node packages/stylyf-cli/dist/bin.js generate \
   --spec packages/stylyf-cli/examples/v0.4/internal-tool.basic.json \
   --target /tmp/stylyf-v04-internal \
   --no-install
@@ -976,10 +976,10 @@ Each kind intro should show a minimal spec and a recommended smoke-test loop.
 ### Acceptance
 
 ```bash
-node packages/stylyf-cli/src/bin.ts intro
-node packages/stylyf-cli/src/bin.ts intro --kind internal-tool
-node packages/stylyf-cli/src/bin.ts intro --topic backend
-node packages/stylyf-cli/src/bin.ts intro --topic media
+node packages/stylyf-cli/dist/bin.js intro
+node packages/stylyf-cli/dist/bin.js intro --kind internal-tool
+node packages/stylyf-cli/dist/bin.js intro --topic backend
+node packages/stylyf-cli/dist/bin.js intro --topic media
 ```
 
 ### Local smoke
@@ -1028,9 +1028,9 @@ The current search already indexes components, layouts, page shells, app shells,
 ### Acceptance
 
 ```bash
-node packages/stylyf-cli/src/bin.ts search internal approvals table
-node packages/stylyf-cli/src/bin.ts search cms publishing media
-node packages/stylyf-cli/src/bin.ts search free saas saved results
+node packages/stylyf-cli/dist/bin.js search internal approvals table
+node packages/stylyf-cli/dist/bin.js search cms publishing media
+node packages/stylyf-cli/dist/bin.js search free saas saved results
 ```
 
 ### Local smoke
@@ -1144,7 +1144,7 @@ Should include:
 
 ```bash
 rm -rf /tmp/stylyf-internal-rich
-node packages/stylyf-cli/src/bin.ts generate \
+node packages/stylyf-cli/dist/bin.js generate \
   --spec packages/stylyf-cli/examples/v0.4/internal-tool.rich.json \
   --target /tmp/stylyf-internal-rich
 cd /tmp/stylyf-internal-rich
@@ -1191,7 +1191,7 @@ Should include:
 
 ```bash
 rm -rf /tmp/stylyf-cms-rich
-node packages/stylyf-cli/src/bin.ts generate \
+node packages/stylyf-cli/dist/bin.js generate \
   --spec packages/stylyf-cli/examples/v0.4/cms-site.rich.json \
   --target /tmp/stylyf-cms-rich
 cd /tmp/stylyf-cms-rich
@@ -1232,7 +1232,7 @@ Should include:
 
 ```bash
 rm -rf /tmp/stylyf-free-tool
-node packages/stylyf-cli/src/bin.ts generate \
+node packages/stylyf-cli/dist/bin.js generate \
   --spec packages/stylyf-cli/examples/v0.4/free-saas-tool.basic.json \
   --target /tmp/stylyf-free-tool
 cd /tmp/stylyf-free-tool
@@ -1275,7 +1275,7 @@ Backend:
 
 ```bash
 rm -rf /tmp/stylyf-hosted
-node packages/stylyf-cli/src/bin.ts generate \
+node packages/stylyf-cli/dist/bin.js generate \
   --spec packages/stylyf-cli/examples/v0.4/internal-tool.hosted.rich.json \
   --target /tmp/stylyf-hosted
 cd /tmp/stylyf-hosted

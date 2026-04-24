@@ -14,6 +14,11 @@ import type {
 } from "./generated-app.js";
 import { defaultTheme, humanize, singularize } from "./defaults.js";
 import type { FieldSpec, FlowSpec, MediaAttachmentSpec, ObjectSpec, StylyfSpecV04, SurfaceSpec } from "../spec/types.js";
+import { genericExpansion } from "./kinds/generic.js";
+import { internalToolExpansion } from "./kinds/internal-tool.js";
+import { cmsSiteExpansion } from "./kinds/cms-site.js";
+import { freeSaasToolExpansion } from "./kinds/free-saas-tool.js";
+import type { KindExpansion } from "./kinds/common.js";
 
 function slugify(value: string) {
   return value
@@ -405,154 +410,29 @@ function mergeSurfaces(defaults: SurfaceSpec[], overrides?: SurfaceSpec[]) {
   return [...merged.values()];
 }
 
-function genericSurfaces(resources: ResourceIR[]): SurfaceSpec[] {
-  const resource = resources[0]?.name;
-  return [
-    { name: "Home", kind: resource ? "dashboard" : "landing", path: "/", audience: resource ? "user" : "public" },
-    ...(resource
-      ? [
-          { name: titleFor(resource), kind: "list" as const, object: resource, path: `/${slugify(resource)}`, audience: "user" as const },
-          { name: `Create ${titleFor(singularize(resource))}`, kind: "create" as const, object: resource, path: `/${slugify(resource)}/new`, audience: "user" as const },
-          { name: "Settings", kind: "settings" as const, path: "/settings", audience: "user" as const },
-        ]
-      : []),
-  ];
+function kindExpansionFor(spec: StylyfSpecV04): KindExpansion {
+  switch (spec.app.kind) {
+    case "generic":
+      return genericExpansion;
+    case "internal-tool":
+      return internalToolExpansion;
+    case "cms-site":
+      return cmsSiteExpansion;
+    case "free-saas-tool":
+      return freeSaasToolExpansion;
+  }
 }
 
-function internalToolSurfaces(resources: ResourceIR[]): SurfaceSpec[] {
-  return [
-    { name: "Overview", kind: "dashboard", path: "/", audience: "user" },
-    ...resources.flatMap(resource => [
-      { name: titleFor(resource.name), kind: "list" as const, object: resource.name, path: `/${slugify(resource.name)}`, audience: "user" as const },
-      { name: `Create ${titleFor(singularize(resource.name))}`, kind: "create" as const, object: resource.name, path: `/${slugify(resource.name)}/new`, audience: "user" as const },
-      { name: `Edit ${titleFor(singularize(resource.name))}`, kind: "edit" as const, object: resource.name, path: `/${slugify(resource.name)}/:id/edit`, audience: "user" as const },
-    ]),
-    { name: "Settings", kind: "settings", path: "/settings", audience: "user" },
-  ];
-}
-
-function cmsSurfaces(resources: ResourceIR[]): SurfaceSpec[] {
-  const article = resources.find(resource => resource.name === "articles") ?? resources[0];
-  const articleName = article?.name ?? "articles";
-  return [
-    { name: "Home", kind: "landing", path: "/", audience: "public" },
-    { name: titleFor(articleName), kind: "content-index", object: articleName, path: `/${slugify(articleName)}`, audience: "public" },
-    { name: titleFor(singularize(articleName)), kind: "content-detail", object: articleName, path: `/${slugify(articleName)}/:slug`, audience: "public" },
-    { name: "Content", kind: "content-index", object: articleName, path: "/admin/content", audience: "admin" },
-    { name: "Create content", kind: "create", object: articleName, path: "/admin/content/new", audience: "admin" },
-    { name: "Edit content", kind: "edit", object: articleName, path: "/admin/content/:id/edit", audience: "admin" },
-  ];
-}
-
-function freeToolSurfaces(hasSavedResults: boolean): SurfaceSpec[] {
-  return [
-    { name: "Home", kind: "landing", path: "/", audience: "public" },
-    { name: "Tool", kind: "tool", path: "/tool", audience: "public" },
-    ...(hasSavedResults
-      ? [
-          { name: "Dashboard", kind: "dashboard" as const, path: "/dashboard", audience: "user" as const },
-          { name: "Settings", kind: "settings" as const, path: "/settings", audience: "user" as const },
-        ]
-      : []),
-  ];
-}
-
-function defaultObjectsFor(spec: StylyfSpecV04): ObjectSpec[] {
-  if (spec.objects && spec.objects.length > 0) {
-    return spec.objects;
-  }
-
-  if (spec.app.kind === "cms-site") {
-    return [
-      {
-        name: "articles",
-        ownership: "user",
-        visibility: "mixed",
-        fields: [
-          { name: "title", type: "short-text", required: true },
-          { name: "slug", type: "slug", required: true, unique: true },
-          { name: "excerpt", type: "long-text" },
-          { name: "body", type: "rich-text" },
-          { name: "status", type: "status", options: ["draft", "review", "published", "archived"] },
-          { name: "published_at", type: "datetime" },
-        ],
-      },
-    ];
-  }
-
-  if (spec.app.kind === "free-saas-tool") {
-    const hasSavedResults = (spec.flows ?? []).some(flow => flow.kind === "saved-results");
-    return hasSavedResults
-      ? [
-          {
-            name: "tool_runs",
-            ownership: "user",
-            visibility: "private",
-            fields: [
-              { name: "input", type: "json" },
-              { name: "output", type: "json" },
-              { name: "status", type: "status", options: ["queued", "complete", "failed"] },
-            ],
-          },
-        ]
-      : [];
-  }
-
-  return [
-    {
-      name: "records",
-      ownership: "user",
-      visibility: "private",
-      fields: [
-        { name: "title", type: "short-text", required: true },
-        { name: "status", type: "status", options: ["draft", "review", "approved"] },
-        { name: "summary", type: "long-text" },
-      ],
-    },
-  ];
-}
-
-function defaultFlowsFor(spec: StylyfSpecV04, resources: ResourceIR[]): FlowSpec[] {
-  if (spec.flows && spec.flows.length > 0) {
-    return spec.flows;
-  }
-
-  const primary = resources[0]?.name;
-  if (!primary) {
-    return [];
-  }
-
-  if (spec.app.kind === "cms-site") {
-    return [{ name: "contentPublishing", object: primary, kind: "publishing" }];
-  }
-
-  return [];
-}
-
-function defaultSurfacesFor(spec: StylyfSpecV04, resources: ResourceIR[]): SurfaceSpec[] {
-  if (spec.app.kind === "cms-site") {
-    return cmsSurfaces(resources);
-  }
-  if (spec.app.kind === "free-saas-tool") {
-    return freeToolSurfaces(resources.some(resource => resource.name === "tool_runs"));
-  }
-  if (spec.app.kind === "internal-tool") {
-    return internalToolSurfaces(resources);
-  }
-  return genericSurfaces(resources);
-}
-
-function routesFor(spec: StylyfSpecV04, resources: ResourceIR[]) {
-  const fallbackShell = spec.app.kind === "free-saas-tool" ? "topbar-app" : "sidebar-app";
-  return mergeSurfaces(defaultSurfacesFor(spec, resources), spec.surfaces).map(surface => surfaceToRoute(surface, resources, fallbackShell));
+function routesFor(spec: StylyfSpecV04, resources: ResourceIR[], expansion: KindExpansion) {
+  return mergeSurfaces(expansion.defaultSurfaces(spec, resources), spec.surfaces).map(surface => surfaceToRoute(surface, resources, expansion.shell));
 }
 
 export function expandSpecToGeneratedApp(spec: StylyfSpecV04): AppIR {
-  const resources = defaultObjectsFor(spec).map(object => objectToResource(object, spec));
-  const workflows = defaultFlowsFor(spec, resources).map(flowToWorkflow);
-  const routes = routesFor(spec, resources);
+  const expansion = kindExpansionFor(spec);
+  const resources = expansion.defaultObjects(spec).map(object => objectToResource(object, spec));
+  const workflows = expansion.defaultFlows(spec, resources).map(flowToWorkflow);
+  const routes = routesFor(spec, resources, expansion);
   const backend = backendFor(spec);
-  const shell = spec.app.kind === "free-saas-tool" ? "topbar-app" : "sidebar-app";
 
   const auth = backend.auth
     ? {
@@ -563,7 +443,7 @@ export function expandSpecToGeneratedApp(spec: StylyfSpecV04): AppIR {
 
   return {
     name: spec.app.name,
-    shell,
+    shell: expansion.shell,
     theme: defaultTheme(spec),
     routes,
     database: backend.database,
