@@ -37,6 +37,14 @@ export type PageShellId =
   | "blank";
 export type LayoutNodeId = "stack" | "row" | "column" | "grid" | "split" | "panel" | "section" | "toolbar" | "content-frame";
 export type AuthAccess = "public" | "user";
+export type ResourceAccessPreset = "public" | "user" | "owner" | "owner-or-public" | "workspace-member" | "admin";
+export type ResourceRelationKind = "belongs-to" | "has-many" | "many-to-many";
+export type WorkflowNotificationAudience = "owner" | "workspace" | "watchers" | "admins";
+export type ApiRouteMethod = "GET" | "POST" | "PATCH" | "DELETE";
+export type ApiRouteType = "json" | "webhook" | "presign-upload";
+export type ServerModuleType = "query" | "action";
+export type EnvExposure = "server" | "public";
+export type DatabaseColumnType = "text" | "varchar" | "integer" | "boolean" | "timestamp" | "jsonb" | "uuid";
 
 export type ActorSpec = {
   name: string;
@@ -58,14 +66,34 @@ export type MediaAttachmentSpec = {
   kind?: "file" | "image" | "video" | "audio" | "document";
   multiple?: boolean;
   required?: boolean;
+  bucketAlias?: string;
+  metadataTable?: string;
+};
+
+export type ResourceAccessSpec = {
+  list?: ResourceAccessPreset;
+  read?: ResourceAccessPreset;
+  create?: ResourceAccessPreset;
+  update?: ResourceAccessPreset;
+  delete?: ResourceAccessPreset;
+};
+
+export type ResourceRelationSpec = {
+  target: string;
+  kind: ResourceRelationKind;
+  field?: string;
+  through?: string;
 };
 
 export type ObjectSpec = {
   name: string;
+  table?: string;
   label?: string;
   purpose?: string;
   ownership?: "none" | "user" | "workspace";
   visibility?: "private" | "public" | "mixed";
+  access?: ResourceAccessSpec;
+  relations?: ResourceRelationSpec[];
   fields?: FieldSpec[];
   media?: MediaAttachmentSpec[];
 };
@@ -74,12 +102,15 @@ export type FlowSpec = {
   name: string;
   object: string;
   kind: FlowKind;
+  field?: string;
   states?: string[];
   transitions?: Array<{
     name: string;
     from: string | string[];
     to: string;
     actor?: string;
+    emits?: string[];
+    notifies?: WorkflowNotificationAudience[];
   }>;
 };
 
@@ -124,6 +155,41 @@ export type RouteSpec = {
   sections?: SectionSpec[];
 };
 
+export type EnvVarSpec = {
+  name: string;
+  exposure?: EnvExposure;
+  required?: boolean;
+  example?: string;
+  description?: string;
+};
+
+export type DatabaseSchemaSpec = {
+  table: string;
+  columns: Array<{
+    name: string;
+    type: DatabaseColumnType;
+    nullable?: boolean;
+    primaryKey?: boolean;
+    unique?: boolean;
+  }>;
+  timestamps?: boolean;
+};
+
+export type ApiRouteSpec = {
+  path: string;
+  method: ApiRouteMethod;
+  type: ApiRouteType;
+  name: string;
+  auth?: AuthAccess;
+};
+
+export type ServerModuleSpec = {
+  name: string;
+  type: ServerModuleType;
+  resource?: string;
+  auth?: AuthAccess;
+};
+
 export type StylyfSpecV04 = {
   version: "0.4";
   app: {
@@ -136,6 +202,12 @@ export type StylyfSpecV04 = {
     portable?: {
       database?: "sqlite" | "postgres";
     };
+  };
+  database?: {
+    schema?: DatabaseSchemaSpec[];
+  };
+  env?: {
+    extras?: EnvVarSpec[];
   };
   media?: {
     mode: MediaMode;
@@ -152,4 +224,6 @@ export type StylyfSpecV04 = {
   flows?: FlowSpec[];
   surfaces?: SurfaceSpec[];
   routes?: RouteSpec[];
+  apis?: ApiRouteSpec[];
+  server?: ServerModuleSpec[];
 };

@@ -1,12 +1,16 @@
 import {
   actorKinds,
+  apiRouteMethods,
+  apiRouteTypes,
   appKinds,
   appShells,
   authAccessLevels,
   attachmentKinds,
   audiences,
   backendModes,
+  databaseColumnTypes,
   densities,
+  envExposures,
   fieldTypes,
   flowKinds,
   layoutNodes,
@@ -15,11 +19,15 @@ import {
   pageShells,
   portableDatabases,
   radii,
+  relationKinds,
+  resourceAccessPresets,
+  serverModuleTypes,
   spacings,
   surfaceKinds,
   themeModes,
   themes,
   visibilityModes,
+  workflowNotificationAudiences,
 } from "./schema.js";
 import type { StylyfSpecV04 } from "./types.js";
 
@@ -76,6 +84,16 @@ function optionalStringArray(value: Record<string, unknown>, key: string, path: 
   }
   if (!Array.isArray(item) || item.some(entry => typeof entry !== "string")) {
     context.errors.push(`${path}.${key} must be an array of strings when provided.`);
+  }
+}
+
+function optionalEnumArray(value: Record<string, unknown>, key: string, allowed: readonly string[], path: string, context: ValidationContext) {
+  const item = value[key];
+  if (item === undefined) {
+    return;
+  }
+  if (!Array.isArray(item) || item.some(entry => typeof entry !== "string" || !allowed.includes(entry))) {
+    context.errors.push(`${path}.${key} must be an array containing only: ${allowed.join(", ")}.`);
   }
 }
 
@@ -283,11 +301,51 @@ function validateObjectMedia(value: unknown, path: string, context: ValidationCo
       context.errors.push(`${attachmentPath} must be an object.`);
       return;
     }
-    hasOnlyKeys(attachment, ["name", "kind", "multiple", "required"], attachmentPath, context);
+    hasOnlyKeys(attachment, ["name", "kind", "multiple", "required", "bucketAlias", "metadataTable"], attachmentPath, context);
     requireString(attachment, "name", attachmentPath, context);
     optionalEnum(attachment, "kind", attachmentKinds, attachmentPath, context);
     optionalBoolean(attachment, "multiple", attachmentPath, context);
     optionalBoolean(attachment, "required", attachmentPath, context);
+    optionalString(attachment, "bucketAlias", attachmentPath, context);
+    optionalString(attachment, "metadataTable", attachmentPath, context);
+  });
+}
+
+function validateResourceAccess(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["list", "read", "create", "update", "delete"], path, context);
+  optionalEnum(value, "list", resourceAccessPresets, path, context);
+  optionalEnum(value, "read", resourceAccessPresets, path, context);
+  optionalEnum(value, "create", resourceAccessPresets, path, context);
+  optionalEnum(value, "update", resourceAccessPresets, path, context);
+  optionalEnum(value, "delete", resourceAccessPresets, path, context);
+}
+
+function validateRelations(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push(`${path} must be an array when provided.`);
+    return;
+  }
+  value.forEach((relation, index) => {
+    const relationPath = `${path}[${index}]`;
+    if (!isRecord(relation)) {
+      context.errors.push(`${relationPath} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(relation, ["target", "kind", "field", "through"], relationPath, context);
+    requireString(relation, "target", relationPath, context);
+    enumValue(relation.kind, relationKinds, `${relationPath}.kind`, context);
+    optionalString(relation, "field", relationPath, context);
+    optionalString(relation, "through", relationPath, context);
   });
 }
 
@@ -305,12 +363,15 @@ function validateObjects(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(object, ["name", "label", "purpose", "ownership", "visibility", "fields", "media"], path, context);
+    hasOnlyKeys(object, ["name", "table", "label", "purpose", "ownership", "visibility", "access", "relations", "fields", "media"], path, context);
     requireString(object, "name", path, context);
+    optionalString(object, "table", path, context);
     optionalString(object, "label", path, context);
     optionalString(object, "purpose", path, context);
     optionalEnum(object, "ownership", ownershipModels, path, context);
     optionalEnum(object, "visibility", visibilityModes, path, context);
+    validateResourceAccess(object.access, `${path}.access`, context);
+    validateRelations(object.relations, `${path}.relations`, context);
     validateFields(object.fields, `${path}.fields`, context);
     validateObjectMedia(object.media, `${path}.media`, context);
   });
@@ -330,10 +391,11 @@ function validateFlows(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(flow, ["name", "object", "kind", "states", "transitions"], path, context);
+    hasOnlyKeys(flow, ["name", "object", "kind", "field", "states", "transitions"], path, context);
     requireString(flow, "name", path, context);
     requireString(flow, "object", path, context);
     enumValue(flow.kind, flowKinds, `${path}.kind`, context);
+    optionalString(flow, "field", path, context);
     optionalStringArray(flow, "states", path, context);
     if (flow.transitions !== undefined) {
       if (!Array.isArray(flow.transitions)) {
@@ -345,13 +407,15 @@ function validateFlows(value: unknown, context: ValidationContext) {
             context.errors.push(`${transitionPath} must be an object.`);
             return;
           }
-          hasOnlyKeys(transition, ["name", "from", "to", "actor"], transitionPath, context);
+          hasOnlyKeys(transition, ["name", "from", "to", "actor", "emits", "notifies"], transitionPath, context);
           requireString(transition, "name", transitionPath, context);
           if (typeof transition.from !== "string" && !(Array.isArray(transition.from) && transition.from.every(item => typeof item === "string"))) {
             context.errors.push(`${transitionPath}.from must be a string or array of strings.`);
           }
           requireString(transition, "to", transitionPath, context);
           optionalString(transition, "actor", transitionPath, context);
+          optionalStringArray(transition, "emits", transitionPath, context);
+          optionalEnumArray(transition, "notifies", workflowNotificationAudiences, transitionPath, context);
         });
       }
     }
@@ -410,6 +474,127 @@ function validateRoutes(value: unknown, context: ValidationContext) {
   });
 }
 
+function validateDatabase(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push("database must be an object when provided.");
+    return;
+  }
+  hasOnlyKeys(value, ["schema"], "database", context);
+  if (value.schema === undefined) {
+    return;
+  }
+  if (!Array.isArray(value.schema)) {
+    context.errors.push("database.schema must be an array when provided.");
+    return;
+  }
+  value.schema.forEach((table, tableIndex) => {
+    const tablePath = `database.schema[${tableIndex}]`;
+    if (!isRecord(table)) {
+      context.errors.push(`${tablePath} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(table, ["table", "columns", "timestamps"], tablePath, context);
+    requireString(table, "table", tablePath, context);
+    optionalBoolean(table, "timestamps", tablePath, context);
+    if (!Array.isArray(table.columns)) {
+      context.errors.push(`${tablePath}.columns must be an array.`);
+      return;
+    }
+    table.columns.forEach((column, columnIndex) => {
+      const columnPath = `${tablePath}.columns[${columnIndex}]`;
+      if (!isRecord(column)) {
+        context.errors.push(`${columnPath} must be an object.`);
+        return;
+      }
+      hasOnlyKeys(column, ["name", "type", "nullable", "primaryKey", "unique"], columnPath, context);
+      requireString(column, "name", columnPath, context);
+      enumValue(column.type, databaseColumnTypes, `${columnPath}.type`, context);
+      optionalBoolean(column, "nullable", columnPath, context);
+      optionalBoolean(column, "primaryKey", columnPath, context);
+      optionalBoolean(column, "unique", columnPath, context);
+    });
+  });
+}
+
+function validateEnv(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push("env must be an object when provided.");
+    return;
+  }
+  hasOnlyKeys(value, ["extras"], "env", context);
+  if (value.extras === undefined) {
+    return;
+  }
+  if (!Array.isArray(value.extras)) {
+    context.errors.push("env.extras must be an array when provided.");
+    return;
+  }
+  value.extras.forEach((entry, index) => {
+    const path = `env.extras[${index}]`;
+    if (!isRecord(entry)) {
+      context.errors.push(`${path} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(entry, ["name", "exposure", "required", "example", "description"], path, context);
+    requireString(entry, "name", path, context);
+    optionalEnum(entry, "exposure", envExposures, path, context);
+    optionalBoolean(entry, "required", path, context);
+    optionalString(entry, "example", path, context);
+    optionalString(entry, "description", path, context);
+  });
+}
+
+function validateApis(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push("apis must be an array when provided.");
+    return;
+  }
+  value.forEach((api, index) => {
+    const path = `apis[${index}]`;
+    if (!isRecord(api)) {
+      context.errors.push(`${path} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(api, ["path", "method", "type", "name", "auth"], path, context);
+    requireString(api, "path", path, context);
+    enumValue(api.method, apiRouteMethods, `${path}.method`, context);
+    enumValue(api.type, apiRouteTypes, `${path}.type`, context);
+    requireString(api, "name", path, context);
+    optionalEnum(api, "auth", authAccessLevels, path, context);
+  });
+}
+
+function validateServer(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push("server must be an array when provided.");
+    return;
+  }
+  value.forEach((module, index) => {
+    const path = `server[${index}]`;
+    if (!isRecord(module)) {
+      context.errors.push(`${path} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(module, ["name", "type", "resource", "auth"], path, context);
+    requireString(module, "name", path, context);
+    enumValue(module.type, serverModuleTypes, `${path}.type`, context);
+    optionalString(module, "resource", path, context);
+    optionalEnum(module, "auth", authAccessLevels, path, context);
+  });
+}
+
 function validateNoBillingConcepts(value: unknown, context: ValidationContext) {
   const serialized = JSON.stringify(value).toLowerCase();
   for (const token of ["stripe", "billing", "checkout", "payment", "subscription"]) {
@@ -454,6 +639,25 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
       }
     });
   }
+
+  value.objects.forEach((object, objectIndex) => {
+    if (!isRecord(object) || !Array.isArray(object.relations)) {
+      return;
+    }
+    object.relations.forEach((relation, relationIndex) => {
+      if (isRecord(relation) && typeof relation.target === "string" && !objectNames.has(relation.target)) {
+        context.errors.push(`objects[${objectIndex}].relations[${relationIndex}].target references unknown object "${relation.target}".`);
+      }
+    });
+  });
+
+  if (Array.isArray(value.server)) {
+    value.server.forEach((module, index) => {
+      if (isRecord(module) && typeof module.resource === "string" && !objectNames.has(module.resource)) {
+        context.errors.push(`server[${index}].resource references unknown object "${module.resource}".`);
+      }
+    });
+  }
 }
 
 export function validateSpecV04(value: unknown): StylyfSpecV04 {
@@ -463,7 +667,12 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
     throw new Error("Spec must be a JSON object.");
   }
 
-  hasOnlyKeys(value, ["version", "app", "backend", "media", "experience", "actors", "objects", "flows", "surfaces", "routes"], "spec", context);
+  hasOnlyKeys(
+    value,
+    ["version", "app", "backend", "database", "env", "media", "experience", "actors", "objects", "flows", "surfaces", "routes", "apis", "server"],
+    "spec",
+    context,
+  );
 
   if (value.version !== "0.4") {
     context.errors.push('version must be "0.4".');
@@ -471,6 +680,8 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
 
   validateApp(value.app, context);
   validateBackend(value.backend, context);
+  validateDatabase(value.database, context);
+  validateEnv(value.env, context);
   validateMedia(value.media, context);
   validateExperience(value.experience, context);
   validateActors(value.actors, context);
@@ -478,6 +689,8 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
   validateFlows(value.flows, context);
   validateSurfaces(value.surfaces, context);
   validateRoutes(value.routes, context);
+  validateApis(value.apis, context);
+  validateServer(value.server, context);
   validateObjectReferences(value, context);
 
   if (isRecord(value.app) && value.app.kind === "free-saas-tool") {
