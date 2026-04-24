@@ -47,6 +47,7 @@ import { runBuildIndexCommand } from "./commands/build-index.js";
 import { runGenerateCommand } from "./commands/generate.js";
 import { runIntroCommand } from "./commands/intro.js";
 import { runNewCommand } from "./commands/new.js";
+import { runPlanCommand } from "./commands/plan.js";
 import { runSearchCommand } from "./commands/search.js";
 import { runServeSearchCommand } from "./commands/serve-search.js";
 import { runValidateCommand } from "./commands/validate.js";
@@ -75,6 +76,10 @@ export async function runCli(argv: string[] = process.argv.slice(2)) {
 
   if (command === "new") {
     return runNewCommand(commandArgs(argv));
+  }
+
+  if (command === "plan") {
+    return runPlanCommand(commandArgs(argv));
   }
 
   if (command === "validate") {
