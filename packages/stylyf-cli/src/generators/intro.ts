@@ -148,7 +148,7 @@ function renderSpecTopic() {
   return [
     "# Stylyf v0.4 Spec",
     "",
-    "The spec is intentionally smaller than the generated app. Do not describe database tables, API files, server modules, or layout trees directly. Describe the app kind, backend mode, objects, flows, surfaces, and experience.",
+    "The public DSL type is `SpecV04`. It is intentionally smaller than the generated app: do not describe database tables, API files, server modules, or layout trees directly. Describe the app kind, backend mode, `objects`, `flows`, optional `surfaces`, and experience.",
     "",
     codeBlock(JSON.stringify(specExample("internal-tool"), null, 2), "json"),
     "",

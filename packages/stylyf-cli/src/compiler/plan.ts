@@ -75,6 +75,7 @@ export function createGenerationPlan(spec: StylyfSpecV04, app: AppIR): Generatio
     files.add("src/lib/auth.ts");
     files.add("src/lib/auth-client.ts");
     files.add("src/lib/db/auth-schema.ts");
+    files.add("src/routes/login.tsx");
     files.add("src/routes/api/auth/[...auth].ts");
     postGenerateSteps.push("auth:generate", "db:generate");
   }
@@ -83,6 +84,7 @@ export function createGenerationPlan(spec: StylyfSpecV04, app: AppIR): Generatio
     files.add("src/lib/supabase.ts");
     files.add("src/lib/supabase-browser.ts");
     files.add("src/lib/auth.ts");
+    files.add("src/routes/login.tsx");
     files.add("src/routes/auth/callback.ts");
     files.add("supabase/schema.sql");
     files.add("supabase/policies.sql");
