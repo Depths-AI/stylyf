@@ -13,6 +13,7 @@ import type {
 import { expandSpecToGeneratedApp } from "../compiler/expand.js";
 import { createGenerationPlan } from "../compiler/plan.js";
 import { readSpecV04 } from "../spec/read.js";
+import { renderHandoffMarkdown, renderLocalSmokeMarkdown, renderSecurityNotesMarkdown } from "./handoff.js";
 import {
   renderGeneratedAuthClientModule,
   renderGeneratedAuthGuards,
@@ -650,6 +651,9 @@ export async function generateFromSpec(specPath: string, targetPath: string, opt
 
   await writeGeneratedFile(resolve(targetPath, "stylyf.spec.json"), await readFile(path, "utf8"));
   await writeGeneratedFile(resolve(targetPath, "stylyf.plan.json"), `${JSON.stringify(plan, null, 2)}\n`);
+  await writeGeneratedFile(resolve(targetPath, "HANDOFF.md"), renderHandoffMarkdown(plan));
+  await writeGeneratedFile(resolve(targetPath, "SECURITY_NOTES.md"), renderSecurityNotesMarkdown(plan));
+  await writeGeneratedFile(resolve(targetPath, "LOCAL_SMOKE.md"), renderLocalSmokeMarkdown(plan));
 
   return {
     ...result,
