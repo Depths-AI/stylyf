@@ -1,14 +1,18 @@
 import {
   actorKinds,
   appKinds,
+  appShells,
+  authAccessLevels,
   attachmentKinds,
   audiences,
   backendModes,
   densities,
   fieldTypes,
   flowKinds,
+  layoutNodes,
   mediaModes,
   ownershipModels,
+  pageShells,
   portableDatabases,
   radii,
   spacings,
@@ -73,6 +77,94 @@ function optionalStringArray(value: Record<string, unknown>, key: string, path: 
   if (!Array.isArray(item) || item.some(entry => typeof entry !== "string")) {
     context.errors.push(`${path}.${key} must be an array of strings when provided.`);
   }
+}
+
+function optionalRecord(value: Record<string, unknown>, key: string, path: string, context: ValidationContext) {
+  const item = value[key];
+  if (item !== undefined && !isRecord(item)) {
+    context.errors.push(`${path}.${key} must be an object when provided.`);
+  }
+}
+
+function validateLayoutProps(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  for (const [key, item] of Object.entries(value)) {
+    if (typeof item !== "string" && typeof item !== "number" && typeof item !== "boolean") {
+      context.errors.push(`${path}.${key} must be a string, number, or boolean.`);
+    }
+  }
+}
+
+function validateComponentNode(value: Record<string, unknown>, path: string, context: ValidationContext) {
+  hasOnlyKeys(value, ["component", "variant", "props", "items"], path, context);
+  requireString(value, "component", path, context);
+  optionalString(value, "variant", path, context);
+  optionalRecord(value, "props", path, context);
+
+  if (value.items !== undefined) {
+    if (!Array.isArray(value.items) || value.items.some(item => !isRecord(item))) {
+      context.errors.push(`${path}.items must be an array of objects when provided.`);
+    }
+  }
+}
+
+function validateCompositionNode(value: unknown, path: string, context: ValidationContext) {
+  if (typeof value === "string") {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be a component reference, layout node, or string component id.`);
+    return;
+  }
+  if (typeof value.component === "string") {
+    validateComponentNode(value, path, context);
+    return;
+  }
+  if (typeof value.layout === "string") {
+    hasOnlyKeys(value, ["layout", "props", "children"], path, context);
+    enumValue(value.layout, layoutNodes, `${path}.layout`, context);
+    validateLayoutProps(value.props, `${path}.props`, context);
+    if (value.children !== undefined) {
+      validateCompositionChildren(value.children, `${path}.children`, context);
+    }
+    return;
+  }
+  context.errors.push(`${path} must include either a component string or a layout string.`);
+}
+
+function validateCompositionChildren(value: unknown, path: string, context: ValidationContext) {
+  if (!Array.isArray(value)) {
+    context.errors.push(`${path} must be an array.`);
+    return;
+  }
+  value.forEach((child, index) => validateCompositionNode(child, `${path}[${index}]`, context));
+}
+
+function validateSections(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push(`${path} must be an array when provided.`);
+    return;
+  }
+  value.forEach((section, index) => {
+    const sectionPath = `${path}[${index}]`;
+    if (!isRecord(section)) {
+      context.errors.push(`${sectionPath} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(section, ["id", "layout", "children"], sectionPath, context);
+    optionalString(section, "id", sectionPath, context);
+    enumValue(section.layout, layoutNodes, `${sectionPath}.layout`, context);
+    validateCompositionChildren(section.children, `${sectionPath}.children`, context);
+  });
 }
 
 function validateApp(value: unknown, context: ValidationContext) {
@@ -280,12 +372,41 @@ function validateSurfaces(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(surface, ["name", "kind", "object", "path", "audience"], path, context);
+    hasOnlyKeys(surface, ["name", "kind", "object", "path", "audience", "shell", "page", "title", "sections"], path, context);
     requireString(surface, "name", path, context);
     enumValue(surface.kind, surfaceKinds, `${path}.kind`, context);
     optionalString(surface, "object", path, context);
     optionalString(surface, "path", path, context);
     optionalEnum(surface, "audience", audiences, path, context);
+    optionalEnum(surface, "shell", appShells, path, context);
+    optionalEnum(surface, "page", pageShells, path, context);
+    optionalString(surface, "title", path, context);
+    validateSections(surface.sections, `${path}.sections`, context);
+  });
+}
+
+function validateRoutes(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push("routes must be an array when provided.");
+    return;
+  }
+  value.forEach((route, index) => {
+    const path = `routes[${index}]`;
+    if (!isRecord(route)) {
+      context.errors.push(`${path} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(route, ["path", "shell", "page", "resource", "title", "access", "sections"], path, context);
+    requireString(route, "path", path, context);
+    optionalEnum(route, "shell", appShells, path, context);
+    enumValue(route.page, pageShells, `${path}.page`, context);
+    optionalString(route, "resource", path, context);
+    optionalString(route, "title", path, context);
+    optionalEnum(route, "access", authAccessLevels, path, context);
+    validateSections(route.sections, `${path}.sections`, context);
   });
 }
 
@@ -325,6 +446,14 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
       }
     });
   }
+
+  if (Array.isArray(value.routes)) {
+    value.routes.forEach((route, index) => {
+      if (isRecord(route) && typeof route.resource === "string" && !objectNames.has(route.resource)) {
+        context.errors.push(`routes[${index}].resource references unknown object "${route.resource}".`);
+      }
+    });
+  }
 }
 
 export function validateSpecV04(value: unknown): StylyfSpecV04 {
@@ -334,7 +463,7 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
     throw new Error("Spec must be a JSON object.");
   }
 
-  hasOnlyKeys(value, ["version", "app", "backend", "media", "experience", "actors", "objects", "flows", "surfaces"], "spec", context);
+  hasOnlyKeys(value, ["version", "app", "backend", "media", "experience", "actors", "objects", "flows", "surfaces", "routes"], "spec", context);
 
   if (value.version !== "0.4") {
     context.errors.push('version must be "0.4".');
@@ -348,6 +477,7 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
   validateObjects(value.objects, context);
   validateFlows(value.flows, context);
   validateSurfaces(value.surfaces, context);
+  validateRoutes(value.routes, context);
   validateObjectReferences(value, context);
 
   if (isRecord(value.app) && value.app.kind === "free-saas-tool") {

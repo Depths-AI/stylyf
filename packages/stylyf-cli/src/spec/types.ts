@@ -25,6 +25,18 @@ export type SurfaceKind =
   | "content-index"
   | "content-detail"
   | "tool";
+export type AppShellId = "sidebar-app" | "topbar-app" | "docs-shell" | "marketing-shell";
+export type PageShellId =
+  | "dashboard"
+  | "resource-index"
+  | "resource-detail"
+  | "resource-create"
+  | "resource-edit"
+  | "settings"
+  | "auth"
+  | "blank";
+export type LayoutNodeId = "stack" | "row" | "column" | "grid" | "split" | "panel" | "section" | "toolbar" | "content-frame";
+export type AuthAccess = "public" | "user";
 
 export type ActorSpec = {
   name: string;
@@ -71,12 +83,45 @@ export type FlowSpec = {
   }>;
 };
 
+export type ComponentSpec = {
+  component: string;
+  variant?: string;
+  props?: Record<string, unknown>;
+  items?: Record<string, unknown>[];
+};
+
+export type LayoutSpec = {
+  layout: LayoutNodeId;
+  props?: Record<string, string | number | boolean>;
+  children?: Array<LayoutSpec | ComponentSpec | string>;
+};
+
+export type SectionSpec = {
+  id?: string;
+  layout: LayoutNodeId;
+  children: Array<LayoutSpec | ComponentSpec | string>;
+};
+
 export type SurfaceSpec = {
   name: string;
   kind: SurfaceKind;
   object?: string;
   path?: string;
   audience?: "public" | "user" | "admin" | "editor";
+  shell?: AppShellId;
+  page?: PageShellId;
+  title?: string;
+  sections?: SectionSpec[];
+};
+
+export type RouteSpec = {
+  path: string;
+  shell?: AppShellId;
+  page: PageShellId;
+  resource?: string;
+  title?: string;
+  access?: AuthAccess;
+  sections?: SectionSpec[];
 };
 
 export type StylyfSpecV04 = {
@@ -106,4 +151,5 @@ export type StylyfSpecV04 = {
   objects?: ObjectSpec[];
   flows?: FlowSpec[];
   surfaces?: SurfaceSpec[];
+  routes?: RouteSpec[];
 };

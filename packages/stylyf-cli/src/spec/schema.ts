@@ -1,4 +1,4 @@
-import type { AppKind, BackendMode, FieldType, FlowKind, MediaMode, SurfaceKind } from "./types.js";
+import type { AppKind, AppShellId, AuthAccess, BackendMode, FieldType, FlowKind, LayoutNodeId, MediaMode, PageShellId, SurfaceKind } from "./types.js";
 
 export const appKinds = ["generic", "internal-tool", "cms-site", "free-saas-tool"] as const satisfies readonly AppKind[];
 export const backendModes = ["portable", "hosted"] as const satisfies readonly BackendMode[];
@@ -40,3 +40,16 @@ export const spacings = ["tight", "balanced", "airy"] as const;
 export const radii = ["edge", "trim", "soft", "mellow"] as const;
 export const audiences = ["public", "user", "admin", "editor"] as const;
 export const portableDatabases = ["sqlite", "postgres"] as const;
+export const appShells = ["sidebar-app", "topbar-app", "docs-shell", "marketing-shell"] as const satisfies readonly AppShellId[];
+export const pageShells = [
+  "dashboard",
+  "resource-index",
+  "resource-detail",
+  "resource-create",
+  "resource-edit",
+  "settings",
+  "auth",
+  "blank",
+] as const satisfies readonly PageShellId[];
+export const layoutNodes = ["stack", "row", "column", "grid", "split", "panel", "section", "toolbar", "content-frame"] as const satisfies readonly LayoutNodeId[];
+export const authAccessLevels = ["public", "user"] as const satisfies readonly AuthAccess[];
