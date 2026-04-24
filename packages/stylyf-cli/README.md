@@ -1,10 +1,10 @@
 # @depths/stylyf-cli
 
-Stylyf is a JSON-driven full-stack assembly line for SolidStart.
+Stylyf is an agent-operated scaffolding compiler for SolidStart.
 
-Its job is to let a coding agent describe the intended app in a small,
-explicit IR, generate a real source tree, and then keep iterating inside that
-emitted app without redoing repetitive setup work by hand.
+Its job is to let a coding agent describe the intended app in a small v0.4
+spec, inspect the generation plan, generate a real source tree, and then keep
+iterating inside that emitted app without redoing repetitive setup work by hand.
 
 The generated app is a separate destination project. It does not import from
 this repo and does not depend on `@depths/stylyf-cli` at runtime.
@@ -71,10 +71,14 @@ stylyf search auth session route protection
 
 ## Canonical Starting Points
 
-- portable: `packages/stylyf-cli/examples/atlas-dashboard-v0.3-local.json`
-- hosted: `packages/stylyf-cli/examples/atlas-dashboard-v0.3-supabase.json`
+Use `stylyf new` to create a small v0.4 spec:
 
-These are the two clearest examples to start from.
+```bash
+stylyf new internal-tool --name "Acme Ops" --backend portable --media rich --output stylyf.spec.json
+stylyf validate --spec stylyf.spec.json
+stylyf plan --spec stylyf.spec.json
+stylyf generate --spec stylyf.spec.json --target ./my-app
+```
 
 ## Minimal Composition Flow
 
@@ -82,82 +86,40 @@ These are the two clearest examples to start from.
 2. define the app frame: `name`, `shell`, `theme`
 3. define routes and page composition
 4. add `resources` and `workflows` when you want resource-driven mechanics
-5. validate the IR
+5. validate the spec
 6. generate into a clean target directory
 7. move into the emitted app and keep developing there
 
-## Additive IR Composition
-
-Stylyf does not require one large JSON file. You can compose the final app from
-explicit fragments in CLI argument order.
-
-```bash
-stylyf validate \
-  --ir app.core.json \
-  --ir backend.portable.json \
-  --ir resources.json \
-  --ir routes.json \
-  --print-resolved
-```
-
-```bash
-stylyf generate \
-  --ir app.core.json \
-  --ir backend.portable.json \
-  --ir resources.json \
-  --ir routes.json \
-  --target ./my-app \
-  --write-resolved ./resolved.app.json
-```
-
-Later fragments override or merge earlier fragments according to Stylyf’s
-semantic merge rules. The generator still operates on one final resolved
-`AppIR`.
-
-## Minimal Root Shape
+## Minimal Spec Shape
 
 ```json
 {
-  "name": "Atlas",
-  "shell": "sidebar-app",
-  "theme": {
-    "preset": "opal",
-    "mode": "light",
-    "radius": "trim",
-    "density": "comfortable",
-    "spacing": "tight",
-    "fonts": {
-      "fancy": "Fraunces",
-      "sans": "Manrope",
-      "mono": "IBM Plex Mono"
+  "version": "0.4",
+  "app": {
+    "name": "Atlas",
+    "kind": "internal-tool"
+  },
+  "backend": {
+    "mode": "portable",
+    "portable": {
+      "database": "sqlite"
     }
   },
-  "routes": [
+  "media": {
+    "mode": "rich"
+  },
+  "objects": [
     {
-      "path": "/",
-      "page": "dashboard",
-      "title": "Overview",
-      "sections": [
-        {
-          "layout": "stack",
-          "children": ["stat-card"]
-        }
+      "name": "records",
+      "ownership": "user",
+      "fields": [
+        { "name": "title", "type": "short-text", "required": true },
+        { "name": "status", "type": "status", "options": ["draft", "review", "published"] }
       ]
     }
   ]
 }
 ```
-
-Add these only when the app needs them:
-
-- `database`
-- `auth`
-- `storage`
-- `resources`
-- `workflows`
-- `apis`
-- `server`
-- `env`
 
 ## Portable Quick Sketch
 
