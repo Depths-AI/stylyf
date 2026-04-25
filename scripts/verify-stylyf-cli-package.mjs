@@ -557,6 +557,18 @@ async function main() {
   ]) {
     await assertFile(resolve(hostedRoot, relativePath));
   }
+  const hostedPolicies = await readFile(resolve(hostedRoot, "supabase/policies.sql"), "utf8");
+  for (const expectedText of [
+    'alter table if exists public."workspace_memberships" enable row level security;',
+    'create index if not exists "workspace_memberships_user_id_idx"',
+    'create policy "workspace_memberships_select_own"',
+    'create policy "workspace_memberships_insert_reserved"',
+    '"workspace_id" in (select "workspace_id" from public."workspace_memberships"',
+  ]) {
+    if (!hostedPolicies.includes(expectedText)) {
+      throw new Error(`Generated hosted app is missing policy-model Supabase RLS: ${expectedText}`);
+    }
+  }
   await assertNoRuntimeStylyfImports(hostedRoot, "Generated hosted app");
 
   process.stdout.write(
@@ -575,6 +587,7 @@ async function main() {
       "  - portable app generates membership policy schema and role/workspace/owner helpers",
       "  - portable internal rich app source is generated with auth/data/media files",
       "  - free SaaS tool app generates and has no billing/payment surface",
+      "  - hosted app generates membership-backed Supabase RLS policies",
       "  - hosted Supabase/Tigris app generates expected auth/data/storage files",
       "  - generated apps do not import the repo or CLI package",
     ].join("\n") + "\n",

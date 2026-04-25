@@ -568,6 +568,10 @@ function sqlQuoted(value: string) {
   return `"${value}"`;
 }
 
+function sqlLiteral(value: string) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
 function sqlOwnershipExpression(resource: ResourceIR) {
   const ownerField = resource.ownership?.ownerField ?? "owner_id";
   return `(select auth.uid()) is not null and (select auth.uid()) = ${sqlQuoted(ownerField)}`;
@@ -583,18 +587,47 @@ function sqlWorkspaceMemberExpression(resource: ResourceIR) {
   return `${sqlQuoted(workspaceField)} in (select ${sqlQuoted(workspaceField)} from public.${sqlQuoted(membershipTable)} where ${sqlQuoted("user_id")} = (select auth.uid()))`;
 }
 
-function sqlReservedAdminExpression() {
+function sqlRoleExpression(app: AppIR, resource: ResourceIR, actor: "admin" | "editor") {
+  const actorPolicy = app.policies?.actors.find(entry => entry.actor === actor);
+  const membershipPolicy = app.policies?.memberships.find(entry => entry.name === actorPolicy?.membership) ?? app.policies?.memberships[0];
+
+  if (!actorPolicy?.role || !membershipPolicy) {
+    return "false";
+  }
+
+  const tableName = membershipPolicy.table;
+  const workspaceField = resource.ownership?.workspaceField ?? membershipPolicy.workspaceField;
+  const workspacePredicate =
+    resource.ownership?.model === "workspace"
+      ? ` and membership.${sqlQuoted(membershipPolicy.workspaceField)} = ${sqlQuoted(workspaceField)}`
+      : "";
+
+  return [
+    "exists (",
+    `select 1 from public.${sqlQuoted(tableName)} as membership`,
+    `where membership.${sqlQuoted(membershipPolicy.userField)} = (select auth.uid())`,
+    `and membership.${sqlQuoted(membershipPolicy.roleField)} = ${sqlLiteral(actorPolicy.role)}`,
+    workspacePredicate,
+    ")",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function sqlReservedAdminExpression(app: AppIR, resource: ResourceIR) {
+  const expression = sqlRoleExpression(app, resource, "admin");
+  if (expression !== "false") return expression;
   return "false";
 }
 
-function sqlReadPredicate(resource: ResourceIR, access: ResourceAccessPreset) {
+function sqlReadPredicate(app: AppIR, resource: ResourceIR, access: ResourceAccessPreset) {
   switch (access) {
     case "public":
       return "true";
     case "user":
       return "(select auth.uid()) is not null";
     case "admin":
-      return sqlReservedAdminExpression();
+      return sqlReservedAdminExpression(app, resource);
     case "owner":
       return sqlOwnershipExpression(resource);
     case "owner-or-public":
@@ -605,6 +638,7 @@ function sqlReadPredicate(resource: ResourceIR, access: ResourceAccessPreset) {
 }
 
 function sqlWriteCheck(
+  app: AppIR,
   resource: ResourceIR,
   access: ResourceAccessPreset,
   options?: {
@@ -625,13 +659,49 @@ function sqlWriteCheck(
     case "user":
       return "(select auth.uid()) is not null";
     case "admin":
-      return sqlReservedAdminExpression();
+      return sqlReservedAdminExpression(app, resource);
     case "owner":
     case "owner-or-public":
       return sqlOwnershipExpression(resource);
     case "workspace-member":
       return sqlWorkspaceMemberExpression(resource);
   }
+}
+
+function renderGeneratedSupabaseMembershipPoliciesSql(app: AppIR) {
+  const needsMembershipTables = (app.resources ?? []).some(
+    resource =>
+      resource.ownership?.model === "workspace" ||
+      Object.values(resource.access ?? {}).some(access => access === "workspace-member" || access === "admin"),
+  );
+  const memberships = app.policies?.memberships ?? [];
+
+  if (!needsMembershipTables || memberships.length === 0) {
+    return [];
+  }
+
+  return memberships.flatMap(membership => {
+    const table = sqlQuoted(membership.table);
+    const userField = sqlQuoted(membership.userField);
+    const workspaceField = sqlQuoted(membership.workspaceField);
+    const roleField = sqlQuoted(membership.roleField);
+
+    return [
+      `alter table if exists public.${table} enable row level security;`,
+      `create index if not exists ${sqlQuoted(`${membership.table}_${membership.userField}_idx`)} on public.${table} (${userField});`,
+      `create index if not exists ${sqlQuoted(`${membership.table}_${membership.workspaceField}_idx`)} on public.${table} (${workspaceField});`,
+      `create index if not exists ${sqlQuoted(`${membership.table}_${membership.roleField}_idx`)} on public.${table} (${roleField});`,
+      `drop policy if exists ${sqlQuoted(`${membership.table}_select_own`)} on public.${table};`,
+      `create policy ${sqlQuoted(`${membership.table}_select_own`)} on public.${table} for select to authenticated using (${userField} = (select auth.uid()));`,
+      `drop policy if exists ${sqlQuoted(`${membership.table}_insert_reserved`)} on public.${table};`,
+      `create policy ${sqlQuoted(`${membership.table}_insert_reserved`)} on public.${table} for insert to authenticated with check (false);`,
+      `drop policy if exists ${sqlQuoted(`${membership.table}_update_reserved`)} on public.${table};`,
+      `create policy ${sqlQuoted(`${membership.table}_update_reserved`)} on public.${table} for update to authenticated using (false) with check (false);`,
+      `drop policy if exists ${sqlQuoted(`${membership.table}_delete_reserved`)} on public.${table};`,
+      `create policy ${sqlQuoted(`${membership.table}_delete_reserved`)} on public.${table} for delete to authenticated using (false);`,
+      "",
+    ];
+  });
 }
 
 export function renderGeneratedSupabasePoliciesSql(app: AppIR) {
@@ -655,13 +725,13 @@ export function renderGeneratedSupabasePoliciesSql(app: AppIR) {
     return [
       `alter table if exists public.${sqlQuoted(tableName)} enable row level security;`,
       `drop policy if exists ${sqlQuoted(`${tableName}_select`)} on public.${sqlQuoted(tableName)};`,
-      `create policy ${sqlQuoted(`${tableName}_select`)} on public.${sqlQuoted(tableName)} for select to anon, authenticated using (${sqlReadPredicate(resource, selectAccess)});`,
+      `create policy ${sqlQuoted(`${tableName}_select`)} on public.${sqlQuoted(tableName)} for select to anon, authenticated using (${sqlReadPredicate(app, resource, selectAccess)});`,
       `drop policy if exists ${sqlQuoted(`${tableName}_insert`)} on public.${sqlQuoted(tableName)};`,
-      `create policy ${sqlQuoted(`${tableName}_insert`)} on public.${sqlQuoted(tableName)} for insert to authenticated with check (${sqlWriteCheck(resource, createAccess, { operation: "create" })});`,
+      `create policy ${sqlQuoted(`${tableName}_insert`)} on public.${sqlQuoted(tableName)} for insert to authenticated with check (${sqlWriteCheck(app, resource, createAccess, { operation: "create" })});`,
       `drop policy if exists ${sqlQuoted(`${tableName}_update`)} on public.${sqlQuoted(tableName)};`,
-      `create policy ${sqlQuoted(`${tableName}_update`)} on public.${sqlQuoted(tableName)} for update to authenticated using (${sqlWriteCheck(resource, updateAccess, { operation: "update" })}) with check (${sqlWriteCheck(resource, updateAccess, { operation: "update" })});`,
+      `create policy ${sqlQuoted(`${tableName}_update`)} on public.${sqlQuoted(tableName)} for update to authenticated using (${sqlWriteCheck(app, resource, updateAccess, { operation: "update" })}) with check (${sqlWriteCheck(app, resource, updateAccess, { operation: "update" })});`,
       `drop policy if exists ${sqlQuoted(`${tableName}_delete`)} on public.${sqlQuoted(tableName)};`,
-      `create policy ${sqlQuoted(`${tableName}_delete`)} on public.${sqlQuoted(tableName)} for delete to authenticated using (${sqlWriteCheck(resource, deleteAccess, { operation: "delete" })});`,
+      `create policy ${sqlQuoted(`${tableName}_delete`)} on public.${sqlQuoted(tableName)} for delete to authenticated using (${sqlWriteCheck(app, resource, deleteAccess, { operation: "delete" })});`,
       "",
     ];
   });
@@ -669,8 +739,10 @@ export function renderGeneratedSupabasePoliciesSql(app: AppIR) {
   return [
     "-- Generated by Stylyf CLI",
     "-- Apply this alongside supabase/schema.sql for resource-driven row level security defaults.",
-    "-- These policies are intentionally broad and should be tightened further for production-specific needs.",
+    "-- Membership tables are readable by their own users but write-locked by default.",
+    "-- App-owned admin membership provisioning should happen through trusted server code or Supabase dashboard operations.",
     "",
+    ...renderGeneratedSupabaseMembershipPoliciesSql(app),
     ...statements,
   ].join("\n");
 }
