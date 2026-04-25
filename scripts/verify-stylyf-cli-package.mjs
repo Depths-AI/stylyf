@@ -354,6 +354,11 @@ async function main() {
   const stylyfBin = resolve(verifyRoot, "node_modules/.bin/stylyf");
   process.stdout.write("Smoke testing installed CLI commands...\n");
   await run(stylyfBin, ["--help"], verifyRoot);
+  await run(stylyfBin, ["doctor"], verifyRoot);
+  const { stdout: inspectedComponent } = await run(stylyfBin, ["inspect", "component", "data-table-shell"], verifyRoot);
+  if (!inspectedComponent.includes("recommendedBindings") || !inspectedComponent.includes("defaultDataShape")) {
+    throw new Error("stylyf inspect component did not return enriched component contracts.");
+  }
 
   await run(stylyfBin, ["intro", "--output", "STYLYF_INTRO.md"], verifyRoot);
   await run(stylyfBin, ["intro", "--topic", "spec", "--output", "STYLYF_SPEC.md"], verifyRoot);
@@ -473,6 +478,14 @@ async function main() {
   const { stdout: resolvedGenericPlan } = await run(stylyfBin, ["plan", "--spec", "generic.spec.json", "--resolved"], verifyRoot);
   if (!resolvedGenericPlan.includes('"kind": "resource.list"') || !resolvedGenericPlan.includes('"kind": "resource.detail"')) {
     throw new Error("Resource bindings did not survive spec -> resolved App IR.");
+  }
+  const { stdout: deepValidation } = await run(stylyfBin, ["validate", "--spec", "generic.spec.json", "--deep"], verifyRoot);
+  if (!deepValidation.includes("deep: true") || !deepValidation.includes("generated routes")) {
+    throw new Error("stylyf validate --deep did not report generated contract checks.");
+  }
+  const { stdout: dryRunOutput } = await run(stylyfBin, ["generate", "--spec", "generic.spec.json", "--target", "./dry-run-target", "--dry-run"], verifyRoot);
+  if (!dryRunOutput.includes('"dryRun": true') || !dryRunOutput.includes('"deployment": "docker"')) {
+    throw new Error("stylyf generate --dry-run did not report planned operations.");
   }
 
   process.stdout.write("Generating/checking v1.0 archetypes in parallel...\n");
@@ -755,6 +768,7 @@ async function main() {
       "Verified:",
       "  - tarball bundles dist manifests, templates, and source assets",
       "  - installed stylyf binary runs outside the repo",
+      "  - doctor, inspect, validate --deep, and generate --dry-run operator commands work",
       "  - intro/new/validate/plan/generate v1.0 commands work",
       "  - component inventory search exposes slots/state/data-shape/binding metadata",
       "  - layout prop contracts validate values and normalize documented aliases",
