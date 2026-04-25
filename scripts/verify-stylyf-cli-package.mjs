@@ -126,6 +126,23 @@ const genericSpec = {
       bindings: [{ kind: "resource.detail", resource: "records" }],
     },
   ],
+  apis: [
+    {
+      path: "/api/health",
+      method: "GET",
+      type: "json",
+      name: "health",
+      auth: "public",
+      response: {
+        status: 200,
+        body: {
+          ok: { type: "boolean", required: true },
+          route: { type: "string", required: true },
+        },
+      },
+      rateLimit: { window: "minute", max: 60 },
+    },
+  ],
 };
 
 const freeToolSpec = {
@@ -451,6 +468,8 @@ async function main() {
     "src/routes/inbox/[id].tsx",
     "src/routes/records/index.tsx",
     "src/routes/records/new.tsx",
+    "src/routes/api/health.ts",
+    "src/api.contracts.json",
     "src/routes/login.tsx",
     "stylyf.spec.json",
     "stylyf.plan.json",
@@ -483,6 +502,23 @@ async function main() {
     if (!genericDetailRoute.includes(expectedText)) {
       throw new Error(`Generated generic detail route is missing data-bound route wiring: ${expectedText}`);
     }
+  }
+  const genericApiRoute = await readFile(resolve(genericRoot, "src/routes/api/health.ts"), "utf8");
+  for (const expectedText of [
+    "const responseContract",
+    "function validateSchema",
+    "function jsonOk",
+    "function jsonError",
+    "Rate-limit contract: max 60 request(s) per minute",
+    "return jsonOk(",
+  ]) {
+    if (!genericApiRoute.includes(expectedText)) {
+      throw new Error(`Generated generic API route is missing contracted API wiring: ${expectedText}`);
+    }
+  }
+  const apiContracts = await readFile(resolve(genericRoot, "src/api.contracts.json"), "utf8");
+  if (!apiContracts.includes('"path": "/api/health"') || !apiContracts.includes('"rateLimit"')) {
+    throw new Error("Generated API contracts summary does not include the contracted health route.");
   }
   await assertNoRuntimeStylyfImports(genericRoot, "Generated generic app");
 
@@ -609,6 +645,7 @@ async function main() {
       "  - intro/new/validate/plan/generate v1.0 commands work",
       "  - layout prop contracts validate values and normalize documented aliases",
       "  - API contract grammar rejects unsafe method/schema and placeholder defaults",
+      "  - contracted API routes emit validation helpers and machine-readable API summary",
       "  - route bindings survive spec expansion into resolved app IR",
       "  - bound list/detail routes import generated queries and route-level loading/empty/error states",
       "  - generic app source honors explicit surface route hints",
