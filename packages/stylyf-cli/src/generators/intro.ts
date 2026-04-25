@@ -397,7 +397,22 @@ function renderCompositionTopic() {
                 ],
               },
             ],
-            apis: [{ path: "/api/health", method: "GET", type: "json", name: "health", auth: "public" }],
+            apis: [
+              {
+                path: "/api/health",
+                method: "GET",
+                type: "json",
+                name: "health",
+                auth: "public",
+                response: {
+                  status: 200,
+                  body: {
+                    ok: { type: "boolean", required: true },
+                    service: { type: "string", required: true },
+                  },
+                },
+              },
+            ],
             server: [{ name: "records.stats", type: "query", resource: "records", auth: "user" }],
             env: { extras: [{ name: "PUBLIC_ANALYTICS_ID", exposure: "public", required: false }] },
           },

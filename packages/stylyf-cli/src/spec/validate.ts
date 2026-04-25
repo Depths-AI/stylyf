@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
 import {
   actorKinds,
+  apiRateLimitWindows,
   apiRouteMethods,
+  apiSchemaPrimitives,
   apiRouteTypes,
+  apiWebhookProviders,
   appKinds,
   appShells,
   authAccessLevels,
@@ -844,6 +847,113 @@ function validateEnv(value: unknown, context: ValidationContext) {
   });
 }
 
+function validateNumber(value: unknown, path: string, context: ValidationContext) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    context.errors.push(`${path} must be a finite number.`);
+  }
+}
+
+function validatePositiveInteger(value: unknown, path: string, context: ValidationContext) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    context.errors.push(`${path} must be a positive integer.`);
+  }
+}
+
+function validateApiSchemaObject(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+
+  for (const [fieldName, field] of Object.entries(value)) {
+    const fieldPath = `${path}.${fieldName}`;
+    if (!isRecord(field)) {
+      context.errors.push(`${fieldPath} must be an object.`);
+      continue;
+    }
+    hasOnlyKeys(field, ["type", "required", "array", "enum", "min", "max"], fieldPath, context);
+    enumValue(field.type, apiSchemaPrimitives, `${fieldPath}.type`, context);
+    optionalBoolean(field, "required", fieldPath, context);
+    optionalBoolean(field, "array", fieldPath, context);
+    optionalStringArray(field, "enum", fieldPath, context);
+    if (field.min !== undefined) validateNumber(field.min, `${fieldPath}.min`, context);
+    if (field.max !== undefined) validateNumber(field.max, `${fieldPath}.max`, context);
+  }
+}
+
+function validateApiRequestContract(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["body", "query", "params", "headers"], path, context);
+  validateApiSchemaObject(value.body, `${path}.body`, context);
+  validateApiSchemaObject(value.query, `${path}.query`, context);
+  validateApiSchemaObject(value.params, `${path}.params`, context);
+  validateApiSchemaObject(value.headers, `${path}.headers`, context);
+}
+
+function validateApiResponseContract(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["status", "body"], path, context);
+  if (value.status !== undefined) {
+    validatePositiveInteger(value.status, `${path}.status`, context);
+  }
+  validateApiSchemaObject(value.body, `${path}.body`, context);
+}
+
+function validateApiRateLimit(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["window", "max"], path, context);
+  enumValue(value.window, apiRateLimitWindows, `${path}.window`, context);
+  validatePositiveInteger(value.max, `${path}.max`, context);
+}
+
+function validateApiIdempotency(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["required", "header"], path, context);
+  optionalBoolean(value, "required", path, context);
+  optionalString(value, "header", path, context);
+}
+
+function validateApiWebhook(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!isRecord(value)) {
+    context.errors.push(`${path} must be an object when provided.`);
+    return;
+  }
+  hasOnlyKeys(value, ["provider", "signatureHeader", "secretEnv"], path, context);
+  optionalEnum(value, "provider", apiWebhookProviders, path, context);
+  optionalString(value, "signatureHeader", path, context);
+  optionalString(value, "secretEnv", path, context);
+}
+
 function validateApis(value: unknown, context: ValidationContext) {
   if (value === undefined) {
     return;
@@ -858,12 +968,35 @@ function validateApis(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(api, ["path", "method", "type", "name", "auth"], path, context);
+    hasOnlyKeys(api, ["path", "method", "type", "name", "auth", "request", "response", "rateLimit", "idempotency", "webhook", "draft"], path, context);
     requireString(api, "path", path, context);
     enumValue(api.method, apiRouteMethods, `${path}.method`, context);
     enumValue(api.type, apiRouteTypes, `${path}.type`, context);
     requireString(api, "name", path, context);
     optionalEnum(api, "auth", authAccessLevels, path, context);
+    optionalBoolean(api, "draft", path, context);
+    validateApiRequestContract(api.request, `${path}.request`, context);
+    validateApiResponseContract(api.response, `${path}.response`, context);
+    validateApiRateLimit(api.rateLimit, `${path}.rateLimit`, context);
+    validateApiIdempotency(api.idempotency, `${path}.idempotency`, context);
+    validateApiWebhook(api.webhook, `${path}.webhook`, context);
+
+    if (api.method === "GET" && isRecord(api.request) && api.request.body !== undefined) {
+      context.errors.push(`${path}.request.body is not supported for GET routes.`);
+    }
+    if (api.type === "webhook" && api.method !== "POST") {
+      context.errors.push(`${path}.method must be POST for webhook routes.`);
+    }
+    if (api.type === "presign-upload" && api.method !== "POST") {
+      context.errors.push(`${path}.method must be POST for presign-upload routes.`);
+    }
+    if (api.type !== "webhook" && api.webhook !== undefined) {
+      context.errors.push(`${path}.webhook is only supported when type is "webhook".`);
+    }
+    const hasContract = api.request !== undefined || api.response !== undefined;
+    if (!hasContract && api.type !== "presign-upload" && api.draft !== true) {
+      context.errors.push(`${path} must provide request/response contracts or set draft: true.`);
+    }
   });
 }
 

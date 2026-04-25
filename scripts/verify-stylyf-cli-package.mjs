@@ -384,15 +384,43 @@ async function main() {
       },
     ],
   };
+  const invalidApiGetBodySpec = {
+    ...genericSpec,
+    apis: [
+      {
+        path: "/api/search",
+        method: "GET",
+        type: "json",
+        name: "search",
+        request: { body: { term: { type: "string", required: true } } },
+        response: { body: { ok: { type: "boolean", required: true } } },
+      },
+    ],
+  };
+  const invalidApiDraftSpec = {
+    ...genericSpec,
+    apis: [
+      {
+        path: "/api/placeholder",
+        method: "POST",
+        type: "json",
+        name: "placeholder",
+      },
+    ],
+  };
 
   await writeJson(resolve(verifyRoot, "alias-layout.spec.json"), aliasLayoutSpec);
   await writeJson(resolve(verifyRoot, "invalid-layout.spec.json"), invalidLayoutSpec);
+  await writeJson(resolve(verifyRoot, "invalid-api-get-body.spec.json"), invalidApiGetBodySpec);
+  await writeJson(resolve(verifyRoot, "invalid-api-draft.spec.json"), invalidApiDraftSpec);
   await run(stylyfBin, ["validate", "--spec", "alias-layout.spec.json"], verifyRoot);
   const { stdout: resolvedAliasPlan } = await run(stylyfBin, ["plan", "--spec", "alias-layout.spec.json", "--resolved"], verifyRoot);
   if (!resolvedAliasPlan.includes('"cols": 2') || resolvedAliasPlan.includes('"columns"')) {
     throw new Error("Documented grid.columns alias was not normalized to grid.cols in the resolved plan.");
   }
   await assertCommandFails(stylyfBin, ["validate", "--spec", "invalid-layout.spec.json"], verifyRoot, "props.cols must be one of");
+  await assertCommandFails(stylyfBin, ["validate", "--spec", "invalid-api-get-body.spec.json"], verifyRoot, "request.body is not supported for GET routes");
+  await assertCommandFails(stylyfBin, ["validate", "--spec", "invalid-api-draft.spec.json"], verifyRoot, "must provide request/response contracts or set draft: true");
 
   await writeJson(resolve(verifyRoot, "generic.spec.json"), genericSpec);
   await writeJson(resolve(verifyRoot, "internal-rich.spec.json"), internalRichSpec);
@@ -580,6 +608,7 @@ async function main() {
       "  - installed stylyf binary runs outside the repo",
       "  - intro/new/validate/plan/generate v1.0 commands work",
       "  - layout prop contracts validate values and normalize documented aliases",
+      "  - API contract grammar rejects unsafe method/schema and placeholder defaults",
       "  - route bindings survive spec expansion into resolved app IR",
       "  - bound list/detail routes import generated queries and route-level loading/empty/error states",
       "  - generic app source honors explicit surface route hints",

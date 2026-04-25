@@ -45,6 +45,9 @@ export type ApiRouteType = "json" | "webhook" | "presign-upload";
 export type ServerModuleType = "query" | "action";
 export type EnvExposure = "server" | "public";
 export type DatabaseColumnType = "text" | "varchar" | "integer" | "boolean" | "timestamp" | "jsonb" | "uuid";
+export type ApiSchemaPrimitive = "string" | "number" | "integer" | "boolean" | "json" | "uuid" | "email" | "url";
+export type ApiWebhookProvider = "generic" | "github" | "stripe" | "clerk" | "supabase";
+export type ApiRateLimitWindow = "minute" | "hour" | "day";
 export type BindingKind =
   | "resource.list"
   | "resource.detail"
@@ -225,12 +228,57 @@ export type DatabaseSchemaSpec = {
   timestamps?: boolean;
 };
 
+export type ApiSchemaFieldSpec = {
+  type: ApiSchemaPrimitive;
+  required?: boolean;
+  array?: boolean;
+  enum?: string[];
+  min?: number;
+  max?: number;
+};
+
+export type ApiSchemaObjectSpec = Record<string, ApiSchemaFieldSpec>;
+
+export type ApiRequestContractSpec = {
+  body?: ApiSchemaObjectSpec;
+  query?: ApiSchemaObjectSpec;
+  params?: ApiSchemaObjectSpec;
+  headers?: ApiSchemaObjectSpec;
+};
+
+export type ApiResponseContractSpec = {
+  status?: number;
+  body?: ApiSchemaObjectSpec;
+};
+
+export type ApiRateLimitSpec = {
+  window: ApiRateLimitWindow;
+  max: number;
+};
+
+export type ApiIdempotencySpec = {
+  required?: boolean;
+  header?: string;
+};
+
+export type ApiWebhookSpec = {
+  provider?: ApiWebhookProvider;
+  signatureHeader?: string;
+  secretEnv?: string;
+};
+
 export type ApiRouteSpec = {
   path: string;
   method: ApiRouteMethod;
   type: ApiRouteType;
   name: string;
   auth?: AuthAccess;
+  request?: ApiRequestContractSpec;
+  response?: ApiResponseContractSpec;
+  rateLimit?: ApiRateLimitSpec;
+  idempotency?: ApiIdempotencySpec;
+  webhook?: ApiWebhookSpec;
+  draft?: boolean;
 };
 
 export type ServerModuleSpec = {

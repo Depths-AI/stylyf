@@ -9,6 +9,9 @@ export type AuthProvider = "better-auth" | "supabase";
 export type StorageProvider = "s3";
 export type ApiRouteMethod = "GET" | "POST" | "PATCH" | "DELETE";
 export type ApiRouteType = "json" | "webhook" | "presign-upload";
+export type ApiSchemaPrimitive = "string" | "number" | "integer" | "boolean" | "json" | "uuid" | "email" | "url";
+export type ApiWebhookProvider = "generic" | "github" | "stripe" | "clerk" | "supabase";
+export type ApiRateLimitWindow = "minute" | "hour" | "day";
 export type ServerModuleType = "query" | "action";
 export type AuthAccess = "public" | "user";
 export type BindingKind =
@@ -268,6 +271,51 @@ export type ApiRouteIR = {
   type: ApiRouteType;
   name: string;
   auth?: AuthAccess;
+  request?: ApiRequestContractIR;
+  response?: ApiResponseContractIR;
+  rateLimit?: ApiRateLimitIR;
+  idempotency?: ApiIdempotencyIR;
+  webhook?: ApiWebhookIR;
+  draft?: boolean;
+};
+
+export type ApiSchemaFieldIR = {
+  type: ApiSchemaPrimitive;
+  required?: boolean;
+  array?: boolean;
+  enum?: string[];
+  min?: number;
+  max?: number;
+};
+
+export type ApiSchemaObjectIR = Record<string, ApiSchemaFieldIR>;
+
+export type ApiRequestContractIR = {
+  body?: ApiSchemaObjectIR;
+  query?: ApiSchemaObjectIR;
+  params?: ApiSchemaObjectIR;
+  headers?: ApiSchemaObjectIR;
+};
+
+export type ApiResponseContractIR = {
+  status?: number;
+  body?: ApiSchemaObjectIR;
+};
+
+export type ApiRateLimitIR = {
+  window: ApiRateLimitWindow;
+  max: number;
+};
+
+export type ApiIdempotencyIR = {
+  required?: boolean;
+  header?: string;
+};
+
+export type ApiWebhookIR = {
+  provider?: ApiWebhookProvider;
+  signatureHeader?: string;
+  secretEnv?: string;
 };
 
 export type ServerModuleIR = {
