@@ -101,6 +101,23 @@ const freeToolSpec = {
   flows: [{ name: "savedResults", object: "tool_runs", kind: "saved-results" }],
 };
 
+const cmsSpec = {
+  version: "0.4",
+  app: {
+    name: "Pack Verify CMS",
+    kind: "cms-site",
+  },
+  backend: {
+    mode: "portable",
+    portable: {
+      database: "sqlite",
+    },
+  },
+  media: {
+    mode: "basic",
+  },
+};
+
 async function run(cmd, args, cwd) {
   return execFileAsync(cmd, args, {
     cwd,
@@ -274,6 +291,7 @@ async function main() {
   await writeJson(resolve(verifyRoot, "internal-rich.spec.json"), internalRichSpec);
   await writeJson(resolve(verifyRoot, "hosted-rich.spec.json"), hostedRichSpec);
   await writeJson(resolve(verifyRoot, "free-tool.spec.json"), freeToolSpec);
+  await writeJson(resolve(verifyRoot, "cms.spec.json"), cmsSpec);
 
   process.stdout.write("Generating/checking v0.4 archetypes in parallel...\n");
   await Promise.all([
@@ -281,6 +299,7 @@ async function main() {
     ["internal-rich.spec.json", "./generated-internal"],
     ["free-tool.spec.json", "./generated-free-tool"],
     ["hosted-rich.spec.json", "./generated-hosted"],
+    ["cms.spec.json", "./generated-cms"],
   ].map(async ([specPath, targetPath]) => {
     await run(stylyfBin, ["validate", "--spec", specPath], verifyRoot);
     await run(stylyfBin, ["plan", "--spec", specPath], verifyRoot);
@@ -339,6 +358,27 @@ async function main() {
     throw new Error(`Generated free tool contains billing/payment language:\n${billingScan}`);
   }
 
+  const cmsRoot = resolve(verifyRoot, "generated-cms");
+  for (const relativePath of [
+    "src/middleware.ts",
+    "src/routes/admin/content/index.tsx",
+    "src/routes/admin/content/new.tsx",
+    "src/routes/admin/content/[id]/edit.tsx",
+  ]) {
+    await assertFile(resolve(cmsRoot, relativePath));
+  }
+  const cmsMiddleware = await readFile(resolve(cmsRoot, "src/middleware.ts"), "utf8");
+  for (const protectedPath of ["/admin/content", "/admin/content/new", "/admin/content/:id/edit"]) {
+    if (!cmsMiddleware.includes(protectedPath)) {
+      throw new Error(`Generated CMS middleware does not protect ${protectedPath}`);
+    }
+  }
+  const cmsAdminRoute = await readFile(resolve(cmsRoot, "src/routes/admin/content/index.tsx"), "utf8");
+  if (!cmsAdminRoute.includes("SidebarAppShell")) {
+    throw new Error("Generated CMS admin content index must use an authenticated app shell, not marketing shell.");
+  }
+  await assertNoRuntimeStylyfImports(cmsRoot, "Generated CMS app");
+
   const hostedRoot = resolve(verifyRoot, "generated-hosted");
 
   for (const relativePath of [
@@ -367,6 +407,7 @@ async function main() {
       "  - installed stylyf binary runs outside the repo",
       "  - intro/new/validate/plan/generate v0.4 commands work",
       "  - generic app source honors explicit surface route hints",
+      "  - CMS admin content routes are generated under authenticated app shell protection",
       "  - portable internal rich app source is generated with auth/data/media files",
       "  - free SaaS tool app generates and has no billing/payment surface",
       "  - hosted Supabase/Tigris app generates expected auth/data/storage files",

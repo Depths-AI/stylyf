@@ -291,7 +291,6 @@ function backendFor(spec: StylyfSpecV04): { database?: DatabaseIR; auth?: AuthIR
 function protectedRoutes(routes: RouteIR[]) {
   return routes
     .filter(route => route.access !== "public")
-    .filter(route => route.shell !== "marketing-shell")
     .map(route => ({
       target: route.path,
       kind: "route" as const,
@@ -350,6 +349,9 @@ function surfaceDefaultPath(surface: SurfaceSpec, resources: ResourceIR[]) {
 }
 
 function shellForSurface(surface: SurfaceSpec, fallbackShell: RouteIR["shell"]): RouteIR["shell"] {
+  if (surface.audience === "admin" || surface.audience === "editor" || surface.audience === "user") {
+    return fallbackShell;
+  }
   if (surface.audience === "public" || surface.kind === "landing" || surface.kind === "content-index" || surface.kind === "content-detail") {
     return "marketing-shell";
   }
@@ -512,7 +514,7 @@ function routeFromSpec(route: RouteSpec, fallbackShell: RouteIR["shell"]): Route
     page: route.page,
     resource: route.resource,
     title: route.title,
-    access: route.access ?? (shell === "marketing-shell" ? "public" : "user"),
+    access: route.access ?? "user",
     sections: sectionsFromSpec(route.sections) ?? [],
   };
 }
