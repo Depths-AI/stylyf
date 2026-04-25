@@ -350,6 +350,12 @@ export type StylyfSpecV10 = {
   };
   media?: {
     mode: MediaMode;
+    maxFileSizeBytes?: number;
+    allowedContentTypes?: string[];
+    keyPrefix?: string;
+    presignExpiresSeconds?: number;
+    objectPolicy?: "private" | "public";
+    deleteMode?: "soft" | "hard";
   };
   experience?: {
     theme?: "amber" | "emerald" | "pearl" | "opal";

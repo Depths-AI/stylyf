@@ -449,8 +449,14 @@ function validateMedia(value: unknown, context: ValidationContext) {
     context.errors.push("media must be an object when provided.");
     return;
   }
-  hasOnlyKeys(value, ["mode"], "media", context);
+  hasOnlyKeys(value, ["mode", "maxFileSizeBytes", "allowedContentTypes", "keyPrefix", "presignExpiresSeconds", "objectPolicy", "deleteMode"], "media", context);
   enumValue(value.mode, mediaModes, "media.mode", context);
+  if (value.maxFileSizeBytes !== undefined) validatePositiveInteger(value.maxFileSizeBytes, "media.maxFileSizeBytes", context);
+  optionalStringArray(value, "allowedContentTypes", "media", context);
+  optionalString(value, "keyPrefix", "media", context);
+  if (value.presignExpiresSeconds !== undefined) validatePositiveInteger(value.presignExpiresSeconds, "media.presignExpiresSeconds", context);
+  optionalEnum(value, "objectPolicy", ["private", "public"], "media", context);
+  optionalEnum(value, "deleteMode", ["soft", "hard"], "media", context);
 }
 
 function validateExperience(value: unknown, context: ValidationContext) {

@@ -281,6 +281,12 @@ export type StorageIR = {
   provider: StorageProvider;
   mode?: "presigned-put";
   bucketAlias?: string;
+  maxFileSizeBytes?: number;
+  allowedContentTypes?: string[];
+  keyPrefix?: string;
+  presignExpiresSeconds?: number;
+  objectPolicy?: "private" | "public";
+  deleteMode?: "soft" | "hard";
 };
 
 export type ApiRouteIR = {

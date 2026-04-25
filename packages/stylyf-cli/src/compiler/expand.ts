@@ -317,7 +317,20 @@ function flowToWorkflow(flow: FlowSpec): WorkflowIR {
 }
 
 function backendFor(spec: StylyfSpecV10): { database?: DatabaseIR; auth?: AuthIR; storage?: StorageIR } {
-  const storage = (spec.media?.mode ?? "none") === "none" ? undefined : { provider: "s3" as const, mode: "presigned-put" as const, bucketAlias: "uploads" };
+  const storage =
+    (spec.media?.mode ?? "none") === "none"
+      ? undefined
+      : {
+          provider: "s3" as const,
+          mode: "presigned-put" as const,
+          bucketAlias: "uploads",
+          maxFileSizeBytes: spec.media?.maxFileSizeBytes,
+          allowedContentTypes: spec.media?.allowedContentTypes,
+          keyPrefix: spec.media?.keyPrefix,
+          presignExpiresSeconds: spec.media?.presignExpiresSeconds,
+          objectPolicy: spec.media?.objectPolicy,
+          deleteMode: spec.media?.deleteMode,
+        };
 
   if (spec.backend.mode === "hosted") {
     return {

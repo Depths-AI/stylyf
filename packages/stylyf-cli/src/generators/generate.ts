@@ -868,7 +868,7 @@ export async function generateFrontendDraftFromApp(appIr: AppIR, targetPath: str
   }
 
   if (app.storage) {
-    await writeGeneratedFile(resolve(targetPath, "src/lib/storage.ts"), renderGeneratedStorageModule());
+    await writeGeneratedFile(resolve(targetPath, "src/lib/storage.ts"), renderGeneratedStorageModule(app));
   }
 
   const generatedServerModules = await writeGeneratedServerModules(app, targetPath);

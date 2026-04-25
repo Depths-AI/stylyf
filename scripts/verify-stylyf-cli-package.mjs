@@ -24,6 +24,12 @@ const internalRichSpec = {
   },
   media: {
     mode: "rich",
+    maxFileSizeBytes: 10485760,
+    allowedContentTypes: ["image/png", "image/jpeg", "application/pdf"],
+    keyPrefix: "workspace-uploads",
+    presignExpiresSeconds: 600,
+    objectPolicy: "private",
+    deleteMode: "soft",
   },
   policies: {
     roles: [
@@ -642,6 +648,18 @@ async function main() {
   if (!internalFactories.includes("makeTicketsFixture")) {
     throw new Error("Generated portable app is missing resource-aware test factories.");
   }
+  const internalStorage = await readFile(resolve(internalRoot, "src/lib/storage.ts"), "utf8");
+  for (const expectedText of [
+    "storagePolicy",
+    "10485760",
+    "workspace-uploads",
+    "allowedContentTypes",
+    "assertUploadAllowed",
+  ]) {
+    if (!internalStorage.includes(expectedText)) {
+      throw new Error(`Generated storage module is missing storage policy/lifecycle enforcement: ${expectedText}`);
+    }
+  }
   await assertNoRuntimeStylyfImports(internalRoot, "Generated portable app");
 
   const freeRoot = resolve(verifyRoot, "generated-free-tool");
@@ -734,6 +752,7 @@ async function main() {
       "  - portable app generates membership policy schema and role/workspace/owner helpers",
       "  - database field defaults and indexes compile into generated Drizzle schema",
       "  - explicit seed modules and resource factories are generated without auto-running seed",
+      "  - storage policy knobs compile into presign validation and key prefixing",
       "  - portable internal rich app source is generated with auth/data/media files",
       "  - free SaaS tool app generates and has no billing/payment surface",
       "  - hosted app generates membership-backed Supabase RLS policies",
