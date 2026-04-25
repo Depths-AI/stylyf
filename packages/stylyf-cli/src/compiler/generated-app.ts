@@ -11,6 +11,13 @@ export type ApiRouteMethod = "GET" | "POST" | "PATCH" | "DELETE";
 export type ApiRouteType = "json" | "webhook" | "presign-upload";
 export type ServerModuleType = "query" | "action";
 export type AuthAccess = "public" | "user";
+export type BindingKind =
+  | "resource.list"
+  | "resource.detail"
+  | "resource.create"
+  | "resource.update"
+  | "workflow.transition"
+  | "attachment.lifecycle";
 
 export type AppShellId = "sidebar-app" | "topbar-app" | "docs-shell" | "marketing-shell";
 export type PageShellId =
@@ -64,7 +71,21 @@ export type RouteIR = {
   resource?: string;
   title?: string;
   access?: AuthAccess;
+  bindings?: BindingIR[];
   sections: SectionIR[];
+};
+
+export type BindingIR = {
+  name?: string;
+  kind: BindingKind;
+  resource?: string;
+  workflow?: string;
+  transition?: string;
+  attachment?: string;
+  source?: {
+    section?: string;
+    component?: string;
+  };
 };
 
 export type EnvVarIR = {

@@ -340,6 +340,7 @@ function renderCompositionTopic() {
                 object: "records",
                 path: "/records",
                 page: "resource-index",
+                bindings: [{ kind: "resource.list", resource: "records" }],
                 sections: [
                   {
                     id: "records-workspace",

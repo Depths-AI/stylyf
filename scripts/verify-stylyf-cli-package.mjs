@@ -78,8 +78,22 @@ const genericSpec = {
     },
   ],
   surfaces: [
-    { name: "Records Inbox", kind: "list", object: "records", path: "/inbox", audience: "user" },
-    { name: "Record Detail", kind: "detail", object: "records", path: "/inbox/:id", audience: "user" },
+    {
+      name: "Records Inbox",
+      kind: "list",
+      object: "records",
+      path: "/inbox",
+      audience: "user",
+      bindings: [{ kind: "resource.list", resource: "records" }],
+    },
+    {
+      name: "Record Detail",
+      kind: "detail",
+      object: "records",
+      path: "/inbox/:id",
+      audience: "user",
+      bindings: [{ kind: "resource.detail", resource: "records" }],
+    },
   ],
 };
 
@@ -354,6 +368,10 @@ async function main() {
   await writeJson(resolve(verifyRoot, "hosted-rich.spec.json"), hostedRichSpec);
   await writeJson(resolve(verifyRoot, "free-tool.spec.json"), freeToolSpec);
   await writeJson(resolve(verifyRoot, "cms.spec.json"), cmsSpec);
+  const { stdout: resolvedGenericPlan } = await run(stylyfBin, ["plan", "--spec", "generic.spec.json", "--resolved"], verifyRoot);
+  if (!resolvedGenericPlan.includes('"kind": "resource.list"') || !resolvedGenericPlan.includes('"kind": "resource.detail"')) {
+    throw new Error("Resource bindings did not survive spec -> resolved App IR.");
+  }
 
   process.stdout.write("Generating/checking v1.0 archetypes in parallel...\n");
   await Promise.all([
@@ -469,6 +487,7 @@ async function main() {
       "  - installed stylyf binary runs outside the repo",
       "  - intro/new/validate/plan/generate v1.0 commands work",
       "  - layout prop contracts validate values and normalize documented aliases",
+      "  - route bindings survive spec expansion into resolved app IR",
       "  - generic app source honors explicit surface route hints",
       "  - CMS admin content routes are generated under authenticated app shell protection",
       "  - portable internal rich app source is generated with auth/data/media files",

@@ -45,6 +45,13 @@ export type ApiRouteType = "json" | "webhook" | "presign-upload";
 export type ServerModuleType = "query" | "action";
 export type EnvExposure = "server" | "public";
 export type DatabaseColumnType = "text" | "varchar" | "integer" | "boolean" | "timestamp" | "jsonb" | "uuid";
+export type BindingKind =
+  | "resource.list"
+  | "resource.detail"
+  | "resource.create"
+  | "resource.update"
+  | "workflow.transition"
+  | "attachment.lifecycle";
 
 export type ActorSpec = {
   name: string;
@@ -119,11 +126,13 @@ export type ComponentSpec = {
   variant?: string;
   props?: Record<string, unknown>;
   items?: Record<string, unknown>[];
+  bindings?: BindingSpec[];
 };
 
 export type LayoutSpec = {
   layout: LayoutNodeId;
   props?: Record<string, string | number | boolean>;
+  bindings?: BindingSpec[];
   children?: Array<LayoutSpec | ComponentSpec | string>;
 };
 
@@ -131,7 +140,19 @@ export type SectionSpec = {
   id?: string;
   layout: LayoutNodeId;
   props?: Record<string, string | number | boolean>;
+  bindings?: BindingSpec[];
   children: Array<LayoutSpec | ComponentSpec | string>;
+};
+
+export type BindingSpec = {
+  name?: string;
+  kind: BindingKind;
+  resource?: string;
+  workflow?: string;
+  transition?: string;
+  attachment?: string;
+  section?: string;
+  component?: string;
 };
 
 export type SurfaceSpec = {
@@ -143,6 +164,7 @@ export type SurfaceSpec = {
   shell?: AppShellId;
   page?: PageShellId;
   title?: string;
+  bindings?: BindingSpec[];
   sections?: SectionSpec[];
 };
 
@@ -153,6 +175,7 @@ export type RouteSpec = {
   resource?: string;
   title?: string;
   access?: AuthAccess;
+  bindings?: BindingSpec[];
   sections?: SectionSpec[];
 };
 

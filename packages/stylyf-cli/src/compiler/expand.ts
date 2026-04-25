@@ -1,6 +1,7 @@
 import type {
   AppIR,
   AuthIR,
+  BindingIR,
   ComponentRefIR,
   DatabaseIR,
   LayoutNodeIR,
@@ -16,6 +17,7 @@ import type {
 import { defaultTheme, humanize, singularize } from "./defaults.js";
 import type {
   ComponentSpec,
+  BindingSpec,
   FieldSpec,
   FlowSpec,
   LayoutSpec,
@@ -74,6 +76,51 @@ function componentFromSpec(node: ComponentSpec): ComponentRefIR {
     props: node.props,
     items: node.items,
   };
+}
+
+function bindingFromSpec(binding: BindingSpec, source?: BindingIR["source"]): BindingIR {
+  return {
+    name: binding.name,
+    kind: binding.kind,
+    resource: binding.resource,
+    workflow: binding.workflow,
+    transition: binding.transition,
+    attachment: binding.attachment,
+    source:
+      source || binding.section || binding.component
+        ? {
+            section: source?.section ?? binding.section,
+            component: source?.component ?? binding.component,
+          }
+        : undefined,
+  };
+}
+
+function collectBindingsFromCompositionNode(node: LayoutSpec | ComponentSpec | string, target: BindingIR[], sectionId?: string) {
+  if (typeof node === "string") {
+    return;
+  }
+
+  if (isComponentSpec(node)) {
+    target.push(...(node.bindings ?? []).map(binding => bindingFromSpec(binding, { section: sectionId, component: node.component })));
+    return;
+  }
+
+  target.push(...(node.bindings ?? []).map(binding => bindingFromSpec(binding, { section: sectionId })));
+  for (const child of node.children ?? []) {
+    collectBindingsFromCompositionNode(child, target, sectionId);
+  }
+}
+
+function collectBindingsFromSections(sections?: SectionSpec[]) {
+  const bindings: BindingIR[] = [];
+  for (const sectionSpec of sections ?? []) {
+    bindings.push(...(sectionSpec.bindings ?? []).map(binding => bindingFromSpec(binding, { section: sectionSpec.id })));
+    for (const child of sectionSpec.children) {
+      collectBindingsFromCompositionNode(child, bindings, sectionSpec.id);
+    }
+  }
+  return bindings;
 }
 
 function compositionNodeFromSpec(node: LayoutSpec | ComponentSpec | string): LayoutNodeIR | ComponentRefIR | string {
@@ -367,6 +414,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
   const path = surface.path ?? surfaceDefaultPath(surface, resources);
   const shell = surface.shell ?? shellForSurface(surface, fallbackShell);
   const explicitSections = sectionsFromSpec(surface.sections);
+  const bindings = [...(surface.bindings ?? []).map(binding => bindingFromSpec(binding)), ...collectBindingsFromSections(surface.sections)];
 
   switch (surface.kind) {
     case "dashboard":
@@ -376,6 +424,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "dashboard",
         title: surface.title ?? surface.name ?? "Dashboard",
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? dashboardSections(),
       };
     case "landing":
@@ -385,6 +434,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "blank",
         title: surface.title ?? surface.name ?? "Home",
         access: "public",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("page-header"), component("empty-state")])],
       };
     case "list":
@@ -395,6 +445,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         resource,
         title: surface.title ?? surface.name ?? resourceTitle,
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? resourceListSections(resource),
       };
     case "detail":
@@ -405,6 +456,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         resource,
         title: surface.title ?? surface.name ?? `${resourceTitle} detail`,
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("page-header"), component("detail-panel")])],
       };
     case "create":
@@ -415,6 +467,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         resource,
         title: surface.title ?? surface.name ?? `Create ${titleFor(singularize(resource))}`,
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? [],
       };
     case "edit":
@@ -425,6 +478,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         resource,
         title: surface.title ?? surface.name ?? `Edit ${titleFor(singularize(resource))}`,
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? [],
       };
     case "settings":
@@ -434,6 +488,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "settings",
         title: surface.title ?? surface.name ?? "Settings",
         access: surface.audience === "public" ? "public" : "user",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("settings-panel"), component("settings-row")])],
       };
     case "content-index":
@@ -445,6 +500,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
           resource,
           title: surface.title ?? surface.name ?? "Content",
           access: "user",
+          bindings,
           sections: explicitSections ?? resourceListSections(resource),
         };
       }
@@ -454,6 +510,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "blank",
         title: surface.title ?? surface.name ?? resourceTitle,
         access: "public",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("section-header"), component("data-list")])],
       };
     case "content-detail":
@@ -463,6 +520,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "blank",
         title: surface.title ?? surface.name ?? titleFor(singularize(resource)),
         access: "public",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("page-header"), component("separator")])],
       };
     case "tool":
@@ -472,6 +530,7 @@ function surfaceToRoute(surface: SurfaceSpec, resources: ResourceIR[], fallbackS
         page: surface.page ?? "blank",
         title: surface.title ?? surface.name ?? "Tool",
         access: surface.audience === "user" || surface.audience === "admin" || surface.audience === "editor" ? "user" : "public",
+        bindings,
         sections: explicitSections ?? [section("stack", [component("form-section"), component("progress"), component("toast")])],
       };
   }
@@ -507,6 +566,7 @@ function kindExpansionFor(spec: StylyfSpecV10): KindExpansion {
 
 function routeFromSpec(route: RouteSpec, fallbackShell: RouteIR["shell"]): RouteIR {
   const shell = route.shell ?? fallbackShell;
+  const bindings = [...(route.bindings ?? []).map(binding => bindingFromSpec(binding)), ...collectBindingsFromSections(route.sections)];
 
   return {
     path: route.path,
@@ -515,6 +575,7 @@ function routeFromSpec(route: RouteSpec, fallbackShell: RouteIR["shell"]): Route
     resource: route.resource,
     title: route.title,
     access: route.access ?? "user",
+    bindings,
     sections: sectionsFromSpec(route.sections) ?? [],
   };
 }

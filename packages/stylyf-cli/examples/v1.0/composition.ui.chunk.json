@@ -7,6 +7,12 @@
       "path": "/records",
       "audience": "user",
       "page": "resource-index",
+      "bindings": [
+        {
+          "kind": "resource.list",
+          "resource": "records"
+        }
+      ],
       "sections": [
         {
           "id": "records-workspace",

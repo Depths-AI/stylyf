@@ -69,6 +69,7 @@ export type GenerationPlan = {
     path: string;
     page: string;
     resource?: string;
+    bindings: string[];
     file: string;
   }>;
   files: string[];
@@ -160,6 +161,17 @@ export function createGenerationPlan(spec: StylyfSpecV10, app: AppIR): Generatio
       path: route.path,
       page: route.page,
       resource: route.resource,
+      bindings: (route.bindings ?? []).map(binding =>
+        [
+          binding.kind,
+          binding.resource ? `resource:${binding.resource}` : undefined,
+          binding.workflow ? `workflow:${binding.workflow}` : undefined,
+          binding.transition ? `transition:${binding.transition}` : undefined,
+          binding.attachment ? `attachment:${binding.attachment}` : undefined,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      ),
       file: routeFilePath(route.path, app.routes),
     })),
     files: [...files].sort(),
@@ -188,7 +200,10 @@ export function renderGenerationPlan(plan: GenerationPlan) {
     ...(plan.workflows.length > 0 ? plan.workflows.map(workflow => `  - ${workflow}`) : ["  - none"]),
     "",
     "Generated routes:",
-    ...plan.routes.map(route => `  - ${route.path} ${route.page}${route.resource ? ` (${route.resource})` : ""}`),
+    ...plan.routes.map(route => {
+      const bindingSummary = route.bindings.length > 0 ? ` bindings: ${route.bindings.join("; ")}` : "";
+      return `  - ${route.path} ${route.page}${route.resource ? ` (${route.resource})` : ""}${bindingSummary}`;
+    }),
     "",
     "Generated files:",
     ...plan.files.slice(0, 18).map(file => `  - ${file}`),

@@ -5,6 +5,7 @@ import type {
   AppShellId,
   AuthAccess,
   BackendMode,
+  BindingKind,
   DatabaseColumnType,
   EnvExposure,
   FieldType,
@@ -80,3 +81,11 @@ export const apiRouteTypes = ["json", "webhook", "presign-upload"] as const sati
 export const serverModuleTypes = ["query", "action"] as const satisfies readonly ServerModuleType[];
 export const envExposures = ["server", "public"] as const satisfies readonly EnvExposure[];
 export const databaseColumnTypes = ["text", "varchar", "integer", "boolean", "timestamp", "jsonb", "uuid"] as const satisfies readonly DatabaseColumnType[];
+export const bindingKinds = [
+  "resource.list",
+  "resource.detail",
+  "resource.create",
+  "resource.update",
+  "workflow.transition",
+  "attachment.lifecycle",
+] as const satisfies readonly BindingKind[];

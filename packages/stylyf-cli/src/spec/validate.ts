@@ -9,6 +9,7 @@ import {
   attachmentKinds,
   audiences,
   backendModes,
+  bindingKinds,
   databaseColumnTypes,
   densities,
   envExposures,
@@ -307,11 +308,38 @@ function normalizeSpecAliases(value: Record<string, unknown>) {
   return normalized;
 }
 
+function validateBindings(value: unknown, path: string, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push(`${path} must be an array when provided.`);
+    return;
+  }
+  value.forEach((binding, index) => {
+    const bindingPath = `${path}[${index}]`;
+    if (!isRecord(binding)) {
+      context.errors.push(`${bindingPath} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(binding, ["name", "kind", "resource", "workflow", "transition", "attachment", "section", "component"], bindingPath, context);
+    optionalString(binding, "name", bindingPath, context);
+    enumValue(binding.kind, bindingKinds, `${bindingPath}.kind`, context);
+    optionalString(binding, "resource", bindingPath, context);
+    optionalString(binding, "workflow", bindingPath, context);
+    optionalString(binding, "transition", bindingPath, context);
+    optionalString(binding, "attachment", bindingPath, context);
+    optionalString(binding, "section", bindingPath, context);
+    optionalString(binding, "component", bindingPath, context);
+  });
+}
+
 function validateComponentNode(value: Record<string, unknown>, path: string, context: ValidationContext) {
-  hasOnlyKeys(value, ["component", "variant", "props", "items"], path, context);
+  hasOnlyKeys(value, ["component", "variant", "props", "items", "bindings"], path, context);
   requireString(value, "component", path, context);
   optionalString(value, "variant", path, context);
   optionalRecord(value, "props", path, context);
+  validateBindings(value.bindings, `${path}.bindings`, context);
   if (typeof value.component === "string") {
     validateComponentProps(value.component, value.props, `${path}.props`, context);
   }
@@ -336,9 +364,10 @@ function validateCompositionNode(value: unknown, path: string, context: Validati
     return;
   }
   if (typeof value.layout === "string") {
-    hasOnlyKeys(value, ["layout", "props", "children"], path, context);
+    hasOnlyKeys(value, ["layout", "props", "children", "bindings"], path, context);
     enumValue(value.layout, layoutNodes, `${path}.layout`, context);
     validateLayoutProps(value.layout, value.props, `${path}.props`, context);
+    validateBindings(value.bindings, `${path}.bindings`, context);
     if (value.children !== undefined) {
       validateCompositionChildren(value.children, `${path}.children`, context);
     }
@@ -369,12 +398,13 @@ function validateSections(value: unknown, path: string, context: ValidationConte
       context.errors.push(`${sectionPath} must be an object.`);
       return;
     }
-    hasOnlyKeys(section, ["id", "layout", "props", "children"], sectionPath, context);
+    hasOnlyKeys(section, ["id", "layout", "props", "bindings", "children"], sectionPath, context);
     optionalString(section, "id", sectionPath, context);
     enumValue(section.layout, layoutNodes, `${sectionPath}.layout`, context);
     if (typeof section.layout === "string") {
       validateLayoutProps(section.layout, section.props, `${sectionPath}.props`, context);
     }
+    validateBindings(section.bindings, `${sectionPath}.bindings`, context);
     validateCompositionChildren(section.children, `${sectionPath}.children`, context);
   });
 }
@@ -630,7 +660,7 @@ function validateSurfaces(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(surface, ["name", "kind", "object", "path", "audience", "shell", "page", "title", "sections"], path, context);
+    hasOnlyKeys(surface, ["name", "kind", "object", "path", "audience", "shell", "page", "title", "bindings", "sections"], path, context);
     requireString(surface, "name", path, context);
     enumValue(surface.kind, surfaceKinds, `${path}.kind`, context);
     optionalString(surface, "object", path, context);
@@ -639,6 +669,7 @@ function validateSurfaces(value: unknown, context: ValidationContext) {
     optionalEnum(surface, "shell", appShells, path, context);
     optionalEnum(surface, "page", pageShells, path, context);
     optionalString(surface, "title", path, context);
+    validateBindings(surface.bindings, `${path}.bindings`, context);
     validateSections(surface.sections, `${path}.sections`, context);
   });
 }
@@ -657,13 +688,14 @@ function validateRoutes(value: unknown, context: ValidationContext) {
       context.errors.push(`${path} must be an object.`);
       return;
     }
-    hasOnlyKeys(route, ["path", "shell", "page", "resource", "title", "access", "sections"], path, context);
+    hasOnlyKeys(route, ["path", "shell", "page", "resource", "title", "access", "bindings", "sections"], path, context);
     requireString(route, "path", path, context);
     optionalEnum(route, "shell", appShells, path, context);
     enumValue(route.page, pageShells, `${path}.page`, context);
     optionalString(route, "resource", path, context);
     optionalString(route, "title", path, context);
     optionalEnum(route, "access", authAccessLevels, path, context);
+    validateBindings(route.bindings, `${path}.bindings`, context);
     validateSections(route.sections, `${path}.sections`, context);
   });
 }
@@ -798,6 +830,105 @@ function validateNoBillingConcepts(value: unknown, context: ValidationContext) {
   }
 }
 
+function validateBindingReferences(
+  bindings: unknown,
+  path: string,
+  context: ValidationContext,
+  objectNames: Set<string>,
+  objectAttachments: Map<string, Set<string>>,
+  flowTransitions: Map<string, Set<string>>,
+) {
+  if (!Array.isArray(bindings)) {
+    return;
+  }
+
+  bindings.forEach((binding, index) => {
+    if (!isRecord(binding) || typeof binding.kind !== "string") {
+      return;
+    }
+
+    const bindingPath = `${path}[${index}]`;
+    const resource = typeof binding.resource === "string" ? binding.resource : undefined;
+    const workflow = typeof binding.workflow === "string" ? binding.workflow : undefined;
+    const transition = typeof binding.transition === "string" ? binding.transition : undefined;
+    const attachment = typeof binding.attachment === "string" ? binding.attachment : undefined;
+
+    if (binding.kind.startsWith("resource.") || binding.kind === "attachment.lifecycle") {
+      if (!resource) {
+        context.errors.push(`${bindingPath}.resource is required for ${binding.kind} bindings.`);
+      } else if (!objectNames.has(resource)) {
+        context.errors.push(`${bindingPath}.resource references unknown object "${resource}".`);
+      }
+    }
+
+    if (binding.kind === "attachment.lifecycle" && resource && attachment) {
+      const attachments = objectAttachments.get(resource);
+      if (attachments && !attachments.has(attachment)) {
+        context.errors.push(`${bindingPath}.attachment references unknown attachment "${attachment}" on object "${resource}".`);
+      }
+    }
+
+    if (binding.kind === "workflow.transition") {
+      if (!workflow) {
+        context.errors.push(`${bindingPath}.workflow is required for workflow.transition bindings.`);
+      } else if (!flowTransitions.has(workflow)) {
+        context.errors.push(`${bindingPath}.workflow references unknown flow "${workflow}".`);
+      } else if (transition && !(flowTransitions.get(workflow)?.has(transition))) {
+        context.errors.push(`${bindingPath}.transition references unknown transition "${transition}" on flow "${workflow}".`);
+      }
+    }
+  });
+}
+
+function validateSectionBindingReferences(
+  sections: unknown,
+  path: string,
+  context: ValidationContext,
+  objectNames: Set<string>,
+  objectAttachments: Map<string, Set<string>>,
+  flowTransitions: Map<string, Set<string>>,
+) {
+  if (!Array.isArray(sections)) {
+    return;
+  }
+
+  sections.forEach((section, sectionIndex) => {
+    if (!isRecord(section)) {
+      return;
+    }
+
+    const sectionPath = `${path}[${sectionIndex}]`;
+    validateBindingReferences(section.bindings, `${sectionPath}.bindings`, context, objectNames, objectAttachments, flowTransitions);
+
+    if (Array.isArray(section.children)) {
+      section.children.forEach((child, childIndex) => {
+        if (isRecord(child)) {
+          validateCompositionBindingReferences(child, `${sectionPath}.children[${childIndex}]`, context, objectNames, objectAttachments, flowTransitions);
+        }
+      });
+    }
+  });
+}
+
+function validateCompositionBindingReferences(
+  node: Record<string, unknown>,
+  path: string,
+  context: ValidationContext,
+  objectNames: Set<string>,
+  objectAttachments: Map<string, Set<string>>,
+  flowTransitions: Map<string, Set<string>>,
+) {
+  validateBindingReferences(node.bindings, `${path}.bindings`, context, objectNames, objectAttachments, flowTransitions);
+
+  if (Array.isArray(node.children)) {
+    node.children.forEach((child, index) => {
+      if (isRecord(child)) {
+        validateCompositionBindingReferences(child, `${path}.children[${index}]`, context, objectNames, objectAttachments, flowTransitions);
+      }
+    });
+  }
+}
+
 function validateObjectReferences(value: Record<string, unknown>, context: ValidationContext) {
   if (!Array.isArray(value.objects)) {
     return;
@@ -809,11 +940,40 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
       .map(object => object.name)
       .filter((name): name is string => typeof name === "string" && name.length > 0),
   );
+  const objectAttachments = new Map<string, Set<string>>();
+  value.objects.forEach(object => {
+    if (!isRecord(object) || typeof object.name !== "string") {
+      return;
+    }
+    const attachments = new Set(
+      Array.isArray(object.media)
+        ? object.media
+            .filter(isRecord)
+            .map(attachment => attachment.name)
+            .filter((name): name is string => typeof name === "string" && name.length > 0)
+        : [],
+    );
+    objectAttachments.set(object.name, attachments);
+  });
+  const flowTransitions = new Map<string, Set<string>>();
 
   if (Array.isArray(value.flows)) {
     value.flows.forEach((flow, index) => {
       if (isRecord(flow) && typeof flow.object === "string" && !objectNames.has(flow.object)) {
         context.errors.push(`flows[${index}].object references unknown object "${flow.object}".`);
+      }
+      if (isRecord(flow) && typeof flow.name === "string") {
+        flowTransitions.set(
+          flow.name,
+          new Set(
+            Array.isArray(flow.transitions)
+              ? flow.transitions
+                  .filter(isRecord)
+                  .map(transition => transition.name)
+                  .filter((name): name is string => typeof name === "string" && name.length > 0)
+              : [],
+          ),
+        );
       }
     });
   }
@@ -823,6 +983,10 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
       if (isRecord(surface) && typeof surface.object === "string" && !objectNames.has(surface.object)) {
         context.errors.push(`surfaces[${index}].object references unknown object "${surface.object}".`);
       }
+      if (isRecord(surface)) {
+        validateBindingReferences(surface.bindings, `surfaces[${index}].bindings`, context, objectNames, objectAttachments, flowTransitions);
+        validateSectionBindingReferences(surface.sections, `surfaces[${index}].sections`, context, objectNames, objectAttachments, flowTransitions);
+      }
     });
   }
 
@@ -830,6 +994,10 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
     value.routes.forEach((route, index) => {
       if (isRecord(route) && typeof route.resource === "string" && !objectNames.has(route.resource)) {
         context.errors.push(`routes[${index}].resource references unknown object "${route.resource}".`);
+      }
+      if (isRecord(route)) {
+        validateBindingReferences(route.bindings, `routes[${index}].bindings`, context, objectNames, objectAttachments, flowTransitions);
+        validateSectionBindingReferences(route.sections, `routes[${index}].sections`, context, objectNames, objectAttachments, flowTransitions);
       }
     });
   }
