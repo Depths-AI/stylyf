@@ -293,6 +293,11 @@ export type ServerModuleSpec = {
   auth?: AuthAccess;
 };
 
+export type FixtureSpec = {
+  resource: string;
+  rows: Record<string, unknown>[];
+};
+
 export type StylyfSpecV10 = {
   version: "1.0";
   app: {
@@ -330,4 +335,5 @@ export type StylyfSpecV10 = {
   routes?: RouteSpec[];
   apis?: ApiRouteSpec[];
   server?: ServerModuleSpec[];
+  fixtures?: FixtureSpec[];
 };

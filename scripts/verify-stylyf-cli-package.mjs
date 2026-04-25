@@ -69,6 +69,12 @@ const internalRichSpec = {
     },
   ],
   flows: [{ name: "ticketApproval", object: "tickets", kind: "approval" }],
+  fixtures: [
+    {
+      resource: "tickets",
+      rows: [{ title: "Seed ticket", status: "draft", summary: "Generated fixture row" }],
+    },
+  ],
 };
 
 const hostedRichSpec = {
@@ -565,6 +571,9 @@ async function main() {
     "src/lib/storage.ts",
     "src/lib/attachments.ts",
     "src/lib/workflows.ts",
+    "src/lib/server/seed.ts",
+    "scripts/seed.ts",
+    "tests/factories/resources.ts",
     "src/routes/api/auth/[...auth].ts",
     "src/routes/login.tsx",
     "src/routes/api/attachments/intent.ts",
@@ -602,6 +611,14 @@ async function main() {
     if (!internalPolicy.includes(expectedText)) {
       throw new Error(`Generated portable app is missing policy helper wiring: ${expectedText}`);
     }
+  }
+  const internalSeed = await readFile(resolve(internalRoot, "src/lib/server/seed.ts"), "utf8");
+  if (!internalSeed.includes("Seed ticket") || !internalSeed.includes("runSeed")) {
+    throw new Error("Generated portable app is missing explicit fixture-backed seed module.");
+  }
+  const internalFactories = await readFile(resolve(internalRoot, "tests/factories/resources.ts"), "utf8");
+  if (!internalFactories.includes("makeTicketsFixture")) {
+    throw new Error("Generated portable app is missing resource-aware test factories.");
   }
   await assertNoRuntimeStylyfImports(internalRoot, "Generated portable app");
 
@@ -691,6 +708,7 @@ async function main() {
       "  - CMS admin content routes are generated under authenticated app shell protection",
       "  - portable app generates membership policy schema and role/workspace/owner helpers",
       "  - database field defaults and indexes compile into generated Drizzle schema",
+      "  - explicit seed modules and resource factories are generated without auto-running seed",
       "  - portable internal rich app source is generated with auth/data/media files",
       "  - free SaaS tool app generates and has no billing/payment surface",
       "  - hosted app generates membership-backed Supabase RLS policies",

@@ -48,6 +48,7 @@ import {
   renderGeneratedSupabasePoliciesSql,
 } from "./backend/resources.js";
 import { writeGeneratedServerModules } from "./backend/server-functions.js";
+import { renderGeneratedResourceFactories, renderGeneratedSeedModule, renderGeneratedSeedScript } from "./backend/seed.js";
 import { renderGeneratedStorageModule } from "./backend/storage.js";
 import {
   hasGeneratedWorkflows,
@@ -757,6 +758,9 @@ export async function generateFrontendDraftFromApp(appIr: AppIR, targetPath: str
   }
   if ((app.resources?.length ?? 0) > 0) {
     await writeGeneratedResourceForms(app, targetPath);
+    await writeGeneratedFile(resolve(targetPath, "src/lib/server/seed.ts"), renderGeneratedSeedModule(app));
+    await writeGeneratedFile(resolve(targetPath, "scripts/seed.ts"), renderGeneratedSeedScript());
+    await writeGeneratedFile(resolve(targetPath, "tests/factories/resources.ts"), renderGeneratedResourceFactories(app));
   }
   if (hasGeneratedAttachments(app)) {
     await writeGeneratedFile(resolve(targetPath, "src/lib/attachments.ts"), renderGeneratedAttachmentModule(app));

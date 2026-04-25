@@ -24,6 +24,7 @@ export function renderGeneratedPackageJson(app: AppIR) {
     "test:e2e": "playwright test",
     "test:smoke": "playwright test tests/smoke",
     "env:check": "tsx src/lib/env.check.ts",
+    seed: "tsx scripts/seed.ts",
     preflight: "npm run env:check && npm run check",
   };
 

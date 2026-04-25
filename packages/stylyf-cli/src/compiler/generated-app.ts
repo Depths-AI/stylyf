@@ -329,6 +329,11 @@ export type ServerModuleIR = {
   auth?: AuthAccess;
 };
 
+export type FixtureIR = {
+  resource: string;
+  rows: Record<string, unknown>[];
+};
+
 export type AppIR = {
   name: string;
   shell: AppShellId;
@@ -343,4 +348,5 @@ export type AppIR = {
   storage?: StorageIR;
   apis?: ApiRouteIR[];
   server?: ServerModuleIR[];
+  fixtures?: FixtureIR[];
 };

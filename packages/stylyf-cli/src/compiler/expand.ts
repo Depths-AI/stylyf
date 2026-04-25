@@ -687,5 +687,6 @@ export function expandSpecToGeneratedApp(spec: StylyfSpecV10): AppIR {
     workflows,
     apis: spec.apis,
     server: spec.server,
+    fixtures: spec.fixtures,
   };
 }

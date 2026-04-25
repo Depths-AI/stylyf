@@ -1031,6 +1031,28 @@ function validateServer(value: unknown, context: ValidationContext) {
   });
 }
 
+function validateFixtures(value: unknown, context: ValidationContext) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    context.errors.push("fixtures must be an array when provided.");
+    return;
+  }
+  value.forEach((fixture, index) => {
+    const path = `fixtures[${index}]`;
+    if (!isRecord(fixture)) {
+      context.errors.push(`${path} must be an object.`);
+      return;
+    }
+    hasOnlyKeys(fixture, ["resource", "rows"], path, context);
+    requireString(fixture, "resource", path, context);
+    if (!Array.isArray(fixture.rows) || fixture.rows.some(row => !isRecord(row))) {
+      context.errors.push(`${path}.rows must be an array of objects.`);
+    }
+  });
+}
+
 function validateNoBillingConcepts(value: unknown, context: ValidationContext) {
   const serialized = JSON.stringify(value).toLowerCase();
   for (const token of ["stripe", "billing", "checkout", "payment", "subscription"]) {
@@ -1280,6 +1302,14 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
       }
     });
   }
+
+  if (Array.isArray(value.fixtures)) {
+    value.fixtures.forEach((fixture, index) => {
+      if (isRecord(fixture) && typeof fixture.resource === "string" && !objectNames.has(fixture.resource)) {
+        context.errors.push(`fixtures[${index}].resource references unknown object "${fixture.resource}".`);
+      }
+    });
+  }
 }
 
 export function validateSpecV10(value: unknown): StylyfSpecV10 {
@@ -1293,7 +1323,7 @@ export function validateSpecV10(value: unknown): StylyfSpecV10 {
 
   hasOnlyKeys(
     normalized,
-    ["version", "app", "backend", "database", "env", "media", "experience", "actors", "policies", "objects", "flows", "surfaces", "routes", "apis", "server"],
+    ["version", "app", "backend", "database", "env", "media", "experience", "actors", "policies", "objects", "flows", "surfaces", "routes", "apis", "server", "fixtures"],
     "spec",
     context,
   );
@@ -1316,6 +1346,7 @@ export function validateSpecV10(value: unknown): StylyfSpecV10 {
   validateRoutes(normalized.routes, context);
   validateApis(normalized.apis, context);
   validateServer(normalized.server, context);
+  validateFixtures(normalized.fixtures, context);
   validatePolicyReferences(normalized, context);
   validateObjectReferences(normalized, context);
 
