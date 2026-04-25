@@ -53,8 +53,8 @@ const internalRichSpec = {
       ownership: "user",
       visibility: "private",
       fields: [
-        { name: "title", type: "short-text", required: true },
-        { name: "status", type: "status", options: ["draft", "review", "approved"] },
+        { name: "title", type: "short-text", required: true, indexed: true },
+        { name: "status", type: "status", options: ["draft", "review", "approved"], default: "draft" },
         { name: "summary", type: "long-text" },
       ],
     },
@@ -584,6 +584,8 @@ async function main() {
     'userId: text("user_id").notNull()',
     'workspaceId: text("workspace_id").notNull()',
     'role: text("role").notNull()',
+    'index("tickets_title_idx").on(table.title)',
+    'status: text("status").default("draft")',
   ]) {
     if (!internalSchema.includes(expectedText)) {
       throw new Error(`Generated portable app is missing membership policy schema: ${expectedText}`);
@@ -688,6 +690,7 @@ async function main() {
       "  - generic app source honors explicit surface route hints",
       "  - CMS admin content routes are generated under authenticated app shell protection",
       "  - portable app generates membership policy schema and role/workspace/owner helpers",
+      "  - database field defaults and indexes compile into generated Drizzle schema",
       "  - portable internal rich app source is generated with auth/data/media files",
       "  - free SaaS tool app generates and has no billing/payment surface",
       "  - hosted app generates membership-backed Supabase RLS policies",

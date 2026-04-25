@@ -500,17 +500,21 @@ function validateFields(value: unknown, path: string, context: ValidationContext
   }
   value.forEach((field, index) => {
     const fieldPath = `${path}[${index}]`;
-    if (!isRecord(field)) {
-      context.errors.push(`${fieldPath} must be an object.`);
-      return;
-    }
-    hasOnlyKeys(field, ["name", "label", "type", "required", "unique", "options"], fieldPath, context);
-    requireString(field, "name", fieldPath, context);
-    optionalString(field, "label", fieldPath, context);
-    enumValue(field.type, fieldTypes, `${fieldPath}.type`, context);
-    optionalBoolean(field, "required", fieldPath, context);
-    optionalBoolean(field, "unique", fieldPath, context);
-    optionalStringArray(field, "options", fieldPath, context);
+      if (!isRecord(field)) {
+        context.errors.push(`${fieldPath} must be an object.`);
+        return;
+      }
+      hasOnlyKeys(field, ["name", "label", "type", "required", "unique", "indexed", "default", "options"], fieldPath, context);
+      requireString(field, "name", fieldPath, context);
+      optionalString(field, "label", fieldPath, context);
+      enumValue(field.type, fieldTypes, `${fieldPath}.type`, context);
+      optionalBoolean(field, "required", fieldPath, context);
+      optionalBoolean(field, "unique", fieldPath, context);
+      optionalBoolean(field, "indexed", fieldPath, context);
+      if (field.default !== undefined && !["string", "number", "boolean"].includes(typeof field.default)) {
+        context.errors.push(`${fieldPath}.default must be a string, number, or boolean when provided.`);
+      }
+      optionalStringArray(field, "options", fieldPath, context);
   });
 }
 
@@ -793,9 +797,10 @@ function validateDatabase(value: unknown, context: ValidationContext) {
       context.errors.push(`${tablePath} must be an object.`);
       return;
     }
-    hasOnlyKeys(table, ["table", "columns", "timestamps"], tablePath, context);
+    hasOnlyKeys(table, ["table", "columns", "timestamps", "softDelete"], tablePath, context);
     requireString(table, "table", tablePath, context);
     optionalBoolean(table, "timestamps", tablePath, context);
+    optionalBoolean(table, "softDelete", tablePath, context);
     if (!Array.isArray(table.columns)) {
       context.errors.push(`${tablePath}.columns must be an array.`);
       return;
@@ -806,12 +811,16 @@ function validateDatabase(value: unknown, context: ValidationContext) {
         context.errors.push(`${columnPath} must be an object.`);
         return;
       }
-      hasOnlyKeys(column, ["name", "type", "nullable", "primaryKey", "unique"], columnPath, context);
+      hasOnlyKeys(column, ["name", "type", "nullable", "primaryKey", "unique", "indexed", "default"], columnPath, context);
       requireString(column, "name", columnPath, context);
       enumValue(column.type, databaseColumnTypes, `${columnPath}.type`, context);
       optionalBoolean(column, "nullable", columnPath, context);
       optionalBoolean(column, "primaryKey", columnPath, context);
       optionalBoolean(column, "unique", columnPath, context);
+      optionalBoolean(column, "indexed", columnPath, context);
+      if (column.default !== undefined && !["string", "number", "boolean"].includes(typeof column.default)) {
+        context.errors.push(`${columnPath}.default must be a string, number, or boolean when provided.`);
+      }
     });
   });
 }

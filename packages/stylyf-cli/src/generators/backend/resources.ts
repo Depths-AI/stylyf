@@ -58,6 +58,8 @@ function toSchemaColumn(field: ResourceFieldIR): DatabaseSchemaIR["columns"][num
     nullable: field.required === true ? false : true,
     primaryKey: field.primaryKey,
     unique: field.unique,
+    indexed: field.indexed,
+    default: field.default,
   };
 }
 

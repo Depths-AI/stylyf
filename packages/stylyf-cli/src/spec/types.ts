@@ -94,6 +94,8 @@ export type FieldSpec = {
   type: FieldType;
   required?: boolean;
   unique?: boolean;
+  indexed?: boolean;
+  default?: string | number | boolean;
   options?: string[];
 };
 
@@ -224,8 +226,11 @@ export type DatabaseSchemaSpec = {
     nullable?: boolean;
     primaryKey?: boolean;
     unique?: boolean;
+    indexed?: boolean;
+    default?: string | number | boolean;
   }>;
   timestamps?: boolean;
+  softDelete?: boolean;
 };
 
 export type ApiSchemaFieldSpec = {

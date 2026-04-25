@@ -159,6 +159,8 @@ function fieldToResourceField(field: FieldSpec): ResourceFieldIR {
     name: field.name,
     required: field.required,
     unique: field.unique,
+    indexed: field.indexed,
+    default: field.default,
   };
 
   switch (field.type) {

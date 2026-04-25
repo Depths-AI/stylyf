@@ -133,8 +133,11 @@ export type DatabaseSchemaIR = {
     nullable?: boolean;
     primaryKey?: boolean;
     unique?: boolean;
+    indexed?: boolean;
+    default?: string | number | boolean;
   }>;
   timestamps?: boolean;
+  softDelete?: boolean;
 };
 
 export type DatabaseIR = {
@@ -150,6 +153,7 @@ export type ResourceFieldIR = {
   required?: boolean;
   unique?: boolean;
   indexed?: boolean;
+  default?: string | number | boolean;
   primaryKey?: boolean;
   enumValues?: string[];
 };
