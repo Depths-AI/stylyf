@@ -470,6 +470,11 @@ async function main() {
     "src/routes/records/new.tsx",
     "src/routes/api/health.ts",
     "src/api.contracts.json",
+    "playwright.config.ts",
+    "tests/smoke/routes.spec.ts",
+    "tests/smoke/auth.spec.ts",
+    "tests/smoke/resource-forms.spec.ts",
+    "src/lib/test/factories.ts",
     "src/routes/login.tsx",
     "stylyf.spec.json",
     "stylyf.plan.json",
@@ -519,6 +524,20 @@ async function main() {
   const apiContracts = await readFile(resolve(genericRoot, "src/api.contracts.json"), "utf8");
   if (!apiContracts.includes('"path": "/api/health"') || !apiContracts.includes('"rateLimit"')) {
     throw new Error("Generated API contracts summary does not include the contracted health route.");
+  }
+  const genericPackageJson = await readFile(resolve(genericRoot, "package.json"), "utf8");
+  for (const expectedText of [
+    '"test:smoke": "playwright test tests/smoke"',
+    '"test:types": "tsc --noEmit"',
+    '"@playwright/test"',
+  ]) {
+    if (!genericPackageJson.includes(expectedText)) {
+      throw new Error(`Generated package is missing test harness package wiring: ${expectedText}`);
+    }
+  }
+  const routeSmoke = await readFile(resolve(genericRoot, "tests/smoke/routes.spec.ts"), "utf8");
+  if (!routeSmoke.includes("/inbox") || !routeSmoke.includes("toBeLessThan(500)")) {
+    throw new Error("Generated route smoke test does not cover generated routes safely.");
   }
   await assertNoRuntimeStylyfImports(genericRoot, "Generated generic app");
 
@@ -646,6 +665,7 @@ async function main() {
       "  - layout prop contracts validate values and normalize documented aliases",
       "  - API contract grammar rejects unsafe method/schema and placeholder defaults",
       "  - contracted API routes emit validation helpers and machine-readable API summary",
+      "  - generated apps include Playwright smoke test harness and package scripts",
       "  - route bindings survive spec expansion into resolved app IR",
       "  - bound list/detail routes import generated queries and route-level loading/empty/error states",
       "  - generic app source honors explicit surface route hints",
