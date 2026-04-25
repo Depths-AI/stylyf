@@ -11,7 +11,7 @@ const repoDir = resolve(scriptDir, "..");
 const packageDir = resolve(repoDir, "packages/stylyf-cli");
 
 const internalRichSpec = {
-  version: "0.4",
+  version: "1.0",
   app: {
     name: "Pack Verify Internal",
     kind: "internal-tool",
@@ -52,7 +52,7 @@ const hostedRichSpec = {
 };
 
 const genericSpec = {
-  version: "0.4",
+  version: "1.0",
   app: {
     name: "Pack Verify Generic",
     kind: "generic",
@@ -84,7 +84,7 @@ const genericSpec = {
 };
 
 const freeToolSpec = {
-  version: "0.4",
+  version: "1.0",
   app: {
     name: "Pack Verify Free Tool",
     kind: "free-saas-tool",
@@ -102,7 +102,7 @@ const freeToolSpec = {
 };
 
 const cmsSpec = {
-  version: "0.4",
+  version: "1.0",
   app: {
     name: "Pack Verify CMS",
     kind: "cms-site",
@@ -270,10 +270,10 @@ async function main() {
   const intro = await readFile(resolve(verifyRoot, "STYLYF_INTRO.md"), "utf8");
   const specIntro = await readFile(resolve(verifyRoot, "STYLYF_SPEC.md"), "utf8");
   if (!intro.includes("generic") || !intro.includes("internal-tool") || !intro.includes("Supabase") || !intro.includes("Tigris/S3-compatible")) {
-    throw new Error("Generated intro overview does not mention v0.4 app kinds and backend paths");
+    throw new Error("Generated intro overview does not mention v1.0 app kinds and backend paths");
   }
-  if (!specIntro.includes("SpecV04") || !specIntro.includes("objects") || !specIntro.includes("flows") || !specIntro.includes("surfaces")) {
-    throw new Error("Generated spec intro topic does not explain the v0.4 DSL");
+  if (!specIntro.includes("SpecV10") || !specIntro.includes("objects") || !specIntro.includes("flows") || !specIntro.includes("surfaces")) {
+    throw new Error("Generated spec intro topic does not explain the v1.0 DSL");
   }
 
   for (const kind of ["generic", "internal-tool", "cms-site", "free-saas-tool"]) {
@@ -293,7 +293,7 @@ async function main() {
   await writeJson(resolve(verifyRoot, "free-tool.spec.json"), freeToolSpec);
   await writeJson(resolve(verifyRoot, "cms.spec.json"), cmsSpec);
 
-  process.stdout.write("Generating/checking v0.4 archetypes in parallel...\n");
+  process.stdout.write("Generating/checking v1.0 archetypes in parallel...\n");
   await Promise.all([
     ["generic.spec.json", "./generated-generic"],
     ["internal-rich.spec.json", "./generated-internal"],
@@ -405,7 +405,7 @@ async function main() {
       "Verified:",
       "  - tarball bundles dist manifests, templates, and source assets",
       "  - installed stylyf binary runs outside the repo",
-      "  - intro/new/validate/plan/generate v0.4 commands work",
+      "  - intro/new/validate/plan/generate v1.0 commands work",
       "  - generic app source honors explicit surface route hints",
       "  - CMS admin content routes are generated under authenticated app shell protection",
       "  - portable internal rich app source is generated with auth/data/media files",

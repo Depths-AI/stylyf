@@ -1,6 +1,6 @@
 export const CLI_NAME = "stylyf";
 
-export const CLI_VERSION = "0.5.0";
+export const CLI_VERSION = "1.0.0";
 
 export type CliCommand =
   | "intro"
@@ -24,11 +24,11 @@ export function helpText() {
     "",
     "Commands:",
     "  intro         Layered briefing for coding agents",
-    "  new           Create a v0.4 spec for an app kind",
-    "  compose       Merge explicit additive v0.4 spec chunks",
-    "  validate      Validate a v0.4 spec",
+    "  new           Create a v1.0 spec for an app kind",
+    "  compose       Merge explicit additive v1.0 spec chunks",
+    "  validate      Validate a v1.0 spec",
     "  plan          Explain what a spec will generate",
-    "  generate      Generate a SolidStart app from a v0.4 spec",
+    "  generate      Generate a SolidStart app from a v1.0 spec",
     "  search        Search bundled capabilities, patterns, and components",
     "  serve-search  Start the local search HTTP endpoint",
     "  build-index   Rebuild the bundled search index",

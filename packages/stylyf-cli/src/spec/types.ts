@@ -191,8 +191,8 @@ export type ServerModuleSpec = {
   auth?: AuthAccess;
 };
 
-export type StylyfSpecV04 = {
-  version: "0.4";
+export type StylyfSpecV10 = {
+  version: "1.0";
   app: {
     name: string;
     kind: AppKind;

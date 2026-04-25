@@ -1,5 +1,5 @@
 import type { AppIR, RouteIR } from "./generated-app.js";
-import type { StylyfSpecV04 } from "../spec/types.js";
+import type { StylyfSpecV10 } from "../spec/types.js";
 
 function toRouteFileSegment(segment: string) {
   return segment.startsWith(":") ? `[${segment.slice(1)}]` : segment;
@@ -60,7 +60,7 @@ function backendSummary(app: AppIR) {
 export type GenerationPlan = {
   app: {
     name: string;
-    kind: StylyfSpecV04["app"]["kind"];
+    kind: StylyfSpecV10["app"]["kind"];
   };
   backend: ReturnType<typeof backendSummary>;
   resources: string[];
@@ -75,7 +75,7 @@ export type GenerationPlan = {
   postGenerateSteps: string[];
 };
 
-export function createGenerationPlan(spec: StylyfSpecV04, app: AppIR): GenerationPlan {
+export function createGenerationPlan(spec: StylyfSpecV10, app: AppIR): GenerationPlan {
   const files = new Set<string>([
     "package.json",
     "app.config.ts",
@@ -169,7 +169,7 @@ export function createGenerationPlan(spec: StylyfSpecV04, app: AppIR): Generatio
 
 export function renderGenerationPlan(plan: GenerationPlan) {
   return [
-    "Stylyf v0.4 generation plan",
+    "Stylyf v1.0 generation plan",
     "",
     "App:",
     `  name: ${plan.app.name}`,

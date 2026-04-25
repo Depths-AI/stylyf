@@ -12,7 +12,7 @@ import type {
 } from "../compiler/generated-app.js";
 import { expandSpecToGeneratedApp } from "../compiler/expand.js";
 import { createGenerationPlan } from "../compiler/plan.js";
-import { readSpecV04 } from "../spec/read.js";
+import { readSpecV10 } from "../spec/read.js";
 import { renderHandoffMarkdown, renderLocalSmokeMarkdown, renderSecurityNotesMarkdown } from "./handoff.js";
 import {
   renderGeneratedAuthClientModule,
@@ -728,7 +728,7 @@ export async function generateFrontendDraftFromApp(appIr: AppIR, targetPath: str
 }
 
 export async function generateFromSpec(specPath: string, targetPath: string, options?: { install?: boolean }) {
-  const { path, spec } = await readSpecV04(specPath);
+  const { path, spec } = await readSpecV10(specPath);
   const app = expandSpecToGeneratedApp(spec);
   const plan = createGenerationPlan(spec, app);
   const result = await generateFrontendDraftFromApp(app, targetPath, options);

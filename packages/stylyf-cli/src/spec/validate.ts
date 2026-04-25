@@ -29,7 +29,7 @@ import {
   visibilityModes,
   workflowNotificationAudiences,
 } from "./schema.js";
-import type { StylyfSpecV04 } from "./types.js";
+import type { StylyfSpecV10 } from "./types.js";
 
 type ValidationContext = {
   errors: string[];
@@ -42,7 +42,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[], path: string, context: ValidationContext) {
   for (const key of Object.keys(value)) {
     if (!allowed.includes(key)) {
-      context.errors.push(`${path}.${key} is not supported in Stylyf v0.4 specs.`);
+      context.errors.push(`${path}.${key} is not supported in Stylyf v1.0 specs.`);
     }
   }
 }
@@ -661,7 +661,7 @@ function validateObjectReferences(value: Record<string, unknown>, context: Valid
   }
 }
 
-export function validateSpecV04(value: unknown): StylyfSpecV04 {
+export function validateSpecV10(value: unknown): StylyfSpecV10 {
   const context: ValidationContext = { errors: [] };
 
   if (!isRecord(value)) {
@@ -675,8 +675,8 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
     context,
   );
 
-  if (value.version !== "0.4") {
-    context.errors.push('version must be "0.4".');
+  if (value.version !== "1.0") {
+    context.errors.push('version must be "1.0".');
   }
 
   validateApp(value.app, context);
@@ -699,8 +699,8 @@ export function validateSpecV04(value: unknown): StylyfSpecV04 {
   }
 
   if (context.errors.length > 0) {
-    throw new Error(`Invalid Stylyf v0.4 spec:\n${context.errors.map(error => `- ${error}`).join("\n")}`);
+    throw new Error(`Invalid Stylyf v1.0 spec:\n${context.errors.map(error => `- ${error}`).join("\n")}`);
   }
 
-  return value as StylyfSpecV04;
+  return value as StylyfSpecV10;
 }

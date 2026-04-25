@@ -23,7 +23,7 @@ import type {
   ObjectSpec,
   RouteSpec,
   SectionSpec,
-  StylyfSpecV04,
+  StylyfSpecV10,
   SurfaceSpec,
 } from "../spec/types.js";
 import { genericExpansion } from "./kinds/generic.js";
@@ -144,7 +144,7 @@ function attachmentFromSpec(attachment: MediaAttachmentSpec): ResourceAttachment
   };
 }
 
-function defaultMediaAttachments(spec: StylyfSpecV04): ResourceAttachmentIR[] {
+function defaultMediaAttachments(spec: StylyfSpecV10): ResourceAttachmentIR[] {
   const mode = spec.media?.mode ?? "none";
   if (mode === "none") {
     return [];
@@ -158,7 +158,7 @@ function defaultMediaAttachments(spec: StylyfSpecV04): ResourceAttachmentIR[] {
   ];
 }
 
-function objectToResource(object: ObjectSpec, spec: StylyfSpecV04): ResourceIR {
+function objectToResource(object: ObjectSpec, spec: StylyfSpecV10): ResourceIR {
   const ownership = object.ownership ?? (spec.app.kind === "cms-site" ? "user" : "user");
   const visibility = object.visibility ?? (spec.app.kind === "cms-site" ? "mixed" : "private");
   const fields = object.fields?.map(fieldToResourceField) ?? [
@@ -258,7 +258,7 @@ function flowToWorkflow(flow: FlowSpec): WorkflowIR {
   };
 }
 
-function backendFor(spec: StylyfSpecV04): { database?: DatabaseIR; auth?: AuthIR; storage?: StorageIR } {
+function backendFor(spec: StylyfSpecV10): { database?: DatabaseIR; auth?: AuthIR; storage?: StorageIR } {
   const storage = (spec.media?.mode ?? "none") === "none" ? undefined : { provider: "s3" as const, mode: "presigned-put" as const, bucketAlias: "uploads" };
 
   if (spec.backend.mode === "hosted") {
@@ -492,7 +492,7 @@ function mergeSurfaces(defaults: SurfaceSpec[], overrides?: SurfaceSpec[]) {
   return [...merged.values()];
 }
 
-function kindExpansionFor(spec: StylyfSpecV04): KindExpansion {
+function kindExpansionFor(spec: StylyfSpecV10): KindExpansion {
   switch (spec.app.kind) {
     case "generic":
       return genericExpansion;
@@ -534,7 +534,7 @@ function mergeRoutes(defaults: RouteIR[], overrides?: RouteIR[]) {
   return [...merged.values()];
 }
 
-function routesFor(spec: StylyfSpecV04, resources: ResourceIR[], expansion: KindExpansion) {
+function routesFor(spec: StylyfSpecV10, resources: ResourceIR[], expansion: KindExpansion) {
   const surfaceRoutes = mergeSurfaces(expansion.defaultSurfaces(spec, resources), spec.surfaces).map(surface =>
     surfaceToRoute(surface, resources, expansion.shell),
   );
@@ -542,7 +542,7 @@ function routesFor(spec: StylyfSpecV04, resources: ResourceIR[], expansion: Kind
   return mergeRoutes(surfaceRoutes, explicitRoutes);
 }
 
-export function expandSpecToGeneratedApp(spec: StylyfSpecV04): AppIR {
+export function expandSpecToGeneratedApp(spec: StylyfSpecV10): AppIR {
   const expansion = kindExpansionFor(spec);
   const resources = expansion.defaultObjects(spec).map(object => objectToResource(object, spec));
   const workflows = expansion.defaultFlows(spec, resources).map(flowToWorkflow);

@@ -50,7 +50,7 @@ function section(title: string, body: string[]) {
 
 function specExample(kind: IntroKind) {
   const base = {
-    version: "0.4",
+    version: "1.0",
     app: {
       name: kind === "cms-site" ? "Field Notes" : kind === "free-saas-tool" ? "Resize Kit" : "Acme Ops",
       kind,
@@ -143,11 +143,11 @@ function specExample(kind: IntroKind) {
 
 function renderOverview() {
   return [
-    "# Stylyf v0.4 Intro",
+    "# Stylyf v1.0 Intro",
     "",
-    "Stylyf v0.4 is an agent-operated scaffolding compiler for standalone SolidStart apps.",
+    "Stylyf v1.0 is an agent-operated scaffolding compiler for standalone SolidStart apps.",
     "",
-    "The public authoring surface is a small `SpecV04`. Stylyf expands that spec into a private app model, builds a generation plan, and emits ordinary source code that has no runtime dependency on this repo or on `@depths/stylyf-cli`.",
+    "The public authoring surface is a small `SpecV10`. Stylyf expands that spec into a private app model, builds a generation plan, and emits ordinary source code that has no runtime dependency on this repo or on `@depths/stylyf-cli`.",
     "",
     section("Default Operator Loop", [
       "1. choose an app kind: `generic`, `internal-tool`, `cms-site`, or `free-saas-tool`",
@@ -180,7 +180,7 @@ function renderOverview() {
       "- hosted is the fast managed deployment path",
     ]),
     section("Drill Down", [
-      "- `stylyf intro --topic spec` for the v0.4 DSL",
+      "- `stylyf intro --topic spec` for the v1.0 DSL",
       "- `stylyf intro --topic backend` for backend choices",
       "- `stylyf intro --topic media` for object storage and attachments",
       "- `stylyf intro --topic composition` for additive chunks, explicit routes, and deeper layout/API control",
@@ -195,14 +195,14 @@ function renderOverview() {
 
 function renderSpecTopic() {
   return [
-    "# Stylyf v0.4 Spec",
+    "# Stylyf v1.0 Spec",
     "",
-    "The public DSL type is `SpecV04`. Start with app kind, backend mode, `objects`, `flows`, optional `surfaces`, and experience. Drill down only when needed with explicit `sections`, `routes`, `apis`, `server`, `database.schema`, and `env.extras`.",
+    "The public DSL type is `SpecV10`. Start with app kind, backend mode, `objects`, `flows`, optional `surfaces`, and experience. Drill down only when needed with explicit `sections`, `routes`, `apis`, `server`, `database.schema`, and `env.extras`.",
     "",
     codeBlock(JSON.stringify(specExample("internal-tool"), null, 2), "json"),
     "",
     section("Top-Level Fields", [
-      "- `version`: must be `0.4`",
+      "- `version`: must be `1.0`",
       "- `app`: name, kind, optional description",
       "- `backend`: `portable` or `hosted`",
       "- `media`: `none`, `basic`, or `rich`",
@@ -247,7 +247,7 @@ function renderKindTopic(kind: IntroKind) {
   } satisfies Record<IntroKind, string[]>;
 
   return [
-    `# Stylyf v0.4: ${labels[kind]}`,
+    `# Stylyf v1.0: ${labels[kind]}`,
     "",
     ...notes[kind],
     "",
@@ -270,7 +270,7 @@ function renderKindTopic(kind: IntroKind) {
 
 function renderBackendTopic() {
   return [
-    "# Stylyf v0.4 Backend",
+    "# Stylyf v1.0 Backend",
     "",
     section("Portable", [
       "- Better Auth for sessions and auth routes",
@@ -293,7 +293,7 @@ function renderBackendTopic() {
 
 function renderMediaTopic() {
   return [
-    "# Stylyf v0.4 Media",
+    "# Stylyf v1.0 Media",
     "",
     "`media.mode` controls whether Stylyf generates object-storage capability and attachment lifecycle code.",
     "",
@@ -313,7 +313,7 @@ function renderMediaTopic() {
 
 function renderCompositionTopic() {
   return [
-    "# Stylyf v0.4 Composition",
+    "# Stylyf v1.0 Composition",
     "",
     "Stylyf is layered. Use a small intent spec first, then add explicit chunks only where the generated defaults are too coarse. Composition is explicit: no directory magic, no hidden globbing.",
     "",
@@ -418,7 +418,7 @@ function renderCompositionTopic() {
 
 function renderGeneratedOutputTopic() {
   return [
-    "# Stylyf v0.4 Generated Output",
+    "# Stylyf v1.0 Generated Output",
     "",
     "Generated apps are ordinary SolidStart source trees. They do not import this repo and do not depend on the CLI package at runtime.",
     "",

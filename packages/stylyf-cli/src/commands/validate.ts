@@ -1,4 +1,4 @@
-import { readSpecV04 } from "../spec/read.js";
+import { readSpecV10 } from "../spec/read.js";
 
 export async function runValidateCommand(args: string[]) {
   let specPath: string | undefined;
@@ -14,7 +14,7 @@ export async function runValidateCommand(args: string[]) {
 
     if (arg === "--ir" || arg === "--print-resolved" || arg === "--write-resolved") {
       process.stderr.write(
-        "Stylyf v0.4 no longer accepts --ir fragments. Use --spec stylyf.spec.json. Run `stylyf intro --topic spec` for the v0.4 DSL.\n",
+        "Stylyf v1.0 no longer accepts --ir fragments. Use --spec stylyf.spec.json. Run `stylyf intro --topic spec` for the v1.0 DSL.\n",
       );
       return 1;
     }
@@ -25,7 +25,7 @@ export async function runValidateCommand(args: string[]) {
     return 1;
   }
 
-  const { path, spec } = await readSpecV04(specPath);
+  const { path, spec } = await readSpecV10(specPath);
 
   process.stdout.write(
     [

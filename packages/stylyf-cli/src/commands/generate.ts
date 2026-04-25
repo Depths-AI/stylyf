@@ -28,7 +28,7 @@ export async function runGenerateCommand(args: string[]) {
 
     if (arg === "--ir" || arg === "--print-resolved" || arg === "--write-resolved") {
       process.stderr.write(
-        "Stylyf v0.4 no longer accepts --ir fragments. Use --spec stylyf.spec.json. Run `stylyf intro --topic spec` for the v0.4 DSL.\n",
+        "Stylyf v1.0 no longer accepts --ir fragments. Use --spec stylyf.spec.json. Run `stylyf intro --topic spec` for the v1.0 DSL.\n",
       );
       return 1;
     }
