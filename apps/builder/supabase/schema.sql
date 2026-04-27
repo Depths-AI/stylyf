@@ -1,6 +1,8 @@
 -- Stylyf Builder Supabase schema
 -- Apply this once in the Supabase SQL editor for the internal builder project.
 -- It is intentionally builder-owned and stricter than the generic scaffold schema.
+-- Postgres stores scalar records, text fields, and pointers only.
+-- Variable-sized media, screenshots, logs, large metadata, and handoff artifacts belong in Tigris/S3-compatible object storage or the project filesystem.
 
 create extension if not exists pgcrypto;
 
@@ -13,6 +15,14 @@ begin
   return new;
 end;
 $$;
+
+-- Remove stale scaffold-era tables that are not part of the current builder runtime.
+drop table if exists public.agent_events_assets cascade;
+drop table if exists public.approvals cascade;
+drop table if exists public.previews cascade;
+drop table if exists public.stylyf_specs cascade;
+drop table if exists public.briefs cascade;
+drop table if exists public.project_briefs cascade;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -63,49 +73,6 @@ create table if not exists public.project_members (
 
 create index if not exists project_members_user_id_idx on public.project_members(user_id);
 
-create table if not exists public.project_briefs (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id) on delete cascade,
-  brief_text text not null default '',
-  brief_path text,
-  structured_summary text,
-  version integer not null default 1,
-  created_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create index if not exists project_briefs_project_id_idx on public.project_briefs(project_id);
-
--- Backward-compatible table retained for the current generated app pass.
--- New builder code should use project_briefs.
-create table if not exists public.briefs (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id) on delete cascade,
-  content jsonb not null default '{}'::jsonb,
-  version integer not null default 1,
-  created_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create index if not exists briefs_project_id_idx on public.briefs(project_id);
-
-create table if not exists public.stylyf_specs (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id) on delete cascade,
-  kind text not null default 'full',
-  spec jsonb not null,
-  version integer not null default 1,
-  is_active boolean not null default false,
-  created_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create unique index if not exists stylyf_specs_one_active_per_project_idx
-on public.stylyf_specs(project_id)
-where is_active;
-
-create index if not exists stylyf_specs_project_id_idx on public.stylyf_specs(project_id);
-
 create table if not exists public.stylyf_spec_chunks (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
@@ -146,8 +113,12 @@ create table if not exists public.agent_events (
   session_id uuid references public.agent_sessions(id) on delete set null,
   owner_id uuid not null references public.profiles(id) on delete cascade,
   type text not null,
+  role text check (role in ('system', 'builder', 'user', 'assistant', 'tool')),
+  status text not null default 'completed' check (status in ('queued', 'running', 'completed', 'failed', 'cancelled')),
   summary text,
+  content text,
   artifact_path text,
+  content_path text,
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
@@ -172,22 +143,28 @@ create table if not exists public.commands (
 );
 
 create index if not exists commands_project_id_idx on public.commands(project_id);
+create index if not exists commands_status_idx on public.commands(status);
 
-create table if not exists public.previews (
+create table if not exists public.build_runs (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
-  port integer not null,
-  pid integer,
-  status text not null default 'stopped' check (status in ('starting', 'running', 'stopped', 'error')),
+  command_id uuid references public.commands(id) on delete set null,
+  kind text not null check (kind in ('compose', 'validate', 'plan', 'generate', 'install', 'typecheck', 'build', 'preview', 'webknife')),
+  status text not null default 'queued' check (status in ('queued', 'running', 'completed', 'failed', 'cancelled')),
+  summary text,
+  artifact_path text,
+  started_at timestamptz,
+  completed_at timestamptz,
   created_at timestamptz not null default timezone('utc'::text, now()),
   updated_at timestamptz not null default timezone('utc'::text, now())
 );
 
-create index if not exists previews_project_id_idx on public.previews(project_id);
+create index if not exists build_runs_project_id_idx on public.build_runs(project_id);
+create index if not exists build_runs_status_idx on public.build_runs(status);
 
-drop trigger if exists set_previews_updated_at on public.previews;
-create trigger set_previews_updated_at
-before update on public.previews
+drop trigger if exists set_build_runs_updated_at on public.build_runs;
+create trigger set_build_runs_updated_at
+before update on public.build_runs
 for each row execute function public.set_updated_at();
 
 create table if not exists public.preview_processes (
@@ -222,23 +199,6 @@ create table if not exists public.webknife_runs (
 
 create index if not exists webknife_runs_project_id_idx on public.webknife_runs(project_id);
 
-create table if not exists public.approvals (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid not null references public.projects(id) on delete cascade,
-  session_id uuid references public.agent_sessions(id) on delete set null,
-  type text not null,
-  requested_by text not null,
-  summary text,
-  payload_path text,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'denied', 'expired')),
-  decided_by uuid references public.profiles(id) on delete set null,
-  decided_at timestamptz,
-  created_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create index if not exists approvals_project_id_idx on public.approvals(project_id);
-create index if not exists approvals_status_idx on public.approvals(status);
-
 create table if not exists public.git_events (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
@@ -268,6 +228,8 @@ create table if not exists public.asset_pointers (
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
+comment on table public.asset_pointers is 'Scalar object-storage pointers only. Raw media, screenshots, logs, and large metadata must stay outside Postgres.';
+
 create index if not exists asset_pointers_project_id_idx on public.asset_pointers(project_id);
 create index if not exists asset_pointers_purpose_idx on public.asset_pointers(purpose);
 
@@ -291,36 +253,11 @@ create table if not exists public.projects_assets (
   updated_at timestamptz not null default timezone('utc'::text, now())
 );
 
+comment on table public.projects_assets is 'Reference asset records for projects. Store object keys and scalar metadata only; put variable-sized metadata behind metadata_path.';
+
 create index if not exists projects_assets_resource_id_idx on public.projects_assets(resource_id);
 
 drop trigger if exists set_projects_assets_updated_at on public.projects_assets;
 create trigger set_projects_assets_updated_at
 before update on public.projects_assets
-for each row execute function public.set_updated_at();
-
-create table if not exists public.agent_events_assets (
-  id uuid primary key default gen_random_uuid(),
-  resource_id uuid not null references public.agent_events(id) on delete cascade,
-  storage_provider text not null default 'tigris',
-  bucket_name text not null,
-  attachment_name text not null,
-  bucket_alias text not null,
-  object_key text unique not null,
-  file_name text,
-  content_type text,
-  file_size integer,
-  kind text not null,
-  status text not null,
-  metadata_path text,
-  replaced_by_asset_id uuid references public.agent_events_assets(id) on delete set null,
-  deleted_at timestamptz,
-  created_at timestamptz not null default timezone('utc'::text, now()),
-  updated_at timestamptz not null default timezone('utc'::text, now())
-);
-
-create index if not exists agent_events_assets_resource_id_idx on public.agent_events_assets(resource_id);
-
-drop trigger if exists set_agent_events_assets_updated_at on public.agent_events_assets;
-create trigger set_agent_events_assets_updated_at
-before update on public.agent_events_assets
 for each row execute function public.set_updated_at();

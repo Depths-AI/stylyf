@@ -9,7 +9,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select role from public.profiles where id = auth.uid()
+  select role from public.profiles where id = (select auth.uid())
 $$;
 
 create or replace function public.is_admin()
@@ -33,7 +33,7 @@ as $$
     select 1
     from public.project_members pm
     where pm.project_id = target_project_id
-      and pm.user_id = auth.uid()
+      and pm.user_id = (select auth.uid())
       and pm.role = any(allowed_roles)
   )
 $$;
@@ -45,7 +45,8 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.is_admin() or public.is_project_member(target_project_id, array['owner', 'editor', 'viewer'])
+  select (select auth.uid()) is not null
+    and (public.is_admin() or public.is_project_member(target_project_id, array['owner', 'editor', 'viewer']))
 $$;
 
 create or replace function public.can_edit_project(target_project_id uuid)
@@ -55,7 +56,8 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.is_admin() or public.is_project_member(target_project_id, array['owner', 'editor'])
+  select (select auth.uid()) is not null
+    and (public.is_admin() or public.is_project_member(target_project_id, array['owner', 'editor']))
 $$;
 
 create or replace function public.handle_new_user()
@@ -123,34 +125,29 @@ for each row execute function public.add_project_owner_member();
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
-alter table public.project_briefs enable row level security;
-alter table public.briefs enable row level security;
-alter table public.stylyf_specs enable row level security;
 alter table public.stylyf_spec_chunks enable row level security;
 alter table public.agent_sessions enable row level security;
 alter table public.agent_events enable row level security;
 alter table public.commands enable row level security;
-alter table public.previews enable row level security;
+alter table public.build_runs enable row level security;
 alter table public.preview_processes enable row level security;
 alter table public.webknife_runs enable row level security;
-alter table public.approvals enable row level security;
 alter table public.git_events enable row level security;
 alter table public.asset_pointers enable row level security;
 alter table public.projects_assets enable row level security;
-alter table public.agent_events_assets enable row level security;
 
 drop policy if exists profiles_select_self_or_admin on public.profiles;
 create policy profiles_select_self_or_admin
 on public.profiles for select
 to authenticated
-using (id = auth.uid() or public.is_admin());
+using (id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists profiles_update_self_or_admin on public.profiles;
 create policy profiles_update_self_or_admin
 on public.profiles for update
 to authenticated
-using (id = auth.uid() or public.is_admin())
-with check (id = auth.uid() or public.is_admin());
+using (id = (select auth.uid()) or public.is_admin())
+with check (id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists projects_select_member_or_admin on public.projects;
 create policy projects_select_member_or_admin
@@ -162,7 +159,7 @@ drop policy if exists projects_insert_authenticated_owner on public.projects;
 create policy projects_insert_authenticated_owner
 on public.projects for insert
 to authenticated
-with check (owner_id = auth.uid() or public.is_admin());
+with check (owner_id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists projects_update_editor_or_admin on public.projects;
 create policy projects_update_editor_or_admin
@@ -189,49 +186,6 @@ on public.project_members for all
 to authenticated
 using (public.is_admin() or public.is_project_member(project_id, array['owner']))
 with check (public.is_admin() or public.is_project_member(project_id, array['owner']));
-
-drop policy if exists briefs_select_project_member on public.briefs;
-create policy briefs_select_project_member
-on public.briefs for select
-to authenticated
-using (public.can_read_project(project_id));
-
-drop policy if exists briefs_insert_project_editor on public.briefs;
-create policy briefs_insert_project_editor
-on public.briefs for insert
-to authenticated
-with check (public.can_edit_project(project_id));
-
-drop policy if exists project_briefs_select_project_member on public.project_briefs;
-create policy project_briefs_select_project_member
-on public.project_briefs for select
-to authenticated
-using (public.can_read_project(project_id));
-
-drop policy if exists project_briefs_insert_project_editor on public.project_briefs;
-create policy project_briefs_insert_project_editor
-on public.project_briefs for insert
-to authenticated
-with check (public.can_edit_project(project_id));
-
-drop policy if exists stylyf_specs_select_project_member on public.stylyf_specs;
-create policy stylyf_specs_select_project_member
-on public.stylyf_specs for select
-to authenticated
-using (public.can_read_project(project_id));
-
-drop policy if exists stylyf_specs_insert_project_editor on public.stylyf_specs;
-create policy stylyf_specs_insert_project_editor
-on public.stylyf_specs for insert
-to authenticated
-with check (public.can_edit_project(project_id));
-
-drop policy if exists stylyf_specs_update_project_editor on public.stylyf_specs;
-create policy stylyf_specs_update_project_editor
-on public.stylyf_specs for update
-to authenticated
-using (public.can_edit_project(project_id))
-with check (public.can_edit_project(project_id));
 
 drop policy if exists stylyf_spec_chunks_select_project_member on public.stylyf_spec_chunks;
 create policy stylyf_spec_chunks_select_project_member
@@ -269,7 +223,7 @@ drop policy if exists agent_events_insert_project_editor on public.agent_events;
 create policy agent_events_insert_project_editor
 on public.agent_events for insert
 to authenticated
-with check ((owner_id = auth.uid() or public.is_admin()) and public.can_edit_project(project_id));
+with check ((owner_id = (select auth.uid()) or public.is_admin()) and public.can_edit_project(project_id));
 
 drop policy if exists agent_events_update_project_editor on public.agent_events;
 create policy agent_events_update_project_editor
@@ -291,15 +245,15 @@ to authenticated
 using (public.can_edit_project(project_id))
 with check (public.can_edit_project(project_id));
 
-drop policy if exists previews_select_project_member on public.previews;
-create policy previews_select_project_member
-on public.previews for select
+drop policy if exists build_runs_select_project_member on public.build_runs;
+create policy build_runs_select_project_member
+on public.build_runs for select
 to authenticated
 using (public.can_read_project(project_id));
 
-drop policy if exists previews_write_project_editor on public.previews;
-create policy previews_write_project_editor
-on public.previews for all
+drop policy if exists build_runs_write_project_editor on public.build_runs;
+create policy build_runs_write_project_editor
+on public.build_runs for all
 to authenticated
 using (public.can_edit_project(project_id))
 with check (public.can_edit_project(project_id));
@@ -327,19 +281,6 @@ drop policy if exists webknife_runs_insert_project_editor on public.webknife_run
 create policy webknife_runs_insert_project_editor
 on public.webknife_runs for insert
 to authenticated
-with check (public.can_edit_project(project_id));
-
-drop policy if exists approvals_select_project_member on public.approvals;
-create policy approvals_select_project_member
-on public.approvals for select
-to authenticated
-using (public.can_read_project(project_id));
-
-drop policy if exists approvals_write_project_editor on public.approvals;
-create policy approvals_write_project_editor
-on public.approvals for all
-to authenticated
-using (public.can_edit_project(project_id))
 with check (public.can_edit_project(project_id));
 
 drop policy if exists git_events_select_project_member on public.git_events;
@@ -378,37 +319,3 @@ on public.projects_assets for all
 to authenticated
 using (exists (select 1 from public.projects p where p.id = resource_id and public.can_edit_project(p.id)))
 with check (exists (select 1 from public.projects p where p.id = resource_id and public.can_edit_project(p.id)));
-
-drop policy if exists agent_events_assets_select_project_member on public.agent_events_assets;
-create policy agent_events_assets_select_project_member
-on public.agent_events_assets for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.agent_events e
-    where e.id = resource_id
-      and public.can_read_project(e.project_id)
-  )
-);
-
-drop policy if exists agent_events_assets_write_project_editor on public.agent_events_assets;
-create policy agent_events_assets_write_project_editor
-on public.agent_events_assets for all
-to authenticated
-using (
-  exists (
-    select 1
-    from public.agent_events e
-    where e.id = resource_id
-      and public.can_edit_project(e.project_id)
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.agent_events e
-    where e.id = resource_id
-      and public.can_edit_project(e.project_id)
-  )
-);
