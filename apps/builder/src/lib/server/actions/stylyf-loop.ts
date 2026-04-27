@@ -73,6 +73,20 @@ async function getProject(projectId: string, userId: string) {
   return data as Record<string, unknown>;
 }
 
+async function getActiveSpec(projectId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("stylyf_specs")
+    .select("spec")
+    .eq("project_id", projectId)
+    .eq("is_active", true)
+    .order("version", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const spec = data?.[0]?.spec;
+  return spec && typeof spec === "object" ? spec : null;
+}
+
 async function ensureWorkspace(project: Record<string, unknown>) {
   const supabase = createSupabaseServerClient();
   const existing = typeof project.workspacePath === "string" ? project.workspacePath : "";
@@ -135,7 +149,7 @@ export const runStylyfProjectStep = action(async (projectId: string, step: Styly
   const { userId } = await requireViewerIdentity();
   const project = await getProject(projectId, userId);
   const workspace = await ensureWorkspace(project);
-  const spec = createSpec(project);
+  const spec = (await getActiveSpec(projectId)) ?? createSpec(project);
   const specPath = join(workspace.specs, "stylyf.spec.json");
   await writeJson(specPath, spec);
 

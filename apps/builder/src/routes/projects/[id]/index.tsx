@@ -17,18 +17,22 @@ import { startProjectPreview, stopProjectPreview } from "~/lib/server/actions/pr
 import { decideApproval, sendAgentPrompt } from "~/lib/server/actions/agent-loop";
 import { getWorkbenchTimeline } from "~/lib/server/queries/workbench-timeline";
 import { runWebknifeScreenshot } from "~/lib/server/actions/webknife-loop";
+import { saveIrDraft } from "~/lib/server/actions/ir-draft";
+import { getActiveIrDraft } from "~/lib/server/queries/ir-draft";
 
 export default function ProjectsIdRoute() {
   const params = useParams();
   const projectData = createAsync(() => getProjects(params.id ?? ""));
   const timeline = createAsync(() => getWorkbenchTimeline(params.id ?? ""));
+  const activeIr = createAsync(() => getActiveIrDraft(params.id ?? ""));
   const stylyfSubmission = useSubmission(runStylyfProjectStep);
   const startPreviewSubmission = useSubmission(startProjectPreview);
   const stopPreviewSubmission = useSubmission(stopProjectPreview);
   const agentSubmission = useSubmission(sendAgentPrompt);
   const approvalSubmission = useSubmission(decideApproval);
   const webknifeSubmission = useSubmission(runWebknifeScreenshot);
-  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending || webknifeSubmission.pending;
+  const irSubmission = useSubmission(saveIrDraft);
+  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending || webknifeSubmission.pending || irSubmission.pending;
   return (
     <>
       <Title>Project workbench</Title>
@@ -45,6 +49,69 @@ export default function ProjectsIdRoute() {
                 <PageHeader
                   title={projectData()?.name ?? "Project workbench"}
                   description={projectData()?.summary || "Draft, validate, plan, and generate the standalone app source from this workspace."}
+                />
+                <DetailPanel
+                  title="Friendly IR panes"
+                  description="These controls compose an explicit Stylyf spec. Use raw IR only when the panes are too coarse."
+                  body={
+                    <form action={saveIrDraft.with(params.id ?? "")} method="post" class="space-y-4">
+                      <div class="grid gap-3 md:grid-cols-2">
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">App name</span>
+                          <input name="appName" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2" value={projectData()?.name ?? ""} />
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">App kind</span>
+                          <select name="appKind" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2">
+                            <option value="generic">Generic</option>
+                            <option value="internal-tool" selected>Internal tool</option>
+                            <option value="cms">CMS</option>
+                            <option value="free-saas-tool">Free SaaS tool</option>
+                          </select>
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">Theme</span>
+                          <select name="theme" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2">
+                            <option value="opal" selected>Opal</option>
+                            <option value="amber">Amber</option>
+                            <option value="emerald">Emerald</option>
+                            <option value="pearl">Pearl</option>
+                          </select>
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">Primary object</span>
+                          <input name="objectName" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2" value="records" />
+                        </label>
+                      </div>
+                      <label class="space-y-1 text-sm">
+                        <span class="font-medium text-foreground">Brief</span>
+                        <textarea name="brief" rows="3" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2" placeholder="What should this app help users do?">{projectData()?.summary ?? ""}</textarea>
+                      </label>
+                      <div class="grid gap-3 md:grid-cols-2">
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">Fields</span>
+                          <input name="fields" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2" value="title,status,summary" />
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium text-foreground">Routes</span>
+                          <input name="routes" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2" value="Dashboard,Records,New Record,Settings" />
+                        </label>
+                      </div>
+                      <label class="space-y-1 text-sm">
+                        <span class="font-medium text-foreground">Raw IR override</span>
+                        <textarea name="rawSpec" rows="8" class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2 font-mono text-xs" placeholder="Optional: paste a complete Stylyf JSON spec to use instead of the pane values.">{activeIr()?.spec ?? ""}</textarea>
+                      </label>
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-xs text-muted-foreground">
+                          Active draft: {activeIr() ? `v${activeIr()?.version}` : "none yet"}. Generation uses the active draft when present.
+                        </p>
+                        <Button type="submit" pending={pending()}>Save IR draft</Button>
+                      </div>
+                      <Show when={irSubmission.result}>
+                        {result => <p class="text-sm text-muted-foreground">Saved IR draft v{result().version}.</p>}
+                      </Show>
+                    </form>
+                  }
                 />
                 <div class="grid gap-[var(--space-5)] lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
                   <DetailPanel
