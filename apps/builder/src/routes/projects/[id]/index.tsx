@@ -19,6 +19,7 @@ import {
 } from "lucide-solid";
 import { For, Show, createSignal, type JSX } from "solid-js";
 import { demoProject, getProject } from "~/lib/server/projects";
+import { composeSpec, getSpecChunks, planSpec, saveSpecChunk, validateSpec, type SpecChunkKind } from "~/lib/server/specs";
 import { getTimeline, runScreenshotReview, sendAgentPrompt, startPreview, stopPreview } from "~/lib/server/studio";
 
 type UploadIntentResponse =
@@ -35,21 +36,88 @@ type UploadIntentResponse =
 
 type UploadConfirmResponse = { ok: true; fileName: string | null } | { ok: false; error: string };
 
+const specPaneKinds: { kind: SpecChunkKind; label: string }[] = [
+  { kind: "brief", label: "Brief" },
+  { kind: "style", label: "Style" },
+  { kind: "routes", label: "Screens" },
+  { kind: "data", label: "Data" },
+  { kind: "api", label: "API" },
+  { kind: "media", label: "Media" },
+  { kind: "raw", label: "Raw" },
+];
+
+const specPaneDefaultText: Record<SpecChunkKind, string> = {
+  brief: `{
+  "app": {
+    "description": "A focused app draft shaped through Stylyf Builder."
+  }
+}`,
+  style: `{
+  "experience": {
+    "theme": "opal",
+    "mode": "light",
+    "radius": "trim",
+    "density": "comfortable",
+    "spacing": "balanced"
+  }
+}`,
+  routes: `{
+  "surfaces": [
+    {
+      "name": "Home",
+      "kind": "dashboard",
+      "path": "/",
+      "audience": "user"
+    }
+  ]
+}`,
+  data: `{
+  "objects": []
+}`,
+  api: `{
+  "apis": [],
+  "server": []
+}`,
+  media: `{
+  "media": {
+    "mode": "rich"
+  }
+}`,
+  raw: "{}",
+};
+
 export default function ProjectStudioRoute() {
   const params = useParams();
   const [controlsVisible, setControlsVisible] = createSignal(true);
   const [referenceStatus, setReferenceStatus] = createSignal("");
   const [referencePending, setReferencePending] = createSignal(false);
+  const [activeSpecKind, setActiveSpecKind] = createSignal<SpecChunkKind>("brief");
   let referenceInput!: HTMLInputElement;
   const project = createAsync(() => getProject(params.id ?? "demo"));
   const timeline = createAsync(() => getTimeline(params.id ?? "demo"));
+  const specChunks = createAsync(() => getSpecChunks(params.id ?? "demo"));
   const promptSubmission = useSubmission(sendAgentPrompt);
   const startPreviewSubmission = useSubmission(startPreview);
   const stopPreviewSubmission = useSubmission(stopPreview);
   const screenshotSubmission = useSubmission(runScreenshotReview);
+  const saveSpecSubmission = useSubmission(saveSpecChunk);
+  const composeSpecSubmission = useSubmission(composeSpec);
+  const validateSpecSubmission = useSubmission(validateSpec);
+  const planSpecSubmission = useSubmission(planSpec);
   const activeProject = () => project() ?? demoProject;
   const projectName = () => activeProject().name;
-  const pending = () => promptSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || screenshotSubmission.pending || referencePending();
+  const pending = () =>
+    promptSubmission.pending ||
+    startPreviewSubmission.pending ||
+    stopPreviewSubmission.pending ||
+    screenshotSubmission.pending ||
+    saveSpecSubmission.pending ||
+    composeSpecSubmission.pending ||
+    validateSpecSubmission.pending ||
+    planSpecSubmission.pending ||
+    referencePending();
+  const activeSpecChunk = () => specChunks()?.find(chunk => chunk.kind === activeSpecKind());
+  const activeSpecText = () => activeSpecChunk()?.spec_text ?? specPaneDefaultText[activeSpecKind()];
 
   const handleReferenceSelected: JSX.EventHandler<HTMLInputElement, Event> = async event => {
     const file = event.currentTarget.files?.[0];
@@ -94,7 +162,8 @@ export default function ProjectStudioRoute() {
       setReferenceStatus(confirmed.fileName ? `Attached ${confirmed.fileName}.` : "Reference attached.");
       await revalidate(getTimeline.keyFor(params.id ?? "demo"));
     } catch (error) {
-      setReferenceStatus(error instanceof Error ? error.message : "Reference upload failed.");
+      const message = error instanceof Error ? error.message : "Reference upload failed.";
+      setReferenceStatus(message === "Failed to fetch" ? "Upload is blocked by storage permissions. Ask dev team to allow this builder origin." : message);
     } finally {
       setReferencePending(false);
     }
@@ -260,23 +329,57 @@ export default function ProjectStudioRoute() {
 
           <div class="control-list">
             <section class="control-card">
-              <h3>App outline</h3>
-              <label class="field-label">
-                Direction
-                <input class="input-field" value="Editorial rating site" />
-              </label>
-              <span class="pill pill--coral">Social posts</span>
+              <h3>Spec panes</h3>
+              <div class="spec-tabs" role="tablist" aria-label="Stylyf spec panes">
+                <For each={specPaneKinds}>
+                  {pane => (
+                    <button
+                      class="spec-tab"
+                      classList={{ "spec-tab--active": activeSpecKind() === pane.kind }}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeSpecKind() === pane.kind}
+                      onClick={() => setActiveSpecKind(pane.kind)}
+                    >
+                      {pane.label}
+                    </button>
+                  )}
+                </For>
+              </div>
+              <form class="spec-editor" action={saveSpecChunk.with(params.id ?? "demo")} method="post">
+                <input type="hidden" name="kind" value={activeSpecKind()} />
+                <label class="field-label">
+                  {specPaneKinds.find(pane => pane.kind === activeSpecKind())?.label ?? "Spec"} JSON
+                  <textarea class="input-field input-field--code" name="specText" spellcheck={false} wrap="soft">
+                    {activeSpecText()}
+                  </textarea>
+                </label>
+                <button class="button button--ink" type="submit" disabled={pending()}>
+                  {saveSpecSubmission.pending ? "Saving..." : "Save pane"}
+                </button>
+              </form>
+              <Show when={saveSpecSubmission.error}>
+                {error => <p class="prompt-example" role="alert">{error().message}</p>}
+              </Show>
             </section>
 
             <section class="control-card">
-              <h3>Screens</h3>
-              <ul>
-                <li>Home</li>
-                <li>Submit</li>
-                <li>Leaderboard</li>
-                <li>Moderation</li>
-              </ul>
-              <button class="button button--ink" type="button"><Code2 size={17} /> Edit details</button>
+              <h3>Stylyf loop</h3>
+              <p>Save panes, compose them, then validate the resolved app plan.</p>
+              <div class="spec-action-grid">
+                <form action={composeSpec.with(params.id ?? "demo")} method="post">
+                  <button class="button button--quiet" type="submit" disabled={pending()}><Code2 size={17} /> Compose</button>
+                </form>
+                <form action={validateSpec.with(params.id ?? "demo")} method="post">
+                  <button class="button button--quiet" type="submit" disabled={pending()}>Validate</button>
+                </form>
+                <form action={planSpec.with(params.id ?? "demo")} method="post">
+                  <button class="button button--ink" type="submit" disabled={pending()}>Plan</button>
+                </form>
+              </div>
+              <Show when={composeSpecSubmission.error ?? validateSpecSubmission.error ?? planSpecSubmission.error}>
+                {error => <p class="prompt-example" role="alert">{error().message}</p>}
+              </Show>
             </section>
 
             <section class="control-card">

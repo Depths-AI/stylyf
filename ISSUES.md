@@ -139,3 +139,11 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added S3 bucket-name validation before presigning or inserting upload rows, and made the UI surface storage upload status instead of a generic failure.
 - **Likely source fix:** Hosted media scaffolds should validate object-storage env shape before creating asset pointer rows, and generated upload UIs should report storage-step failures distinctly from app/API failures.
 - **Status:** Locally hardened in the builder app. CLI hosted-media generator should absorb the same validation rule.
+
+### Browser presigned uploads require explicit bucket CORS
+
+- **Context:** After correcting the Tigris bucket name, the builder generated a valid presigned PUT URL for the configured bucket endpoint.
+- **Symptom:** Browser upload smoke failed at preflight from `http://127.0.0.1:3000` because the Tigris bucket did not return `Access-Control-Allow-Origin`.
+- **Local fix:** None in app code; the app correctly surfaces the failed upload. This is a bucket CORS configuration requirement for browser-to-object-storage presigned uploads.
+- **Likely source fix:** Stylyf hosted-media docs and generated handoff notes should include the required bucket CORS rule for local builder origins and production app origins.
+- **Status:** Awaiting bucket CORS configuration before browser upload confirmation can pass end to end.
