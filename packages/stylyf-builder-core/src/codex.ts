@@ -1,5 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 
 const tokenNamePattern = /(TOKEN|SECRET|PASSWORD|KEY|AUTH|COOKIE|SESSION|SUPABASE_SECRET|AWS_SECRET)/i;
@@ -21,12 +23,12 @@ function redactAgentText(input: string) {
 export type AgentRole = "system" | "user" | "assistant" | "tool";
 
 export type BuilderAgentEvent =
-  | { type: "session.started"; sessionId: string; provider: string; workspacePath: string }
+  | { type: "session.started"; sessionId: string; provider: string; workspacePath: string; providerSessionId?: string }
   | { type: "turn.started"; sessionId: string; turnId: string; prompt: string }
   | { type: "message"; sessionId: string; role: AgentRole; content: string }
   | { type: "approval.requested"; sessionId: string; approvalId: string; summary: string; payload?: unknown }
   | { type: "tool.event"; sessionId: string; name: string; summary: string; payload?: unknown }
-  | { type: "turn.completed"; sessionId: string; turnId: string; summary: string }
+  | { type: "turn.completed"; sessionId: string; turnId: string; summary: string; providerSessionId?: string }
   | { type: "session.error"; sessionId: string; message: string };
 
 export type BuilderAgentSession = {
@@ -35,11 +37,14 @@ export type BuilderAgentSession = {
   workspacePath: string;
   startedAt: Date;
   hasRun?: boolean;
+  providerSessionId?: string;
+  turnCount?: number;
 };
 
 export type StartAgentSessionInput = {
   workspacePath: string;
   systemPrompt: string;
+  resumeSessionId?: string | null;
 };
 
 export type SendAgentTurnInput = {
@@ -122,6 +127,31 @@ type JsonRpcResponse = {
   error?: { message?: string };
   params?: unknown;
 };
+
+type CodexExecState = {
+  provider: "codex-exec";
+  providerSessionId: string | null;
+  updatedAt: string;
+  turnCount: number;
+};
+
+function codexStatePath(workspacePath: string) {
+  return join(workspacePath, ".stylyf", "codex-exec-session.json");
+}
+
+async function readCodexState(workspacePath: string): Promise<CodexExecState | null> {
+  try {
+    return JSON.parse(await readFile(codexStatePath(workspacePath), "utf8")) as CodexExecState;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCodexState(workspacePath: string, state: CodexExecState) {
+  const path = codexStatePath(workspacePath);
+  await mkdir(join(path, ".."), { recursive: true });
+  await writeFile(path, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
 
 export class CodexAppServerAdapter implements BuilderAgentAdapter {
   readonly provider = "codex-app-server" as const;
@@ -210,20 +240,25 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
   readonly provider = "codex-exec" as const;
   #command: string;
   #baseArgs: string[];
+  #resumeArgs: string[];
   #sessions = new Map<string, BuilderAgentSession>();
 
   constructor(input: { command?: string; args?: string[] } = {}) {
     this.#command = input.command ?? "codex";
-    this.#baseArgs = input.args ?? shellSplit(process.env.CODEX_RUN_FLAGS ?? "exec --json --sandbox danger-full-access --ask-for-approval never");
+    this.#baseArgs = input.args ?? shellSplit(process.env.CODEX_RUN_FLAGS ?? "exec --json --dangerously-bypass-approvals-and-sandbox");
+    this.#resumeArgs = shellSplit(process.env.CODEX_RESUME_FLAGS ?? "exec resume --json --dangerously-bypass-approvals-and-sandbox");
   }
 
   async *startSession(input: StartAgentSessionInput): AsyncIterable<BuilderAgentEvent> {
+    const persisted = await readCodexState(input.workspacePath);
     const session: BuilderAgentSession = {
       id: randomUUID(),
       provider: this.provider,
       workspacePath: input.workspacePath,
       startedAt: new Date(),
       hasRun: false,
+      providerSessionId: input.resumeSessionId ?? persisted?.providerSessionId ?? undefined,
+      turnCount: persisted?.turnCount ?? 0,
     };
     this.#sessions.set(session.id, session);
     yield {
@@ -231,12 +266,17 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
       sessionId: session.id,
       provider: this.provider,
       workspacePath: input.workspacePath,
+      providerSessionId: session.providerSessionId,
     };
     yield {
       type: "message",
       sessionId: session.id,
       role: "system",
-      content: redactAgentText(input.systemPrompt),
+      content: redactAgentText(
+        session.providerSessionId
+          ? `${input.systemPrompt}\n\nResuming Codex session ${session.providerSessionId}.`
+          : input.systemPrompt,
+      ),
     };
   }
 
@@ -250,8 +290,9 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
     const turnId = randomUUID();
     yield { type: "turn.started", sessionId: input.sessionId, turnId, prompt: redactAgentText(input.prompt) };
 
-    const args = session.hasRun
-      ? ["exec", "resume", "--last", "--json", input.prompt]
+    const shouldResume = Boolean(session.providerSessionId);
+    const args = shouldResume
+      ? [...this.#resumeArgs, session.providerSessionId as string, input.prompt]
       : [...this.#baseArgs, "--cd", session.workspacePath, input.prompt];
     const child = spawn(this.#command, args, {
       cwd: session.workspacePath,
@@ -274,6 +315,17 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
     })();
 
     for await (const line of stdoutLines) {
+      const providerSessionId = extractCodexSessionId(line);
+      if (providerSessionId) {
+        session.providerSessionId = providerSessionId;
+        session.turnCount = (session.turnCount ?? 0) + 1;
+        await writeCodexState(session.workspacePath, {
+          provider: this.provider,
+          providerSessionId,
+          updatedAt: new Date().toISOString(),
+          turnCount: session.turnCount,
+        });
+      }
       const event = parseCodexEvent(input.sessionId, line);
       if (event) yield event;
     }
@@ -282,7 +334,13 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
     const exitCode = await exitPromise;
 
     if (exitCode === 0) {
-      yield { type: "turn.completed", sessionId: input.sessionId, turnId, summary: "Codex exec turn completed." };
+      yield {
+        type: "turn.completed",
+        sessionId: input.sessionId,
+        turnId,
+        summary: "Codex exec turn completed.",
+        providerSessionId: session.providerSessionId,
+      };
     } else {
       const stderr = stderrBuffer.join("\n").trim();
       yield { type: "session.error", sessionId: input.sessionId, message: `Codex exec exited with ${exitCode ?? "unknown"}.${stderr ? ` ${stderr.slice(0, 800)}` : ""}` };
@@ -292,6 +350,31 @@ export class CodexExecAdapter implements BuilderAgentAdapter {
   async stopSession(sessionId: string) {
     this.#sessions.delete(sessionId);
   }
+}
+
+function extractCodexSessionId(line: string) {
+  if (!line.trim()) return undefined;
+  let payload: unknown;
+  try {
+    payload = JSON.parse(line) as unknown;
+  } catch {
+    return undefined;
+  }
+  if (!payload || typeof payload !== "object") return undefined;
+  const record = payload as Record<string, unknown>;
+  for (const key of ["session_id", "sessionId", "conversation_id", "conversationId", "thread_id", "threadId"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.length > 8) return value;
+  }
+  const nested = record.msg ?? record.message ?? record.event ?? record.payload;
+  if (nested && typeof nested === "object") {
+    const nestedRecord = nested as Record<string, unknown>;
+    for (const key of ["session_id", "sessionId", "conversation_id", "conversationId", "thread_id", "threadId"]) {
+      const value = nestedRecord[key];
+      if (typeof value === "string" && value.length > 8) return value;
+    }
+  }
+  return undefined;
 }
 
 function parseCodexEvent(sessionId: string, line: string): BuilderAgentEvent | undefined {

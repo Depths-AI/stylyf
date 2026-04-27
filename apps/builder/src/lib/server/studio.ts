@@ -71,6 +71,20 @@ async function requireProject(projectId: string, userId: string) {
   return data as ProjectWorkspaceRecord;
 }
 
+async function latestProviderSessionId(projectId: string) {
+  const { data, error } = await createSupabaseServerClient()
+    .from("agent_sessions")
+    .select("thread_id")
+    .eq("project_id", projectId)
+    .not("thread_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  const threadId = data?.thread_id;
+  return typeof threadId === "string" && threadId ? threadId : null;
+}
+
 async function recordEvent(input: {
   projectId: string;
   userId: string;
@@ -297,6 +311,7 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
   await mkdir(join(project.workspacePath, "logs"), { recursive: true });
   const adapter = createAgentAdapter();
   const supabase = createSupabaseServerClient();
+  const resumeSessionId = await latestProviderSessionId(projectId);
   const { data: session, error: sessionError } = await supabase
     .from("agent_sessions")
     .insert({
@@ -320,9 +335,11 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
   });
 
   let adapterSessionId = "";
+  let providerSessionId = resumeSessionId ?? "";
   try {
-    for await (const event of adapter.startSession({ workspacePath: project.workspacePath, systemPrompt: operatorSystemPrompt })) {
+    for await (const event of adapter.startSession({ workspacePath: project.workspacePath, systemPrompt: operatorSystemPrompt, resumeSessionId })) {
       if (event.type === "session.started") adapterSessionId = event.sessionId;
+      if ("providerSessionId" in event && event.providerSessionId) providerSessionId = event.providerSessionId;
       await recordEvent({
         projectId,
         userId,
@@ -337,6 +354,7 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
 
     const packet = buildTaskPacket({ project, prompt });
     for await (const event of adapter.sendTurn({ sessionId: adapterSessionId, prompt: packet })) {
+      if ("providerSessionId" in event && event.providerSessionId) providerSessionId = event.providerSessionId;
       await recordEvent({
         projectId,
         userId,
@@ -350,7 +368,7 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
     }
 
     await commitAndPushProject({ project, userId, sessionId: session.id, prompt });
-    await supabase.from("agent_sessions").update({ status: "completed", thread_id: adapterSessionId }).eq("id", session.id);
+    await supabase.from("agent_sessions").update({ status: "completed", thread_id: providerSessionId || adapterSessionId }).eq("id", session.id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Builder turn failed.";
     await recordEvent({
@@ -362,7 +380,7 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
       status: "failed",
       summary: message,
     });
-    await supabase.from("agent_sessions").update({ status: "error", thread_id: adapterSessionId || null }).eq("id", session.id);
+    await supabase.from("agent_sessions").update({ status: "error", thread_id: providerSessionId || adapterSessionId || null }).eq("id", session.id);
     await revalidate(getTimeline.keyFor(projectId));
     throw error;
   }
