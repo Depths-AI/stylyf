@@ -175,3 +175,11 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added a builder env checker that loads app-local and repo-root env files, validates required key names, validates bucket naming shape, and never prints secret values.
 - **Likely source fix:** Stylyf CLI generation should either emit every script target it advertises or omit the script. Preflight scripts need to be part of scaffold verification.
 - **Status:** Locally fixed in the builder app. CLI generator should be checked for the same missing-file class.
+
+### Real builder project routes must fail fast on Supabase schema drift
+
+- **Context:** The demo studio route worked, but the full dogfood smoke created a real project and then hit a SolidStart `Unknown error` overlay on `/projects/:id`.
+- **Symptom:** The hosted Supabase project was behind the current builder SQL. `agent_events.role` was missing and `build_runs` was absent, so real project timeline/build queries failed while demo routes still looked healthy.
+- **Local fix:** Added `npm --prefix apps/builder run schema:check`, wired it into `preflight` and `test:dogfood`, and made `schema.sql` idempotently add the newer `agent_events` columns to older tables.
+- **Likely source fix:** Generated hosted Supabase apps should include a schema-contract check that validates required table/column presence before running browser dogfood tests. Demo routes must not be treated as proof that real authenticated resources are healthy.
+- **Status:** Builder app now fails with a precise schema message. Apply `apps/builder/supabase/schema.sql` and `apps/builder/supabase/policies.sql` before rerunning the full dogfood lifecycle.
