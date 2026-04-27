@@ -132,6 +132,7 @@ Run these from the repo root:
 
 ```bash
 npm --prefix apps/builder run env:check
+npm --prefix apps/builder run schema:check
 npm --prefix apps/builder run storage:cors:check
 npm --prefix apps/builder run check
 npm --prefix apps/builder run build
@@ -166,6 +167,14 @@ Screenshot-gated routes:
 
 Object storage lifecycle smoke must cover intent, direct PUT, confirm, list, presigned GET, delete, and post-delete read failure. Do not call the upload path complete after PUT/confirm alone.
 
+Full internal dogfood smoke is intentionally gated because it creates a real project workspace and runs the generated app lifecycle:
+
+```bash
+npm --prefix apps/builder run test:dogfood
+```
+
+If `schema:check` fails, apply `apps/builder/supabase/schema.sql` and `apps/builder/supabase/policies.sql` before trying real project routes. Demo routes can pass while real project routes fail if Supabase is stale.
+
 The latest validated full lifecycle produced:
 
 - presigned PUT: `200`
@@ -176,7 +185,7 @@ The latest validated full lifecycle produced:
 
 ## Build And Deployment
 
-No generated deployment profile is currently committed for this app. Build locally and deploy the source using the platform selected by the dev team.
+`stylyf.com` runs only the auth-gated builder control plane. Generated apps remain local workspaces and GitHub repos for dev-team review; their deployment is intentionally manual.
 
 Common commands from `apps/builder`:
 
@@ -192,7 +201,11 @@ For repo-root operation, prefer:
 ```bash
 npm --prefix apps/builder run preflight
 npm --prefix apps/builder run build
+systemctl restart stylyf
+systemctl reload caddy
 ```
+
+The production service should run `apps/builder/.output/server/index.mjs` behind Caddy on `127.0.0.1:3001`, with preview servers bound to `127.0.0.1` only.
 
 ## Security Rules
 

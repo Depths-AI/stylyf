@@ -24,6 +24,7 @@ set -a
 export VITE_SUPABASE_URL="$SUPABASE_URL"
 export VITE_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 set +a
+npm --prefix apps/builder run schema:check
 npm run builder:build
 systemctl restart stylyf
 systemctl reload caddy
@@ -64,6 +65,13 @@ File: `/etc/caddy/Caddyfile`
 ```caddy
 stylyf.com, www.stylyf.com {
   encode zstd gzip
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Frame-Options "SAMEORIGIN"
+    -Server
+  }
   reverse_proxy 127.0.0.1:3001 {
     header_up -Accept-Encoding
     transport http {
@@ -97,8 +105,11 @@ Keep secret values out of docs and git. The builder expects these keys at runtim
 
 ```bash
 npm run builder:check
+npm --prefix apps/builder run schema:check
 npm run builder:build
 systemctl status stylyf --no-pager
 systemctl status caddy --no-pager
 curl -I https://stylyf.com
 ```
+
+If `schema:check` reports missing tables or columns, apply `/root/stylyf/apps/builder/supabase/schema.sql` and `/root/stylyf/apps/builder/supabase/policies.sql` in Supabase before restarting the live service.
