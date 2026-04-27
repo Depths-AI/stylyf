@@ -1,4 +1,4 @@
-import { A, createAsync, useParams } from "@solidjs/router";
+import { A, createAsync, useParams, useSubmission } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
 import {
   ArrowLeft,
@@ -17,15 +17,21 @@ import {
   Send,
   Sparkles,
 } from "lucide-solid";
-import { createSignal } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { demoProject, getProject } from "~/lib/server/projects";
+import { getTimeline, sendAgentPrompt, startPreview, stopPreview } from "~/lib/server/studio";
 
 export default function ProjectStudioRoute() {
   const params = useParams();
   const [controlsVisible, setControlsVisible] = createSignal(true);
   const project = createAsync(() => getProject(params.id ?? "demo"));
+  const timeline = createAsync(() => getTimeline(params.id ?? "demo"));
+  const promptSubmission = useSubmission(sendAgentPrompt);
+  const startPreviewSubmission = useSubmission(startPreview);
+  const stopPreviewSubmission = useSubmission(stopPreview);
   const activeProject = () => project() ?? demoProject;
   const projectName = () => activeProject().name;
+  const pending = () => promptSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending;
 
   return (
     <main class="app-frame app-frame--studio">
@@ -69,16 +75,23 @@ export default function ProjectStudioRoute() {
             </article>
           </div>
 
-          <form class="composer" onSubmit={event => event.preventDefault()}>
+          <form class="composer" action={sendAgentPrompt.with(params.id ?? "demo")} method="post">
             <label class="field-label">
               Next instruction
               <textarea
                 class="input-field input-field--textarea"
+                name="prompt"
                 placeholder="Example: Make the leaderboard more editorial and add a clear submit-post button above the fold."
+                required
               />
             </label>
+            <Show when={promptSubmission.error}>
+              {error => <p class="prompt-example" role="alert">{error().message}</p>}
+            </Show>
             <div class="button-row">
-              <button class="button" type="submit">Send to builder <Send size={17} /></button>
+              <button class="button" type="submit" disabled={pending()}>
+                {promptSubmission.pending ? "Sending..." : "Send to builder"} <Send size={17} />
+              </button>
               <button class="button button--quiet" type="button">Attach reference <Image size={17} /></button>
             </div>
           </form>
@@ -92,7 +105,12 @@ export default function ProjectStudioRoute() {
               <p>Inspect the app while you chat.</p>
             </div>
             <div class="button-row">
-              <button class="button button--quiet" type="button"><MonitorPlay size={17} /> Refresh</button>
+              <form action={startPreview.with(params.id ?? "demo")} method="post">
+                <button class="button button--quiet" type="submit" disabled={pending()}><MonitorPlay size={17} /> Open</button>
+              </form>
+              <form action={stopPreview.with(params.id ?? "demo")} method="post">
+                <button class="button button--quiet" type="submit" disabled={pending()}>Stop</button>
+              </form>
               <button class="button" type="button"><Sparkles size={17} /> Screenshot review</button>
             </div>
           </header>
@@ -105,31 +123,38 @@ export default function ProjectStudioRoute() {
                 <span class="browser-dot" />
                 <span class="browser-url">localhost:5173/social-post-ratings</span>
               </div>
-              <div class="preview-artboard">
-                <div class="mock-hero">
-                  <span class="pill pill--coral">Community ratings</span>
-                  <h3>The best social posts, ranked by people with taste.</h3>
-                  <p class="body-copy">
-                    Submit a TikTok, Instagram post, or tweet. The community rates originality, clarity, and cultural
-                    spark.
-                  </p>
-                  <div class="button-row">
-                    <span class="button">Submit a post</span>
-                    <span class="button button--quiet">View leaderboard</span>
+              <Show
+                when={activeProject().previewUrl}
+                fallback={
+                  <div class="preview-artboard">
+                    <div class="mock-hero">
+                      <span class="pill pill--coral">Community ratings</span>
+                      <h3>The best social posts, ranked by people with taste.</h3>
+                      <p class="body-copy">
+                        Submit a TikTok, Instagram post, or tweet. The community rates originality, clarity, and cultural
+                        spark.
+                      </p>
+                      <div class="button-row">
+                        <span class="button">Submit a post</span>
+                        <span class="button button--quiet">View leaderboard</span>
+                      </div>
+                    </div>
+                    <div class="mock-grid">
+                      <div class="mock-card"><span class="pill">9.2</span></div>
+                      <div class="mock-card"><span class="pill">8.8</span></div>
+                      <div class="mock-card"><span class="pill">8.5</span></div>
+                    </div>
                   </div>
-                </div>
-                <div class="mock-grid">
-                  <div class="mock-card"><span class="pill">9.2</span></div>
-                  <div class="mock-card"><span class="pill">8.8</span></div>
-                  <div class="mock-card"><span class="pill">8.5</span></div>
-                </div>
-              </div>
+                }
+              >
+                {previewUrl => <iframe class="preview-frame" src={previewUrl()} title={`${projectName()} preview`} />}
+              </Show>
             </div>
           </div>
 
           <footer class="preview-footer">
             <span class="pill"><GitBranch size={15} /> Last commit pushed</span>
-            <span class="pill pill--coral">Ready for another instruction</span>
+            <span class="pill pill--coral">{activeProject().previewUrl ? "Preview open" : "Ready for another instruction"}</span>
           </footer>
         </section>
 
@@ -174,26 +199,17 @@ export default function ProjectStudioRoute() {
             <section class="control-card">
               <h3>Activity</h3>
               <div class="timeline">
-                <div class="timeline-item">
-                  <span class="timeline-dot" />
-                  <p>Project scaffolded and committed.</p>
-                </div>
-                <div class="timeline-item">
-                  <span class="timeline-dot" />
-                  <p>Preview started for screenshot review.</p>
-                </div>
-                <div class="timeline-item">
-                  <span class="timeline-dot" />
-                  <p>Waiting on next product instruction.</p>
-                </div>
+                <Show when={(timeline()?.length ?? 0) > 0} fallback={<p>Waiting on next instruction.</p>}>
+                  <For each={timeline()}>
+                    {event => (
+                      <div class="timeline-item">
+                        <span class="timeline-dot" />
+                        <p>{event.summary ?? event.type}</p>
+                      </div>
+                    )}
+                  </For>
+                </Show>
               </div>
-            </section>
-
-            <section class="control-card surface--ink">
-              <h3 style={{ color: "var(--builder-paper)" }}>Handoff</h3>
-              <p style={{ color: "color-mix(in oklab, var(--builder-paper) 72%, transparent)" }}>
-                When the draft feels right, send it for developer review.
-              </p>
             </section>
           </div>
         </aside>

@@ -741,6 +741,13 @@
     padding: clamp(1.5rem, 4vw, 4rem);
   }
 
+  .preview-frame {
+    width: 100%;
+    min-height: 100%;
+    border: 0;
+    background: white;
+  }
+
   .mock-hero {
     display: grid;
     gap: var(--space-4);

@@ -1,0 +1,229 @@
+import { action, query, revalidate } from "@solidjs/router";
+import {
+  CodexExecAdapter,
+  ManualAgentAdapter,
+  allocatePort,
+  startManagedProcess,
+  type BuilderAgentAdapter,
+  type BuilderAgentEvent,
+  type ManagedProcess,
+} from "@depths/stylyf-builder-core";
+import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { requireSession } from "~/lib/auth";
+import { env } from "~/lib/env.server";
+import { createSupabaseServerClient } from "~/lib/supabase";
+
+type ProjectWorkspaceRecord = {
+  id: string;
+  owner_id: string;
+  name: string;
+  status: string;
+  workspacePath: string | null;
+  previewUrl: string | null;
+  githubRepoFullName: string | null;
+};
+
+export type TimelineEvent = {
+  id: string;
+  type: string;
+  summary: string | null;
+  artifact_path: string | null;
+  created_at: string;
+};
+
+const processRegistry = new Map<string, ManagedProcess>();
+
+const operatorSystemPrompt = [
+  "You are the Stylyf internal builder agent.",
+  "Read AGENTS.md first. It is the controlling contract.",
+  "Use `stylyf intro --topic operator` and Stylyf IR before raw source edits.",
+  "Use Webknife screenshots for UI changes.",
+  "Never reveal raw environment values.",
+].join("\n");
+
+function createAgentAdapter(): BuilderAgentAdapter {
+  if (process.env.STYLYF_BUILDER_AGENT_ADAPTER === "manual") return new ManualAgentAdapter();
+  return new CodexExecAdapter();
+}
+
+async function getUserId() {
+  const session = await requireSession();
+  return session.user.id;
+}
+
+async function requireProject(projectId: string, userId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, owner_id, name, status, workspacePath, previewUrl, githubRepoFullName")
+    .eq("id", projectId)
+    .eq("owner_id", userId)
+    .single();
+  if (error) throw error;
+  return data as ProjectWorkspaceRecord;
+}
+
+async function recordEvent(input: { projectId: string; userId: string; sessionId?: string | null; type: string; summary: string; artifactPath?: string | null }) {
+  const supabase = createSupabaseServerClient();
+  await supabase.from("agent_events").insert({
+    project_id: input.projectId,
+    session_id: input.sessionId ?? null,
+    owner_id: input.userId,
+    type: input.type,
+    summary: input.summary.slice(0, 500),
+    artifact_path: input.artifactPath ?? null,
+  });
+}
+
+function summarizeAgentEvent(event: BuilderAgentEvent) {
+  switch (event.type) {
+    case "session.started":
+      return `Session started: ${event.provider}.`;
+    case "turn.started":
+      return event.prompt;
+    case "message":
+      return `${event.role}: ${event.content}`;
+    case "approval.requested":
+      return event.summary;
+    case "tool.event":
+      return `${event.name}: ${event.summary}`;
+    case "turn.completed":
+      return event.summary;
+    case "session.error":
+      return event.message;
+  }
+}
+
+function buildTaskPacket(input: { project: ProjectWorkspaceRecord; prompt: string }) {
+  return [
+    `Project: ${input.project.name}`,
+    `Workspace: ${input.project.workspacePath ?? "not created"}`,
+    `GitHub: ${input.project.githubRepoFullName ?? "not connected"}`,
+    "",
+    "User request:",
+    input.prompt,
+    "",
+    "Operating order:",
+    "1. Read AGENTS.md.",
+    "2. Prefer Stylyf IR and CLI generation before raw source edits.",
+    "3. Use Webknife screenshots for visual changes.",
+    "4. Keep commits small and push after each completed change.",
+  ].join("\n");
+}
+
+function buildPreviewUrl(port: number) {
+  const publicBase = process.env.STYLYF_PREVIEW_PUBLIC_BASE;
+  if (publicBase) return `${publicBase.replace(/\/$/, "")}:${port}`;
+  const base = new URL(env.APP_BASE_URL);
+  return `${base.protocol}//${base.hostname}:${port}`;
+}
+
+export const getTimeline = query(async (projectId: string): Promise<TimelineEvent[]> => {
+  "use server";
+  if (projectId === "demo") return [];
+  const userId = await getUserId();
+  await requireProject(projectId, userId);
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("agent_events")
+    .select("id,type,summary,artifact_path,created_at")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (error) throw error;
+  return (data ?? []) as TimelineEvent[];
+}, "builder.studio.timeline");
+
+export const sendAgentPrompt = action(async (projectId: string, formData: FormData) => {
+  "use server";
+  const promptValue = formData.get("prompt");
+  const prompt = typeof promptValue === "string" ? promptValue.trim() : "";
+  if (!prompt) throw new Error("Write the next instruction first.");
+  if (projectId === "demo") return { ok: true, message: "Demo prompt noted." };
+
+  const userId = await getUserId();
+  const project = await requireProject(projectId, userId);
+  if (!project.workspacePath) throw new Error("This project workspace is not ready yet.");
+
+  await mkdir(join(project.workspacePath, "logs"), { recursive: true });
+  const adapter = createAgentAdapter();
+  const supabase = createSupabaseServerClient();
+  const { data: session, error: sessionError } = await supabase
+    .from("agent_sessions")
+    .insert({
+      project_id: projectId,
+      provider: adapter.provider,
+      status: "running",
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+  if (sessionError) throw sessionError;
+
+  let adapterSessionId = "";
+  for await (const event of adapter.startSession({ workspacePath: project.workspacePath, systemPrompt: operatorSystemPrompt })) {
+    if (event.type === "session.started") adapterSessionId = event.sessionId;
+    await recordEvent({ projectId, userId, sessionId: session.id, type: event.type, summary: summarizeAgentEvent(event) });
+  }
+
+  const packet = buildTaskPacket({ project, prompt });
+  for await (const event of adapter.sendTurn({ sessionId: adapterSessionId, prompt: packet })) {
+    await recordEvent({ projectId, userId, sessionId: session.id, type: event.type, summary: summarizeAgentEvent(event) });
+  }
+
+  await supabase.from("agent_sessions").update({ status: "completed", thread_id: adapterSessionId }).eq("id", session.id);
+  await revalidate(getTimeline.keyFor(projectId));
+  return { ok: true, message: "Sent to builder." };
+}, "builder.studio.send-prompt");
+
+export const startPreview = action(async (projectId: string) => {
+  "use server";
+  if (projectId === "demo") return { ok: true, previewUrl: null };
+  const userId = await getUserId();
+  const project = await requireProject(projectId, userId);
+  if (!project.workspacePath) throw new Error("This project workspace is not ready yet.");
+
+  const appPath = join(project.workspacePath, "app");
+  if (!existsSync(join(appPath, "package.json"))) {
+    throw new Error("Generate the app before opening preview.");
+  }
+
+  const existing = processRegistry.get(projectId);
+  if (existing) {
+    await existing.stop();
+    processRegistry.delete(projectId);
+  }
+
+  const port = await allocatePort();
+  const preview = startManagedProcess({
+    id: projectId,
+    command: "npm",
+    args: ["run", "dev", "--", "--host", "127.0.0.1", "--port", String(port)],
+    cwd: appPath,
+  });
+  processRegistry.set(projectId, preview);
+
+  const previewUrl = buildPreviewUrl(port);
+  await createSupabaseServerClient().from("projects").update({ preview_port: port, previewUrl }).eq("id", projectId);
+  await recordEvent({ projectId, userId, type: "preview.started", summary: `Preview started.` });
+  await revalidate(getTimeline.keyFor(projectId));
+  return { ok: true, previewUrl };
+}, "builder.studio.start-preview");
+
+export const stopPreview = action(async (projectId: string) => {
+  "use server";
+  if (projectId === "demo") return { ok: true };
+  const userId = await getUserId();
+  await requireProject(projectId, userId);
+  const existing = processRegistry.get(projectId);
+  if (existing) {
+    await existing.stop();
+    processRegistry.delete(projectId);
+  }
+  await createSupabaseServerClient().from("projects").update({ preview_port: null, previewUrl: null }).eq("id", projectId);
+  await recordEvent({ projectId, userId, type: "preview.stopped", summary: "Preview stopped." });
+  await revalidate(getTimeline.keyFor(projectId));
+  return { ok: true };
+}, "builder.studio.stop-preview");
