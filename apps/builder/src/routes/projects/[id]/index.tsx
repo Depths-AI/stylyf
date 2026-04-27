@@ -16,6 +16,7 @@ import { runStylyfProjectStep } from "~/lib/server/actions/stylyf-loop";
 import { startProjectPreview, stopProjectPreview } from "~/lib/server/actions/preview-loop";
 import { decideApproval, sendAgentPrompt } from "~/lib/server/actions/agent-loop";
 import { getWorkbenchTimeline } from "~/lib/server/queries/workbench-timeline";
+import { runWebknifeScreenshot } from "~/lib/server/actions/webknife-loop";
 
 export default function ProjectsIdRoute() {
   const params = useParams();
@@ -26,7 +27,8 @@ export default function ProjectsIdRoute() {
   const stopPreviewSubmission = useSubmission(stopProjectPreview);
   const agentSubmission = useSubmission(sendAgentPrompt);
   const approvalSubmission = useSubmission(decideApproval);
-  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending;
+  const webknifeSubmission = useSubmission(runWebknifeScreenshot);
+  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending || webknifeSubmission.pending;
   return (
     <>
       <Title>Project workbench</Title>
@@ -94,6 +96,9 @@ export default function ProjectsIdRoute() {
                           <form action={stopProjectPreview.with(params.id ?? "")} method="post">
                             <Button type="submit" tone="ghost" pending={pending()}>Stop preview</Button>
                           </form>
+                          <form action={runWebknifeScreenshot.with(params.id ?? "")} method="post">
+                            <Button type="submit" tone="outline" pending={pending()}>Run Webknife shot</Button>
+                          </form>
                         </div>
                         <Show when={stylyfSubmission.result}>
                           {result => (
@@ -106,6 +111,13 @@ export default function ProjectsIdRoute() {
                           {result => (
                             <div class="rounded-[var(--radius-lg)] border border-border/80 bg-muted-soft p-3 text-sm text-muted-foreground">
                               Preview started on <a class="font-medium text-foreground underline" href={result().previewUrl} target="_blank">{result().previewUrl}</a>.
+                            </div>
+                          )}
+                        </Show>
+                        <Show when={webknifeSubmission.result}>
+                          {result => (
+                            <div class="rounded-[var(--radius-lg)] border border-border/80 bg-muted-soft p-3 text-sm text-muted-foreground">
+                              Webknife shot {result().ok ? "completed" : "failed"}; artifacts: {result().artifactPath}
                             </div>
                           )}
                         </Show>
@@ -184,6 +196,25 @@ export default function ProjectsIdRoute() {
                     }
                   />
                 </div>
+                <DetailPanel
+                  title="Webknife QA"
+                  description="Visual QA runs write screenshots and runtime artifacts into the project workspace."
+                  body={
+                    <div class="space-y-3 text-sm text-muted-foreground">
+                      <Show when={(timeline()?.webknifeRuns.length ?? 0) > 0} fallback={<p>No Webknife runs yet. Start a preview, then capture a shot.</p>}>
+                        <For each={timeline()?.webknifeRuns ?? []}>
+                          {run => (
+                            <div class="rounded-[var(--radius-lg)] border border-border/80 bg-background p-3">
+                              <p class="font-medium text-foreground">{run.kind}</p>
+                              <p>{run.summary}</p>
+                              <p class="mt-1 text-xs">Artifacts: {run.artifact_path}</p>
+                            </div>
+                          )}
+                        </For>
+                      </Show>
+                    </div>
+                  }
+                />
                 <Show when={projectData()?.previewUrl || startPreviewSubmission.result?.previewUrl}>
                   {previewUrl => (
                     <DetailPanel

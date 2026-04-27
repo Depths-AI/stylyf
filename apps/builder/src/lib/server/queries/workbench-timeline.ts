@@ -14,7 +14,12 @@ export const getWorkbenchTimeline = query(async (projectId: string) => {
   const { userId } = await requireViewerIdentity();
   await assertProjectOwner(projectId, userId);
   const supabase = createSupabaseServerClient();
-  const [{ data: events, error: eventsError }, { data: approvals, error: approvalsError }, { data: commands, error: commandsError }] = await Promise.all([
+  const [
+    { data: events, error: eventsError },
+    { data: approvals, error: approvalsError },
+    { data: commands, error: commandsError },
+    { data: webknifeRuns, error: webknifeError },
+  ] = await Promise.all([
     supabase
       .from("agent_events")
       .select("id,type,summary,artifact_path,created_at")
@@ -33,13 +38,21 @@ export const getWorkbenchTimeline = query(async (projectId: string) => {
       .eq("project_id", projectId)
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("webknife_runs")
+      .select("id,kind,artifact_path,summary,created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
   if (eventsError) throw eventsError;
   if (approvalsError) throw approvalsError;
   if (commandsError) throw commandsError;
+  if (webknifeError) throw webknifeError;
   return {
     events: events ?? [],
     approvals: approvals ?? [],
     commands: commands ?? [],
+    webknifeRuns: webknifeRuns ?? [],
   };
 }, "workbench.timeline");
