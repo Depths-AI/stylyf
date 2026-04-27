@@ -1,4 +1,4 @@
-import { A, createAsync, useParams, useSubmission } from "@solidjs/router";
+import { A, createAsync, revalidate, useParams, useSubmission } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
 import {
   ArrowLeft,
@@ -17,13 +17,30 @@ import {
   Send,
   Sparkles,
 } from "lucide-solid";
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createSignal, type JSX } from "solid-js";
 import { demoProject, getProject } from "~/lib/server/projects";
 import { getTimeline, runScreenshotReview, sendAgentPrompt, startPreview, stopPreview } from "~/lib/server/studio";
+
+type UploadIntentResponse =
+  | {
+      ok: true;
+      assetId: string;
+      upload: {
+        url: string;
+        method: "PUT";
+        headers: Record<string, string>;
+      };
+    }
+  | { ok: false; error: string };
+
+type UploadConfirmResponse = { ok: true; fileName: string | null } | { ok: false; error: string };
 
 export default function ProjectStudioRoute() {
   const params = useParams();
   const [controlsVisible, setControlsVisible] = createSignal(true);
+  const [referenceStatus, setReferenceStatus] = createSignal("");
+  const [referencePending, setReferencePending] = createSignal(false);
+  let referenceInput!: HTMLInputElement;
   const project = createAsync(() => getProject(params.id ?? "demo"));
   const timeline = createAsync(() => getTimeline(params.id ?? "demo"));
   const promptSubmission = useSubmission(sendAgentPrompt);
@@ -32,7 +49,56 @@ export default function ProjectStudioRoute() {
   const screenshotSubmission = useSubmission(runScreenshotReview);
   const activeProject = () => project() ?? demoProject;
   const projectName = () => activeProject().name;
-  const pending = () => promptSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || screenshotSubmission.pending;
+  const pending = () => promptSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || screenshotSubmission.pending || referencePending();
+
+  const handleReferenceSelected: JSX.EventHandler<HTMLInputElement, Event> = async event => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    if ((params.id ?? "demo") === "demo") {
+      setReferenceStatus("Open a real project before attaching references.");
+      return;
+    }
+
+    setReferencePending(true);
+    setReferenceStatus(`Uploading ${file.name}...`);
+    try {
+      const intentResponse = await fetch("/api/attachments/intent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          projectId: params.id,
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          fileSize: file.size,
+        }),
+      });
+      const intent = (await intentResponse.json()) as UploadIntentResponse;
+      if (!intent.ok) throw new Error(intent.error);
+
+      const uploadResponse = await fetch(intent.upload.url, {
+        method: intent.upload.method,
+        headers: intent.upload.headers,
+        body: file,
+      });
+      if (!uploadResponse.ok) throw new Error(`Reference upload failed at storage (${uploadResponse.status}).`);
+
+      const confirmResponse = await fetch("/api/attachments/confirm", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ projectId: params.id, assetId: intent.assetId }),
+      });
+      const confirmed = (await confirmResponse.json()) as UploadConfirmResponse;
+      if (!confirmed.ok) throw new Error(confirmed.error);
+
+      setReferenceStatus(confirmed.fileName ? `Attached ${confirmed.fileName}.` : "Reference attached.");
+      await revalidate(getTimeline.keyFor(params.id ?? "demo"));
+    } catch (error) {
+      setReferenceStatus(error instanceof Error ? error.message : "Reference upload failed.");
+    } finally {
+      setReferencePending(false);
+    }
+  };
 
   return (
     <main class="app-frame app-frame--studio">
@@ -93,8 +159,20 @@ export default function ProjectStudioRoute() {
               <button class="button" type="submit" disabled={pending()}>
                 {promptSubmission.pending ? "Sending..." : "Send to builder"} <Send size={17} />
               </button>
-              <button class="button button--quiet" type="button">Attach reference <Image size={17} /></button>
+              <button class="button button--quiet" type="button" disabled={pending()} onClick={() => referenceInput.click()}>
+                {referencePending() ? "Uploading..." : "Attach reference"} <Image size={17} />
+              </button>
             </div>
+            <input
+              ref={referenceInput}
+              class="visually-hidden"
+              type="file"
+              onChange={handleReferenceSelected}
+              aria-label="Attach design reference"
+            />
+            <Show when={referenceStatus()}>
+              {status => <p class="prompt-example" role="status">{status()}</p>}
+            </Show>
           </form>
         </aside>
 

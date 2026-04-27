@@ -131,3 +131,11 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Recorded the failure honestly and kept unauthenticated login screenshots as the visual checkpoint for this pass.
 - **Likely source fix:** Builder smoke tooling should have an explicit test-user contract and a safe credential-loading path that validates auth before starting screenshot tours.
 - **Status:** Needs a valid Supabase test user before authenticated screenshot assertions can be trusted.
+
+### Builder reference upload must fail before DB writes when storage bucket config is invalid
+
+- **Context:** The active builder studio now uploads reference assets through a presigned Tigris/S3 PUT and then confirms a Postgres pointer.
+- **Symptom:** A browser smoke upload reached the presigned PUT but storage returned `NoSuchBucket`, while the first implementation had already created a pending DB asset row during upload-intent creation.
+- **Local fix:** Added S3 bucket-name validation before presigning or inserting upload rows, and made the UI surface storage upload status instead of a generic failure.
+- **Likely source fix:** Hosted media scaffolds should validate object-storage env shape before creating asset pointer rows, and generated upload UIs should report storage-step failures distinctly from app/API failures.
+- **Status:** Locally hardened in the builder app. CLI hosted-media generator should absorb the same validation rule.

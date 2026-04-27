@@ -578,6 +578,16 @@
     line-height: 1.55;
   }
 
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .studio-shell {
     display: grid;
     height: calc(100vh - clamp(2rem, 4vw, 3.6rem));
