@@ -123,15 +123,19 @@ for each row execute function public.add_project_owner_member();
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
+alter table public.project_briefs enable row level security;
 alter table public.briefs enable row level security;
 alter table public.stylyf_specs enable row level security;
+alter table public.stylyf_spec_chunks enable row level security;
 alter table public.agent_sessions enable row level security;
 alter table public.agent_events enable row level security;
 alter table public.commands enable row level security;
 alter table public.previews enable row level security;
+alter table public.preview_processes enable row level security;
 alter table public.webknife_runs enable row level security;
 alter table public.approvals enable row level security;
 alter table public.git_events enable row level security;
+alter table public.asset_pointers enable row level security;
 alter table public.projects_assets enable row level security;
 alter table public.agent_events_assets enable row level security;
 
@@ -198,6 +202,18 @@ on public.briefs for insert
 to authenticated
 with check (public.can_edit_project(project_id));
 
+drop policy if exists project_briefs_select_project_member on public.project_briefs;
+create policy project_briefs_select_project_member
+on public.project_briefs for select
+to authenticated
+using (public.can_read_project(project_id));
+
+drop policy if exists project_briefs_insert_project_editor on public.project_briefs;
+create policy project_briefs_insert_project_editor
+on public.project_briefs for insert
+to authenticated
+with check (public.can_edit_project(project_id));
+
 drop policy if exists stylyf_specs_select_project_member on public.stylyf_specs;
 create policy stylyf_specs_select_project_member
 on public.stylyf_specs for select
@@ -213,6 +229,19 @@ with check (public.can_edit_project(project_id));
 drop policy if exists stylyf_specs_update_project_editor on public.stylyf_specs;
 create policy stylyf_specs_update_project_editor
 on public.stylyf_specs for update
+to authenticated
+using (public.can_edit_project(project_id))
+with check (public.can_edit_project(project_id));
+
+drop policy if exists stylyf_spec_chunks_select_project_member on public.stylyf_spec_chunks;
+create policy stylyf_spec_chunks_select_project_member
+on public.stylyf_spec_chunks for select
+to authenticated
+using (public.can_read_project(project_id));
+
+drop policy if exists stylyf_spec_chunks_write_project_editor on public.stylyf_spec_chunks;
+create policy stylyf_spec_chunks_write_project_editor
+on public.stylyf_spec_chunks for all
 to authenticated
 using (public.can_edit_project(project_id))
 with check (public.can_edit_project(project_id));
@@ -275,6 +304,19 @@ to authenticated
 using (public.can_edit_project(project_id))
 with check (public.can_edit_project(project_id));
 
+drop policy if exists preview_processes_select_project_member on public.preview_processes;
+create policy preview_processes_select_project_member
+on public.preview_processes for select
+to authenticated
+using (public.can_read_project(project_id));
+
+drop policy if exists preview_processes_write_project_editor on public.preview_processes;
+create policy preview_processes_write_project_editor
+on public.preview_processes for all
+to authenticated
+using (public.can_edit_project(project_id))
+with check (public.can_edit_project(project_id));
+
 drop policy if exists webknife_runs_select_project_member on public.webknife_runs;
 create policy webknife_runs_select_project_member
 on public.webknife_runs for select
@@ -309,6 +351,18 @@ using (public.can_read_project(project_id));
 drop policy if exists git_events_insert_project_editor on public.git_events;
 create policy git_events_insert_project_editor
 on public.git_events for insert
+to authenticated
+with check (public.can_edit_project(project_id));
+
+drop policy if exists asset_pointers_select_project_member on public.asset_pointers;
+create policy asset_pointers_select_project_member
+on public.asset_pointers for select
+to authenticated
+using (public.can_read_project(project_id));
+
+drop policy if exists asset_pointers_insert_project_editor on public.asset_pointers;
+create policy asset_pointers_insert_project_editor
+on public.asset_pointers for insert
 to authenticated
 with check (public.can_edit_project(project_id));
 

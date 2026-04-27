@@ -63,6 +63,21 @@ create table if not exists public.project_members (
 
 create index if not exists project_members_user_id_idx on public.project_members(user_id);
 
+create table if not exists public.project_briefs (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  brief_text text not null default '',
+  brief_path text,
+  structured_summary text,
+  version integer not null default 1,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc'::text, now())
+);
+
+create index if not exists project_briefs_project_id_idx on public.project_briefs(project_id);
+
+-- Backward-compatible table retained for the current generated app pass.
+-- New builder code should use project_briefs.
 create table if not exists public.briefs (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
@@ -90,6 +105,22 @@ on public.stylyf_specs(project_id)
 where is_active;
 
 create index if not exists stylyf_specs_project_id_idx on public.stylyf_specs(project_id);
+
+create table if not exists public.stylyf_spec_chunks (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  name text not null,
+  kind text not null check (kind in ('brief', 'style', 'routes', 'data', 'api', 'media', 'raw', 'generated')),
+  spec_text text not null default '{}',
+  spec_path text,
+  version integer not null default 1,
+  is_active boolean not null default true,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc'::text, now())
+);
+
+create index if not exists stylyf_spec_chunks_project_id_idx on public.stylyf_spec_chunks(project_id);
+create index if not exists stylyf_spec_chunks_kind_idx on public.stylyf_spec_chunks(kind);
 
 create table if not exists public.agent_sessions (
   id uuid primary key default gen_random_uuid(),
@@ -159,6 +190,27 @@ create trigger set_previews_updated_at
 before update on public.previews
 for each row execute function public.set_updated_at();
 
+create table if not exists public.preview_processes (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  port integer not null,
+  pid integer,
+  preview_url text,
+  status text not null default 'stopped' check (status in ('starting', 'running', 'stopped', 'crashed', 'stale')),
+  log_path text,
+  started_at timestamptz,
+  stopped_at timestamptz,
+  created_at timestamptz not null default timezone('utc'::text, now()),
+  updated_at timestamptz not null default timezone('utc'::text, now())
+);
+
+create index if not exists preview_processes_project_id_idx on public.preview_processes(project_id);
+
+drop trigger if exists set_preview_processes_updated_at on public.preview_processes;
+create trigger set_preview_processes_updated_at
+before update on public.preview_processes
+for each row execute function public.set_updated_at();
+
 create table if not exists public.webknife_runs (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
@@ -201,6 +253,23 @@ create table if not exists public.git_events (
 
 create index if not exists git_events_project_id_idx on public.git_events(project_id);
 create index if not exists git_events_kind_idx on public.git_events(kind);
+
+create table if not exists public.asset_pointers (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  owner_id uuid references public.profiles(id) on delete set null,
+  storage_provider text not null default 'tigris',
+  bucket_name text not null,
+  object_key text unique not null,
+  purpose text not null check (purpose in ('media', 'screenshot', 'log', 'metadata', 'handoff')),
+  content_type text,
+  file_size integer,
+  summary text,
+  created_at timestamptz not null default timezone('utc'::text, now())
+);
+
+create index if not exists asset_pointers_project_id_idx on public.asset_pointers(project_id);
+create index if not exists asset_pointers_purpose_idx on public.asset_pointers(purpose);
 
 create table if not exists public.projects_assets (
   id uuid primary key default gen_random_uuid(),
