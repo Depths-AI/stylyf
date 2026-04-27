@@ -122,6 +122,20 @@ create table if not exists public.agent_events (
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
+alter table public.agent_events
+  add column if not exists session_id uuid references public.agent_sessions(id) on delete set null,
+  add column if not exists owner_id uuid references public.profiles(id) on delete cascade,
+  add column if not exists role text check (role in ('system', 'builder', 'user', 'assistant', 'tool')),
+  add column if not exists status text not null default 'completed' check (status in ('queued', 'running', 'completed', 'failed', 'cancelled')),
+  add column if not exists content text,
+  add column if not exists content_path text;
+
+update public.agent_events
+set owner_id = projects.owner_id
+from public.projects
+where public.agent_events.project_id = projects.id
+  and public.agent_events.owner_id is null;
+
 create index if not exists agent_events_project_id_idx on public.agent_events(project_id);
 create index if not exists agent_events_owner_id_idx on public.agent_events(owner_id);
 create index if not exists agent_events_type_idx on public.agent_events(type);

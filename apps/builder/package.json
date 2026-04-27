@@ -12,11 +12,13 @@
     "test:types": "tsc -p tests/tsconfig.json --noEmit",
     "test:e2e": "playwright test",
     "test:smoke": "playwright test tests/smoke",
+    "test:dogfood": "npm run schema:check && STYLYF_BUILDER_RUN_DOGFOOD=1 STYLYF_BUILDER_CREATE_GITHUB_REPOS=false playwright test tests/dogfood",
     "env:check": "tsx src/lib/env.check.ts",
     "tool:check": "tsx scripts/tool-check.ts",
+    "schema:check": "tsx scripts/schema-check.ts",
     "storage:cors:check": "tsx scripts/storage-cors.ts check",
     "storage:cors:apply": "tsx scripts/storage-cors.ts apply",
-    "preflight": "npm run env:check && npm run tool:check && npm run test:types && npm run check"
+    "preflight": "npm run env:check && npm run tool:check && npm run schema:check && npm run test:types && npm run check"
   },
   "dependencies": {
     "@solidjs/meta": "^0.29.4",

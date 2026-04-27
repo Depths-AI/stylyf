@@ -14,6 +14,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { requireSession } from "~/lib/auth";
 import { env } from "~/lib/env.server";
+import { getProject } from "~/lib/server/projects";
 import { createSupabaseServerClient } from "~/lib/supabase";
 
 type ProjectWorkspaceRecord = {
@@ -478,6 +479,7 @@ export const startPreview = action(async (projectId: string) => {
   if (previewError) throw previewError;
   await supabase.from("projects").update({ preview_port: port, previewUrl }).eq("id", projectId);
   await recordEvent({ projectId, userId, type: "preview.started", summary: `Preview started.` });
+  await revalidate(getProject.keyFor(projectId));
   await revalidate(getTimeline.keyFor(projectId));
   return { ok: true, previewUrl };
 }, "builder.studio.start-preview");
@@ -515,6 +517,7 @@ export const stopPreview = action(async (projectId: string) => {
   }
   await supabase.from("projects").update({ preview_port: null, previewUrl: null }).eq("id", projectId);
   await recordEvent({ projectId, userId, type: "preview.stopped", summary: "Preview stopped." });
+  await revalidate(getProject.keyFor(projectId));
   await revalidate(getTimeline.keyFor(projectId));
   return { ok: true };
 }, "builder.studio.stop-preview");
