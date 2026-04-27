@@ -1,4 +1,4 @@
-import { A, useParams } from "@solidjs/router";
+import { A, createAsync, useParams } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
 import {
   ArrowLeft,
@@ -18,20 +18,14 @@ import {
   Sparkles,
 } from "lucide-solid";
 import { createSignal } from "solid-js";
-
-function readableProjectName(id: string | undefined) {
-  if (!id || id === "demo") return "Social Post Ratings";
-  return id
-    .split("-")
-    .filter(Boolean)
-    .map(part => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
-}
+import { demoProject, getProject } from "~/lib/server/projects";
 
 export default function ProjectStudioRoute() {
   const params = useParams();
   const [controlsVisible, setControlsVisible] = createSignal(true);
-  const projectName = () => readableProjectName(params.id);
+  const project = createAsync(() => getProject(params.id ?? "demo"));
+  const activeProject = () => project() ?? demoProject;
+  const projectName = () => activeProject().name;
 
   return (
     <main class="app-frame app-frame--studio">
@@ -53,7 +47,7 @@ export default function ProjectStudioRoute() {
           <header class="pane-header">
             <div>
               <p class="eyebrow">Chat</p>
-              <h1>ContentRank</h1>
+              <h1>{projectName()}</h1>
               <p>Tell the builder what to change next.</p>
             </div>
             <A href="/" class="pill" aria-label="Back to dashboard"><ArrowLeft size={15} /> Dashboard</A>
@@ -94,7 +88,7 @@ export default function ProjectStudioRoute() {
           <header class="pane-header">
             <div>
               <p class="eyebrow">Preview</p>
-              <h2>ContentRank</h2>
+              <h2>{projectName()}</h2>
               <p>Inspect the app while you chat.</p>
             </div>
             <div class="button-row">

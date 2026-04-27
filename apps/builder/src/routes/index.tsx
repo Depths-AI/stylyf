@@ -1,26 +1,16 @@
-import { A } from "@solidjs/router";
+import { A, createAsync } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
 import { ArrowRight, Clock3, GalleryVerticalEnd, HelpCircle, Home, LayoutGrid, Plus, Sparkles, UsersRound } from "lucide-solid";
-
-const draftCards = [
-  {
-    title: "Content rating platform",
-    status: "Ready to shape",
-    summary: "A public gallery where people submit social posts and the community rates, reviews, and discovers the best work.",
-  },
-  {
-    title: "Roast my design",
-    status: "Draft brief",
-    summary: "A friendly critique queue for visual designers with uploads, reactions, moderation, and shareable result pages.",
-  },
-  {
-    title: "Launch checklist desk",
-    status: "Internal",
-    summary: "A lightweight workspace for operators to track requests, approvals, screenshots, and final developer handoff.",
-  },
-];
+import { ErrorBoundary, For, Show } from "solid-js";
+import { demoProject, listProjects } from "~/lib/server/projects";
 
 export default function DashboardRoute() {
+  const projects = createAsync(() => listProjects());
+  const visibleProjects = () => {
+    const rows = projects();
+    return rows && rows.length > 0 ? rows : [demoProject];
+  };
+
   return (
     <main class="app-frame">
       <Title>Stylyf Builder</Title>
@@ -101,26 +91,32 @@ export default function DashboardRoute() {
 
             <section>
               <p class="eyebrow" style={{ "margin-bottom": "var(--space-4)" }}>App drafts</p>
-              <div class="draft-gallery">
-                {draftCards.map(card => (
-                  <A href="/projects/demo" class="gallery-card surface" aria-label={`Open ${card.title}`}>
-                    <div class="gallery-card__image" />
-                    <div class="gallery-card__body">
-                      <span class="pill">{card.status}</span>
-                      <h3>{card.title}</h3>
-                      <p>{card.summary}</p>
-                    </div>
-                  </A>
-                ))}
-                <A href="/projects/new" class="gallery-card surface" aria-label="Create new app">
-                  <div class="gallery-card__image" />
-                  <div class="gallery-card__body">
-                    <span class="pill pill--coral">New</span>
-                    <h3>Fresh idea</h3>
-                    <p>Open a blank studio and start shaping a new app.</p>
+              <ErrorBoundary fallback={<p class="prompt-example">Could not load app drafts.</p>}>
+                <Show when={projects() !== undefined} fallback={<p class="prompt-example">Loading drafts...</p>}>
+                  <div class="draft-gallery">
+                    <For each={visibleProjects()}>
+                      {project => (
+                        <A href={`/projects/${project.id}`} class="gallery-card surface" aria-label={`Open ${project.name}`}>
+                          <div class="gallery-card__image" />
+                          <div class="gallery-card__body">
+                            <span class="pill">{project.status}</span>
+                            <h3>{project.name}</h3>
+                            <p>{project.summary ?? "Open the studio and describe the first version."}</p>
+                          </div>
+                        </A>
+                      )}
+                    </For>
+                    <A href="/projects/new" class="gallery-card surface" aria-label="Create new app">
+                      <div class="gallery-card__image" />
+                      <div class="gallery-card__body">
+                        <span class="pill pill--coral">New</span>
+                        <h3>Fresh idea</h3>
+                        <p>Open a blank studio and start shaping a new app.</p>
+                      </div>
+                    </A>
                   </div>
-                </A>
-              </div>
+                </Show>
+              </ErrorBoundary>
             </section>
           </div>
         </div>

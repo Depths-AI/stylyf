@@ -1,8 +1,12 @@
-import { A } from "@solidjs/router";
+import { A, useSubmission } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-solid";
+import { Show } from "solid-js";
+import { createProject } from "~/lib/server/projects";
 
 export default function NewProjectRoute() {
+  const submission = useSubmission(createProject);
+
   return (
     <main class="app-frame">
       <Title>Create an app draft</Title>
@@ -17,14 +21,19 @@ export default function NewProjectRoute() {
           </p>
         </div>
 
-        <form class="new-project-form surface" onSubmit={event => event.preventDefault()}>
+        <form class="new-project-form surface" action={createProject} method="post">
           <p class="eyebrow">Create</p>
           <label class="field-label">
             App name
-            <input class="input-field" name="name" value="Social Post Ratings" autocomplete="off" />
+            <input class="input-field" name="name" value="Social Post Ratings" autocomplete="off" required />
           </label>
+          <Show when={submission.error}>
+            {error => <p class="prompt-example" role="alert">{error().message}</p>}
+          </Show>
           <div class="button-row">
-            <A href="/projects/demo" class="button">Create and open studio <ArrowRight size={18} /></A>
+            <button class="button" type="submit" disabled={submission.pending}>
+              {submission.pending ? "Creating..." : "Create and open studio"} <ArrowRight size={18} />
+            </button>
             <A href="/" class="button button--quiet"><ArrowLeft size={18} /> Cancel</A>
           </div>
 
