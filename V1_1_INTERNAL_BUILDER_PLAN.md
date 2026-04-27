@@ -142,12 +142,12 @@ Minimum metadata schema:
   - `name text`
   - `slug text unique`
   - `status text check in ('draft','generating','ready','error','archived')`
-  - `workspace_path text`
+  - `workspacePath text`
   - `preview_port int`
-  - `preview_url text`
-  - `github_repo_full_name text`
+  - `previewUrl text`
+  - `githubRepoFullName text`
   - `github_default_branch text default 'main'`
-  - `last_pushed_sha text`
+  - `lastPushedSha text`
   - timestamps
 - `project_members`
   - `project_id uuid references projects(id)`

@@ -19,3 +19,19 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added an explicit `WorkflowDefinition` type and emitted `workflowDefinitions` as `readonly WorkflowDefinition[]`.
 - **Likely source fix:** Update the CLI resource generator to type empty generated definition arrays when downstream helper code maps over them.
 - **Status:** Locally patched in generated builder app. CLI generator still needs hardening.
+
+### Generated resource field names use camelCase while planned database schema prefers snake_case
+
+- **Context:** The builder spec used fields such as `workspacePath`, `previewUrl`, `githubRepoFullName`, and `lastPushedSha`.
+- **Symptom:** The generated Supabase app code reads and writes those exact camelCase property names, while the hand-authored v1.1 builder schema initially used snake_case columns from the planning document.
+- **Local fix:** Kept the builder SQL compatible with generated app code by quoting the camelCase project columns for now.
+- **Likely source fix:** Decide and document the canonical database column naming convention for Stylyf specs, then teach the generator to map app/form field names to database column names explicitly.
+- **Status:** Locally aligned in builder SQL. CLI generator still needs a clear naming policy.
+
+### Generated project-scoped timeline resource appears as standalone CRUD
+
+- **Context:** The builder baseline includes `agent_events` as a resource because the early spec requested timeline storage.
+- **Symptom:** The generic scaffold exposes standalone `agent_events` list/create/edit routes, but the real builder model needs events scoped under projects and sessions.
+- **Local fix:** None yet. The v1.1 follow-up UI/core commits should replace this scaffold surface with project-scoped timeline modules.
+- **Likely source fix:** Add richer IR affordances for project-scoped child resources and route nesting, or make generator defaults more conservative for internal timeline/log resources.
+- **Status:** Known product/scaffold gap for upcoming builder refinement.
