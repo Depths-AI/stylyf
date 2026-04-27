@@ -67,3 +67,27 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added fallback support for `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in the generated builder public env module and env preflight.
 - **Likely source fix:** Update the CLI env generator to either emit both aliases into generated env examples or generate a safe fallback path for publishable Supabase values.
 - **Status:** Locally patched in generated builder app. CLI generator still needs hardening.
+
+### Generated app env loader only reads app-local env files in monorepo dogfood
+
+- **Context:** The builder app lives at `apps/builder`, while real Supabase/Tigris smoke-test values are configured in the repo root `.env`.
+- **Symptom:** Running `npm --prefix apps/builder run env:check` failed every required env check because the generated loader only read `apps/builder/.env.local` and `apps/builder/.env`.
+- **Local fix:** Added `../../.env` as a fallback env-file candidate in the generated builder server env and env-check modules.
+- **Likely source fix:** Make generated app env loading configurable or document/apply monorepo-root env fallback when Stylyf dogfoods generated apps inside a workspace.
+- **Status:** Locally patched in generated builder app. CLI generator still needs hardening.
+
+### Generated local env contract requires `APP_BASE_URL` even for local smoke tests
+
+- **Context:** The builder app uses `APP_BASE_URL` for auth callback URLs, but local smoke testing can safely use `http://localhost:3000`.
+- **Symptom:** After loading the repo-root `.env`, env preflight still failed only on missing `APP_BASE_URL`.
+- **Local fix:** Defaulted `APP_BASE_URL` to `http://localhost:3000` in the generated builder server env and env-check path when absent.
+- **Likely source fix:** Emit a safe development default for `APP_BASE_URL` in generated apps while still requiring an explicit production value.
+- **Status:** Locally patched in generated builder app. CLI generator still needs hardening.
+
+### One-off smoke scripts run outside generated app context cannot resolve generated dependencies
+
+- **Context:** Supabase auth/DB smoke testing was first attempted from `/tmp` using a one-off Node script.
+- **Symptom:** Node could not resolve `@supabase/supabase-js` because module resolution started outside the generated app workspace.
+- **Local fix:** Ran the same smoke from `apps/builder`, where the generated app dependencies are installed and resolvable.
+- **Likely source fix:** Generated smoke tooling should always live in or execute from the generated app root, and CLI docs should avoid examples that run app-dependent checks from arbitrary temp directories.
+- **Status:** Smoke passed when executed from the generated app context. CLI validation guidance still needs hardening.

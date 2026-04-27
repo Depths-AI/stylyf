@@ -1,6 +1,29 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+function loadEnvFile(path: string) {
+  if (!existsSync(path)) return;
+  const source = readFileSync(path, "utf8");
+  for (const line of source.split(/\r?\n/g)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const [name, ...rawParts] = trimmed.split("=");
+    if (!name || process.env[name] !== undefined) continue;
+    const rawValue = rawParts.join("=");
+    process.env[name] = rawValue.replace(/^["\']|["\']$/g, "");
+  }
+}
+
+for (const candidate of [".env.local", ".env", "../../.env"]) {
+  loadEnvFile(resolve(process.cwd(), candidate));
+}
+
 const serverSource = typeof process !== "undefined" ? process.env : {};
 
 function requiredServer(name: string) {
+  if (name === "APP_BASE_URL" && !serverSource[name]) {
+    return "http://localhost:3000";
+  }
   const value = serverSource[name];
   if (!value) throw new Error(`Missing required server env: ${name}`);
   return value;

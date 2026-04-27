@@ -14,7 +14,7 @@ function loadEnvFile(path: string) {
   }
 }
 
-for (const candidate of [".env.local", ".env"]) {
+for (const candidate of [".env.local", ".env", "../../.env"]) {
   loadEnvFile(resolve(process.cwd(), candidate));
 }
 
@@ -60,6 +60,9 @@ function isProbablyUrl(value: string) {
 function checkEnv() {
   const issues: string[] = [];
   for (const entry of requiredEnv) {
+    if (entry.name === "APP_BASE_URL" && !process.env.APP_BASE_URL) {
+      process.env.APP_BASE_URL = "http://localhost:3000";
+    }
     const value = process.env[entry.name];
     if (!value) {
       issues.push(`Missing required ${entry.exposure} env: ${entry.name}`);
