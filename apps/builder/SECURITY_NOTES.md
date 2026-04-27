@@ -1,0 +1,19 @@
+# Security Notes
+
+## Defaults
+
+- secrets are read server-side through `src/lib/env.server.ts` and re-exported from `src/lib/env.ts`
+- browser code only receives public/publishable values
+- object storage uses presigned URLs; raw bucket credentials stay server-side
+- generated route protection is explicit in middleware when auth-protected routes exist
+
+## Backend Mode
+
+- hosted mode uses Supabase Auth and Supabase SDK data access; apply `supabase/schema.sql` and `supabase/policies.sql` before production use
+
+## Review Before Production
+
+- tighten ownership and role policies for your domain
+- review generated Supabase RLS policies when using hosted mode
+- configure real email delivery before relying on auth email flows
+- use least-privilege object-storage keys
