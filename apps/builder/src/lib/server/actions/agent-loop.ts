@@ -1,5 +1,5 @@
 import { action } from "@solidjs/router";
-import { createProjectWorkspace, ManualAgentAdapter, type BuilderAgentEvent } from "@depths/stylyf-builder-core";
+import { CodexExecAdapter, createProjectWorkspace, ManualAgentAdapter, type BuilderAgentAdapter, type BuilderAgentEvent } from "@depths/stylyf-builder-core";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { createSupabaseServerClient } from "~/lib/supabase";
@@ -14,6 +14,11 @@ const operatorSystemPrompt = [
   "Keep changes visible, run checks before claiming completion, and use Webknife when UI changes need visual feedback.",
   "Never persist or reveal raw environment values.",
 ].join("\n");
+
+function createAgentAdapter(): BuilderAgentAdapter {
+  if (process.env.STYLYF_BUILDER_AGENT_ADAPTER === "manual") return new ManualAgentAdapter();
+  return new CodexExecAdapter();
+}
 
 async function getProject(projectId: string, userId: string) {
   const supabase = createSupabaseServerClient();
@@ -106,7 +111,7 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
     .single();
   if (sessionError) throw sessionError;
 
-  const adapter = new ManualAgentAdapter();
+  const adapter = createAgentAdapter();
   let adapterSessionId = "";
   for await (const event of adapter.startSession({ workspacePath: workspace.app, systemPrompt: operatorSystemPrompt })) {
     if (event.type === "session.started") adapterSessionId = event.sessionId;

@@ -31,9 +31,10 @@ export type BuilderAgentEvent =
 
 export type BuilderAgentSession = {
   id: string;
-  provider: "codex-app-server" | "manual";
+  provider: "codex-app-server" | "codex-exec" | "manual";
   workspacePath: string;
   startedAt: Date;
+  hasRun?: boolean;
 };
 
 export type StartAgentSessionInput = {
@@ -201,6 +202,98 @@ export class CodexAppServerAdapter implements BuilderAgentAdapter {
   }
 }
 
+function shellSplit(input: string) {
+  return input.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map(part => part.replace(/^["']|["']$/g, "")) ?? [];
+}
+
+export class CodexExecAdapter implements BuilderAgentAdapter {
+  readonly provider = "codex-exec" as const;
+  #command: string;
+  #baseArgs: string[];
+  #sessions = new Map<string, BuilderAgentSession>();
+
+  constructor(input: { command?: string; args?: string[] } = {}) {
+    this.#command = input.command ?? "codex";
+    this.#baseArgs = input.args ?? shellSplit(process.env.CODEX_RUN_FLAGS ?? "exec --json --sandbox danger-full-access --ask-for-approval never");
+  }
+
+  async *startSession(input: StartAgentSessionInput): AsyncIterable<BuilderAgentEvent> {
+    const session: BuilderAgentSession = {
+      id: randomUUID(),
+      provider: this.provider,
+      workspacePath: input.workspacePath,
+      startedAt: new Date(),
+      hasRun: false,
+    };
+    this.#sessions.set(session.id, session);
+    yield {
+      type: "session.started",
+      sessionId: session.id,
+      provider: this.provider,
+      workspacePath: input.workspacePath,
+    };
+    yield {
+      type: "message",
+      sessionId: session.id,
+      role: "system",
+      content: redactAgentText(input.systemPrompt),
+    };
+  }
+
+  async *sendTurn(input: SendAgentTurnInput): AsyncIterable<BuilderAgentEvent> {
+    const session = this.#sessions.get(input.sessionId);
+    if (!session) {
+      yield { type: "session.error", sessionId: input.sessionId, message: "Codex exec session not found." };
+      return;
+    }
+
+    const turnId = randomUUID();
+    yield { type: "turn.started", sessionId: input.sessionId, turnId, prompt: redactAgentText(input.prompt) };
+
+    const args = session.hasRun
+      ? ["exec", "resume", "--last", "--json", input.prompt]
+      : [...this.#baseArgs, "--cd", session.workspacePath, input.prompt];
+    const child = spawn(this.#command, args, {
+      cwd: session.workspacePath,
+      shell: false,
+      env: process.env,
+    });
+    session.hasRun = true;
+    const exitPromise = new Promise<number | null>((resolveExit, reject) => {
+      child.on("error", reject);
+      child.on("close", resolveExit);
+    });
+
+    const stdoutLines = createInterface({ input: child.stdout });
+    const stderrLines = createInterface({ input: child.stderr });
+    const stderrBuffer: string[] = [];
+    const stderrPromise = (async () => {
+      for await (const line of stderrLines) {
+        stderrBuffer.push(redactAgentText(line));
+      }
+    })();
+
+    for await (const line of stdoutLines) {
+      const event = parseCodexEvent(input.sessionId, line);
+      if (event) yield event;
+    }
+
+    await stderrPromise;
+    const exitCode = await exitPromise;
+
+    if (exitCode === 0) {
+      yield { type: "turn.completed", sessionId: input.sessionId, turnId, summary: "Codex exec turn completed." };
+    } else {
+      const stderr = stderrBuffer.join("\n").trim();
+      yield { type: "session.error", sessionId: input.sessionId, message: `Codex exec exited with ${exitCode ?? "unknown"}.${stderr ? ` ${stderr.slice(0, 800)}` : ""}` };
+    }
+  }
+
+  async stopSession(sessionId: string) {
+    this.#sessions.delete(sessionId);
+  }
+}
+
 function parseCodexEvent(sessionId: string, line: string): BuilderAgentEvent | undefined {
   if (!line.trim()) return undefined;
   let payload: JsonRpcResponse;
@@ -215,6 +308,16 @@ function parseCodexEvent(sessionId: string, line: string): BuilderAgentEvent | u
   }
 
   const method = payload.method ?? "";
+  const eventType = typeof (payload as { type?: unknown }).type === "string" ? String((payload as { type?: unknown }).type) : "";
+  if (eventType) {
+    return {
+      type: "tool.event",
+      sessionId,
+      name: eventType,
+      summary: "Codex exec emitted an event.",
+      payload,
+    };
+  }
   if (method.includes("approval")) {
     return {
       type: "approval.requested",
