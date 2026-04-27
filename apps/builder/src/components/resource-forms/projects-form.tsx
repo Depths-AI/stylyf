@@ -46,48 +46,73 @@ function normalizeProjectsInitialValues(record?: ProjectsRecord | null): Project
     "lastPushedSha": record?.["lastPushedSha"] ?? "",
   };
 }
-function ProjectsFormFields(props: { initialValues?: ProjectsFormInitialValues; fieldErrors: ProjectsFormFieldErrors }) {
+function ProjectsFormFields(props: { initialValues?: ProjectsFormInitialValues; fieldErrors: ProjectsFormFieldErrors; mode: "create" | "edit" }) {
   return (
     <div class="space-y-[var(--space-5)]">
+      <Show when={props.mode === "create"} fallback={
+        <>
+          <div class="grid gap-[var(--space-5)] md:grid-cols-2">
+            <TextField
+              name="name"
+              label={"Project name"}
+              type={"text"}
+              defaultValue={(((props.initialValues?.["name"] ?? "") as string))}
+              invalid={Boolean(props.fieldErrors["name"])}
+              errorMessage={props.fieldErrors["name"]}
+              description="Human-readable name for the app idea."
+              required
+            />
+
+            <TextField
+              name="slug"
+              label={"Slug"}
+              type={"text"}
+              defaultValue={(((props.initialValues?.["slug"] ?? "") as string))}
+              invalid={Boolean(props.fieldErrors["slug"])}
+              errorMessage={props.fieldErrors["slug"]}
+              description="Used for workspace and repository naming."
+              required
+            />
+          </div>
+
+          <Select
+            name="status"
+            label={"Status"}
+            defaultValue={((props.initialValues?.["status"] ?? "") as string)}
+            options={[{"label":"Draft","value":"draft"},{"label":"Generating","value":"generating"},{"label":"Ready","value":"ready"},{"label":"Error","value":"error"},{"label":"Archived","value":"archived"}] }
+            invalid={Boolean(props.fieldErrors["status"])}
+            errorMessage={props.fieldErrors["status"]}
+            required
+            placeholder="Select status"
+          />
+
+          <TextArea
+            name="summary"
+            label={"Product brief"}
+            defaultValue={(((props.initialValues?.["summary"] ?? "") as string))}
+            invalid={Boolean(props.fieldErrors["summary"])}
+            errorMessage={props.fieldErrors["summary"]}
+            description="Describe the user, app type, core workflow, visual mood, and first version scope."
+            minRows={6}
+          />
+        </>
+      }>
         <TextField
           name="name"
-          label={"Name"}
+          label={"Project name"}
           type={"text"}
           defaultValue={(((props.initialValues?.["name"] ?? "") as string))}
           invalid={Boolean(props.fieldErrors["name"])}
           errorMessage={props.fieldErrors["name"]}
+          description="Give the app a simple working title. Stylyf will create the workspace, repo, specs, and agent instructions."
           required
         />
+      </Show>
 
-        <TextField
-          name="slug"
-          label={"Slug"}
-          type={"text"}
-          defaultValue={(((props.initialValues?.["slug"] ?? "") as string))}
-          invalid={Boolean(props.fieldErrors["slug"])}
-          errorMessage={props.fieldErrors["slug"]}
-          required
-        />
-
-        <Select
-          name="status"
-          label={"Status"}
-          defaultValue={((props.initialValues?.["status"] ?? "") as string)}
-          options={[{"label":"Draft","value":"draft"},{"label":"Generating","value":"generating"},{"label":"Ready","value":"ready"},{"label":"Error","value":"error"},{"label":"Archived","value":"archived"}] }
-          invalid={Boolean(props.fieldErrors["status"])}
-          errorMessage={props.fieldErrors["status"]}
-          required
-          placeholder="Select status"
-        />
-
-        <TextArea
-          name="summary"
-          label={"Summary"}
-          defaultValue={(((props.initialValues?.["summary"] ?? "") as string))}
-          invalid={Boolean(props.fieldErrors["summary"])}
-          errorMessage={props.fieldErrors["summary"]}
-        />
-
+      <Show when={props.mode === "edit"}>
+        <div class="rounded-[var(--radius-2xl)] border border-border/70 bg-muted-soft p-[var(--space-5)]">
+          <div class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Workspace internals</div>
+          <div class="grid gap-[var(--space-5)] md:grid-cols-2">
         <TextField
           name="workspacePath"
           label={"Workspace Path"}
@@ -123,6 +148,9 @@ function ProjectsFormFields(props: { initialValues?: ProjectsFormInitialValues; 
           invalid={Boolean(props.fieldErrors["lastPushedSha"])}
           errorMessage={props.fieldErrors["lastPushedSha"]}
         />
+          </div>
+        </div>
+      </Show>
     </div>
   );
 }
@@ -155,7 +183,7 @@ export function ProjectsForm(props: ProjectsFormProps) {
               <form action={props.resourceId ? submitUpdateProjectsForm.with(props.resourceId) : submitUpdateProjectsForm.with("")} method="post" class="space-y-[var(--space-5)]">
                 <Show when={formError()}><div class="rounded-[var(--radius-lg)] border border-destructive/25 bg-destructive/8 px-[var(--space-5)] py-[var(--space-4)] text-sm text-destructive">{formError()}</div></Show>
                 <Show when={successMessage()}><div class="rounded-[var(--radius-lg)] border border-primary/22 bg-primary/8 px-[var(--space-5)] py-[var(--space-4)] text-sm text-foreground">{successMessage()}</div></Show>
-                <ProjectsFormFields initialValues={normalizeProjectsInitialValues(record())} fieldErrors={fieldErrors()} />
+                <ProjectsFormFields initialValues={normalizeProjectsInitialValues(record())} fieldErrors={fieldErrors()} mode="edit" />
                 <div class="flex justify-end">
                   <Button type="submit" loading={activeSubmission().pending}>Save changes</Button>
                 </div>
@@ -167,7 +195,7 @@ export function ProjectsForm(props: ProjectsFormProps) {
         <form action={submitCreateProjectsForm} method="post" class="space-y-[var(--space-5)]">
           <Show when={formError()}><div class="rounded-[var(--radius-lg)] border border-destructive/25 bg-destructive/8 px-[var(--space-5)] py-[var(--space-4)] text-sm text-destructive">{formError()}</div></Show>
           <Show when={successMessage()}><div class="rounded-[var(--radius-lg)] border border-primary/22 bg-primary/8 px-[var(--space-5)] py-[var(--space-4)] text-sm text-foreground">{successMessage()}</div></Show>
-          <ProjectsFormFields fieldErrors={fieldErrors()} />
+          <ProjectsFormFields fieldErrors={fieldErrors()} mode="create" />
           <div class="flex justify-end">
             <Button type="submit" loading={activeSubmission().pending}>Create Project</Button>
           </div>

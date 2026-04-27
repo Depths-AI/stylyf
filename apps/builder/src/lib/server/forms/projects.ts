@@ -1,5 +1,5 @@
-import { action } from "@solidjs/router";
-import { createProjects } from "~/lib/server/actions/projects-create";
+import { action, redirect } from "@solidjs/router";
+import { createBuilderProject } from "~/lib/server/actions/projects-create";
 import { updateProjects } from "~/lib/server/actions/projects-update";
 
 export type ProjectsFormValues = {
@@ -60,7 +60,17 @@ function readDateField(formData: FormData, name: string) {
   return { value: parsed };
 }
 
-export function parseProjectsFormData(formData: FormData): { ok: true; values: ProjectsFormValues } | { ok: false; fieldErrors: ProjectsFormFieldErrors; formError?: string } {
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 54) || "app-draft";
+}
+
+export function parseProjectsFormData(formData: FormData, options?: { mode?: "create" | "edit" }): { ok: true; values: ProjectsFormValues } | { ok: false; fieldErrors: ProjectsFormFieldErrors; formError?: string } {
+  const mode = options?.mode ?? "edit";
   const values: Partial<ProjectsFormValues> = {};
   const fieldErrors: ProjectsFormFieldErrors = {};
   const nameValue = readStringField(formData, "name");
@@ -72,15 +82,17 @@ export function parseProjectsFormData(formData: FormData): { ok: true; values: P
   }
 
   const slugValue = readStringField(formData, "slug");
-  if (slugValue == null || slugValue === "") {
+  if (mode === "edit" && (slugValue == null || slugValue === "")) {
     fieldErrors["slug"] = "Slug is required.";
   }
   if (slugValue) {
     values.slug = slugValue;
+  } else if (mode === "create" && nameValue) {
+    values.slug = `${slugify(nameValue)}-${Date.now().toString(36).slice(-4)}`;
   }
 
   const statusValue = readStringField(formData, "status");
-  if (statusValue == null || statusValue === "") {
+  if (mode === "edit" && (statusValue == null || statusValue === "")) {
     fieldErrors["status"] = "Status is required.";
   }
   if (statusValue) {
@@ -89,6 +101,8 @@ export function parseProjectsFormData(formData: FormData): { ok: true; values: P
     } else {
       values.status = statusValue as "draft" | "generating" | "ready" | "error" | "archived";
     }
+  } else if (mode === "create") {
+    values.status = "draft";
   }
 
   const summaryValue = readStringField(formData, "summary");
@@ -135,19 +149,26 @@ export function parseProjectsFormData(formData: FormData): { ok: true; values: P
 
 export const submitCreateProjectsForm = action(async (formData: FormData): Promise<ProjectsFormResult> => {
   "use server";
-  const parsed = parseProjectsFormData(formData);
-  if (!parsed.ok) return parsed;
+  const name = readStringField(formData, "name");
+  if (!name) {
+    return {
+      ok: false,
+      fieldErrors: { name: "Project name is required." },
+      formError: "Enter a project name to create a new app workspace.",
+    };
+  }
   try {
-    await createProjects(parsed.values as any);
-    return { ok: true, message: "Project created successfully." };
+    const project = await createBuilderProject({ name });
+    throw redirect(`/projects/${String((project as { id: string }).id)}`);
   } catch (error) {
+    if (error instanceof Response) throw error;
     return { ok: false, fieldErrors: {}, formError: error instanceof Error ? error.message : "Unable to save this record." };
   }
 }, "projects.submit-create-form");
 
 export const submitUpdateProjectsForm = action(async (id: string, formData: FormData): Promise<ProjectsFormResult> => {
   "use server";
-  const parsed = parseProjectsFormData(formData);
+  const parsed = parseProjectsFormData(formData, { mode: "edit" });
   if (!parsed.ok) return parsed;
   try {
     await updateProjects({ id, ...parsed.values } as any);
