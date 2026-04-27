@@ -263,3 +263,5 @@ export function startManagedProcess(input: { id: string; command: string; args?:
 export async function cleanupWorkspace(path: string, root = resolveBuilderPaths().workspaces) {
   await rm(assertInside(root, path), { recursive: true, force: true });
 }
+
+export * from "./codex.js";
