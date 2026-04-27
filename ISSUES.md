@@ -107,3 +107,19 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added server-runtime fallback from `process.env` in `env.public.ts`, documented the deployment build exports, and rebuilt the live service with explicit `VITE_` aliases.
 - **Likely source fix:** Update the CLI hosted Supabase generator so generated apps either emit public aliases into `.env` examples or safely bridge publishable server/public names during production builds.
 - **Status:** Builder app locally hardened and deployment docs updated. CLI generator still needs hardening.
+
+### Generated internal app forms expose operator-unfriendly implementation fields
+
+- **Context:** The internal builder is intended for non-technical team members who should describe the app they want, not manage scaffold internals.
+- **Symptom:** The generated `projects` create form asked for `slug`, `status`, workspace path, preview URL, GitHub repo name, and last pushed SHA. These fields are implementation state and make the first-run authoring experience feel like CRUD administration instead of an AI app builder.
+- **Local fix:** Partial worktree pass started to simplify create-project intake toward project name plus plain-English brief, derive slugs/status server-side, and keep implementation fields out of the create flow.
+- **Likely source fix:** Add IR/generator rules for audience-friendly create forms: user-authored product intent fields should be visible; system-owned lifecycle fields should be derived, hidden, or edit-only/admin-only.
+- **Status:** Planning required before committing the UI rewrite.
+
+### Generated builder shell reads as a generic scaffold, not an AI workbench
+
+- **Context:** Stylyf-generated primitives are visually competent in isolation, but an internal app-builder control plane needs a stronger product metaphor and page hierarchy.
+- **Symptom:** Webknife screenshots of `/login` and the post-login dashboard showed generic boxed headers, a plain sidebar, weak hierarchy, and empty states that do not communicate a Lovable/Bolt/v0-style authoring loop.
+- **Local fix:** Partial worktree pass started on a darker command rail, richer auth panel, builder cockpit cards, and stronger page hierarchy.
+- **Likely source fix:** Add higher-level app-builder/dashboard shell presets and guidance so generated apps can compose primitives into product-grade control planes instead of literal CRUD surfaces.
+- **Status:** Planning required before committing the UI rewrite.
