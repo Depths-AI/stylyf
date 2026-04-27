@@ -28,6 +28,7 @@ const groups = [
 ] as const;
 
 const failures: string[] = [];
+const warnings: string[] = [];
 for (const group of groups) {
   if (!group.keys.some(key => Boolean(process.env[key]))) {
     failures.push(`${group.label}: set one of ${group.keys.join(", ")}`);
@@ -52,9 +53,51 @@ if (corsOrigins) {
   }
 }
 
+const optionalBuilderKeys = [
+  "STYLYF_BUILDER_ROOT",
+  "STYLYF_BUILDER_GITHUB_ORG",
+  "STYLYF_BUILDER_CREATE_GITHUB_REPOS",
+  "STYLYF_BUILDER_AGENT_ADAPTER",
+  "STYLYF_BUILDER_GIT_USER_NAME",
+  "STYLYF_BUILDER_GIT_USER_EMAIL",
+  "CODEX_RUN_FLAGS",
+  "STYLYF_PREVIEW_PUBLIC_BASE",
+] as const;
+
+const missingOptional = optionalBuilderKeys.filter(key => !process.env[key]);
+if (missingOptional.length > 0) {
+  warnings.push(`Optional builder keys not set, defaults will apply where supported: ${missingOptional.join(", ")}`);
+}
+if (!process.env.APP_BASE_URL) {
+  warnings.push("APP_BASE_URL is not set; local server code defaults to http://localhost:3000.");
+}
+
+const createRepos = process.env.STYLYF_BUILDER_CREATE_GITHUB_REPOS;
+if (createRepos && !["true", "false"].includes(createRepos)) {
+  failures.push("STYLYF_BUILDER_CREATE_GITHUB_REPOS: use 'true' or 'false'.");
+}
+
+const agentAdapter = process.env.STYLYF_BUILDER_AGENT_ADAPTER;
+if (agentAdapter && !["manual", "codex-exec", "codex-app-server"].includes(agentAdapter)) {
+  failures.push("STYLYF_BUILDER_AGENT_ADAPTER: use manual, codex-exec, or codex-app-server.");
+}
+
+const previewBase = process.env.STYLYF_PREVIEW_PUBLIC_BASE;
+if (previewBase) {
+  try {
+    const url = new URL(previewBase);
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error("invalid protocol");
+  } catch {
+    failures.push("STYLYF_PREVIEW_PUBLIC_BASE: set a valid http(s) base URL without a trailing port.");
+  }
+}
+
 if (failures.length > 0) {
   console.error(["Builder env check failed:", ...failures.map(failure => `- ${failure}`)].join("\n"));
   process.exitCode = 1;
 } else {
   console.log("Builder env check passed. Required key names are present.");
+  for (const warning of warnings) {
+    console.warn(`- ${warning}`);
+  }
 }
