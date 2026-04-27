@@ -11,19 +11,20 @@ export type ResourceIndexPageShellProps = JSX.HTMLAttributes<HTMLDivElement> & {
   children?: JSX.Element;
   description?: JSX.Element;
   detail?: JSX.Element;
+  eyebrow?: JSX.Element;
   title?: JSX.Element;
   toolbar?: JSX.Element;
 };
 
 export function ResourceIndexPageShell(userProps: ResourceIndexPageShellProps) {
-  const [local, others] = splitProps(userProps, ["actions", "children", "class", "description", "detail", "title", "toolbar"]);
+  const [local, others] = splitProps(userProps, ["actions", "children", "class", "description", "detail", "eyebrow", "title", "toolbar"]);
 
   return (
     <ContentFrame width="wide" class={cn("space-y-[var(--space-6)]", local.class)} {...others}>
       <PageHeader
-        eyebrow="Collection"
+        eyebrow={local.eyebrow ?? "Studio"}
         title={local.title ?? "Stylyf Builder resources"}
-        description={local.description ?? "Generated list shell for indexes, tables, and resource collections."}
+        description={local.description ?? "Browse and continue app drafts."}
         actions={local.actions}
       />
       <Stack gap="comfortable">
@@ -35,4 +36,3 @@ export function ResourceIndexPageShell(userProps: ResourceIndexPageShellProps) {
     </ContentFrame>
   );
 }
-

@@ -52,9 +52,9 @@ export function SidebarNav(userProps: SidebarNavProps) {
       </div>
 
       <div class={cn("builder-rail-card space-y-2", local.collapsed && "hidden")}>
-        <div class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-ink-foreground/50">Current loop</div>
-        <div class="text-sm font-semibold text-ink-foreground">Prompt / IR / Repo</div>
-        <p class="text-xs leading-5 text-ink-foreground/58">Every accepted iteration is tracked, pushed, and ready for dev review.</p>
+        <div class="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-ink-foreground/50">Studio loop</div>
+        <div class="text-sm font-semibold text-ink-foreground">Describe, preview, refine</div>
+        <p class="text-xs leading-5 text-ink-foreground/58">Turn a small app idea into a reviewable draft with a clean visual trail.</p>
       </div>
 
       <div class="space-y-[var(--space-4)]">

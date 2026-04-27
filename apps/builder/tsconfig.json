@@ -21,5 +21,13 @@
         "./src/*"
       ]
     }
-  }
+  },
+  "exclude": [
+    "archive",
+    ".output",
+    ".vinxi",
+    "scripts",
+    "tests",
+    "node_modules"
+  ]
 }

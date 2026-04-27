@@ -2,6 +2,7 @@
 .vinxi
 dist
 node_modules
+design/smoke
 
 .DS_Store
 Thumbs.db

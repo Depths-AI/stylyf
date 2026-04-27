@@ -64,6 +64,14 @@ For repo-level sanity:
 - `npm run build`
 - `npm run check`
 
+For `apps/builder` UI work:
+
+- Treat every UI edit as screenshot-gated.
+- Run `npm --prefix apps/builder run check`.
+- Capture every active route after each visual iteration: `/`, `/projects/new`, and `/projects/demo`.
+- Inspect those screenshots against the moodboards in `apps/builder/design/moodboards/`.
+- Do not keep a visual iteration that leaves an error overlay, clipped primary content, or user-facing implementation commentary.
+
 ## Packaging Rules
 
 The CLI package must bundle its own:
