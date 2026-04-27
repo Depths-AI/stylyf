@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "~/lib/env";
 
@@ -53,7 +53,11 @@ function assertUploadAllowed(input: UploadIntent) {
   if (input.fileSize !== undefined && input.fileSize > storagePolicy.maxFileSizeBytes) {
     throw new Error(`File exceeds max upload size of ${storagePolicy.maxFileSizeBytes} bytes.`);
   }
-  if (!input.key.startsWith(`${storagePolicy.keyPrefix}/`)) {
+  assertObjectKey(input.key);
+}
+
+function assertObjectKey(key: string) {
+  if (!key.startsWith(`${storagePolicy.keyPrefix}/`)) {
     throw new Error(`Object key must start with ${storagePolicy.keyPrefix}/.`);
   }
 }
@@ -95,6 +99,7 @@ export async function createPresignedUpload(input: UploadIntent) {
 }
 
 export async function createPresignedDownload(input: { key: string; expiresIn?: number }) {
+  assertObjectKey(input.key);
   const bucket = storageBucket();
   const expiresIn = input.expiresIn ?? storagePolicy.presignExpiresSeconds;
   const command = new GetObjectCommand({
@@ -111,7 +116,24 @@ export async function createPresignedDownload(input: { key: string; expiresIn?: 
   };
 }
 
+export async function readObjectMetadata(key: string) {
+  assertObjectKey(key);
+  const result = await getStorageClient().send(
+    new HeadObjectCommand({
+      Bucket: storageBucket(),
+      Key: key,
+    }),
+  );
+  return {
+    contentType: result.ContentType ?? null,
+    fileSize: typeof result.ContentLength === "number" ? result.ContentLength : null,
+    eTag: result.ETag ?? null,
+    lastModified: result.LastModified ?? null,
+  };
+}
+
 export async function deleteObject(key: string) {
+  assertObjectKey(key);
   await getStorageClient().send(
     new DeleteObjectCommand({
       Bucket: storageBucket(),

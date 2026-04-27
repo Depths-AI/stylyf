@@ -1,6 +1,6 @@
 import { revalidate } from "@solidjs/router";
 import { requireSession } from "~/lib/auth";
-import { createPresignedDownload, createPresignedUpload, deleteObject, storageBucket, storagePolicy } from "~/lib/storage";
+import { createPresignedDownload, createPresignedUpload, deleteObject, readObjectMetadata, storageBucket, storagePolicy } from "~/lib/storage";
 import { createSupabaseServerClient } from "~/lib/supabase";
 import { getTimeline } from "~/lib/server/studio";
 
@@ -156,6 +156,10 @@ export async function confirmReferenceUpload(input: { projectId: string; assetId
   if (record.status !== "pending" && record.status !== "attached") {
     throw new Error("Reference upload is not in an attachable state.");
   }
+  const objectMetadata = await readObjectMetadata(record.object_key);
+  if (record.file_size !== null && objectMetadata.fileSize !== null && objectMetadata.fileSize !== record.file_size) {
+    throw new Error("Reference upload size does not match the upload intent.");
+  }
 
   const { error: updateError } = await supabase
     .from("projects_assets")
@@ -216,7 +220,7 @@ export async function deleteReferenceAsset(input: { projectId: string; assetId: 
     return { ok: true, assetId: asset.id };
   }
 
-  if (asset.status === "attached") {
+  if (asset.status === "attached" || asset.status === "pending") {
     await deleteObject(asset.object_key);
   }
   const supabase = createSupabaseServerClient();
