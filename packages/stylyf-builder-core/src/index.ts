@@ -3,6 +3,8 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { basename, join, resolve, sep } from "node:path";
 export * from "./codex.js";
+export { renderProjectAgentsMarkdown } from "./project-agents.js";
+import { renderProjectAgentsMarkdown } from "./project-agents.js";
 
 export type BuilderPaths = {
   root: string;
@@ -290,75 +292,6 @@ function defaultInitialSpec(name: string) {
       profile: "none",
     },
   };
-}
-
-export function renderProjectAgentsMarkdown(input: { projectName: string }) {
-  return `# AGENTS
-
-## Mission
-
-You are operating inside a Stylyf Builder project workspace for "${input.projectName}".
-
-The goal is to create a standalone SolidStart app in \`app/\` while keeping the app structure reproducible through explicit Stylyf IR in \`specs/\`.
-
-## Hard Rules
-
-- Use Stylyf CLI before raw source edits whenever the request can be expressed through app kind, backend, media, experience, objects, flows, surfaces, routes, sections, APIs, server modules, fixtures, or deployment metadata.
-- Prefer editing JSON spec chunks under \`specs/\`, then run \`stylyf compose\`, \`stylyf validate\`, \`stylyf plan\`, and \`stylyf generate\`.
-- Only hand-edit generated source when Stylyf cannot express the requested behavior, when the generated code is faulty, or when final product polish is needed after IR generation.
-- If you hand-edit source, record the reason in \`handoff.md\`.
-- Use Webknife for visual validation and interaction checks. Do not trust code edits without screenshot evidence when changing UI.
-- Run checks before claiming progress: \`npm run check\` and \`npm run build\` inside \`app/\` when an app exists.
-- Keep media assets in object storage via presigned URL flows. Do not store variable-sized blobs in Postgres.
-- Commit accepted progress and push immediately when the builder asks for a handoff commit.
-
-## Preferred Loop
-
-1. Inspect intent and current specs.
-2. Run \`stylyf intro --topic operator\` if you need refreshed operating context.
-3. Use \`stylyf search "<intent>"\` and \`stylyf inspect component <id>\` before choosing UI blocks.
-4. Edit or add explicit spec chunks under \`specs/\`.
-5. Compose and validate:
-
-\`\`\`bash
-stylyf compose --base specs/base.json --with specs/*.chunk.json --output stylyf.spec.json
-stylyf validate --spec stylyf.spec.json
-stylyf plan --spec stylyf.spec.json --resolved
-\`\`\`
-
-6. Generate or refresh the app:
-
-\`\`\`bash
-stylyf generate --spec stylyf.spec.json --target app
-\`\`\`
-
-7. Validate the app:
-
-\`\`\`bash
-cd app
-npm run check
-npm run build
-\`\`\`
-
-8. Use Webknife against the preview URL:
-
-\`\`\`bash
-webknife shot http://localhost:<port> --ci --json
-webknife interact http://localhost:<port> --steps ../specs/webknife.steps.yaml --ci --json
-webknife ui:review --url http://localhost:<port>
-\`\`\`
-
-## Workspace Map
-
-- \`AGENTS.md\`: this operating contract.
-- \`specs/\`: source-owned Stylyf IR chunks and interaction scripts.
-- \`stylyf.spec.json\`: composed active spec.
-- \`app/\`: generated standalone SolidStart app.
-- \`logs/\`: command logs.
-- \`screenshots/\`: selected visual artifacts.
-- \`.webknife/\`: Webknife artifacts.
-- \`handoff.md\`: decisions, hand-edit reasons, and human review notes.
-`;
 }
 
 export function renderProjectReadme(input: { projectName: string; description?: string }) {

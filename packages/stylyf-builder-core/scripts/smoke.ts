@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { allocatePort, bootstrapProjectWorkspace, createProjectWorkspace, ManualAgentAdapter, readJson, redact, runCommand } from "../src/index.js";
+import { allocatePort, bootstrapProjectWorkspace, createProjectWorkspace, ManualAgentAdapter, readJson, redact, renderProjectAgentsMarkdown, runCommand } from "../src/index.js";
 
 const root = await mkdtemp(join(tmpdir(), "stylyf-builder-core-"));
 try {
@@ -19,6 +19,10 @@ try {
   if (metadata.name !== "Bootstrap Smoke") throw new Error("Bootstrap metadata smoke failed.");
   if (!bootstrapped.events.some(event => event.type === "git.initialized")) {
     throw new Error("Bootstrap git event was not emitted.");
+  }
+  const agents = renderProjectAgentsMarkdown({ projectName: "Contract Smoke" });
+  for (const required of ["stylyf compose", "stylyf validate", "stylyf generate", "webknife shot", "handoff.md"]) {
+    if (!agents.includes(required)) throw new Error(`Project AGENTS contract is missing ${required}.`);
   }
   const redacted = redact("AWS_SECRET_ACCESS_KEY=abc123\nhello=world\nsk-test");
   if (redacted.includes("abc123")) throw new Error("Redaction failed.");
