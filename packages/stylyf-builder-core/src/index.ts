@@ -165,7 +165,7 @@ export function assertAllowedCommand(command: string, args: string[]) {
   if (base === "npx" && args[0] !== "webknife" && args[0] !== "@depths/webknife") {
     throw new Error(`npx command is not allowlisted: ${args[0] ?? "<missing>"}`);
   }
-  if (base === "git" && !["status", "diff", "add", "commit", "push", "init", "remote", "branch"].includes(args[0] ?? "")) {
+  if (base === "git" && !["status", "diff", "add", "commit", "push", "init", "remote", "branch", "config"].includes(args[0] ?? "")) {
     throw new Error(`git subcommand is not allowlisted: ${args[0] ?? "<missing>"}`);
   }
 }

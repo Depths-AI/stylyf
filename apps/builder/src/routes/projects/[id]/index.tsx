@@ -19,6 +19,7 @@ import { getWorkbenchTimeline } from "~/lib/server/queries/workbench-timeline";
 import { runWebknifeScreenshot } from "~/lib/server/actions/webknife-loop";
 import { saveIrDraft } from "~/lib/server/actions/ir-draft";
 import { getActiveIrDraft } from "~/lib/server/queries/ir-draft";
+import { commitAndPushProject } from "~/lib/server/actions/git-loop";
 
 export default function ProjectsIdRoute() {
   const params = useParams();
@@ -32,7 +33,8 @@ export default function ProjectsIdRoute() {
   const approvalSubmission = useSubmission(decideApproval);
   const webknifeSubmission = useSubmission(runWebknifeScreenshot);
   const irSubmission = useSubmission(saveIrDraft);
-  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending || webknifeSubmission.pending || irSubmission.pending;
+  const gitSubmission = useSubmission(commitAndPushProject);
+  const pending = () => stylyfSubmission.pending || startPreviewSubmission.pending || stopPreviewSubmission.pending || agentSubmission.pending || approvalSubmission.pending || webknifeSubmission.pending || irSubmission.pending || gitSubmission.pending;
   return (
     <>
       <Title>Project workbench</Title>
@@ -188,6 +190,20 @@ export default function ProjectsIdRoute() {
                             </div>
                           )}
                         </Show>
+                        <form action={commitAndPushProject.with(params.id ?? "")} method="post" class="space-y-2 rounded-[var(--radius-lg)] border border-border/80 bg-background p-3">
+                          <label class="space-y-1 text-sm">
+                            <span class="font-medium text-foreground">Accepted iteration commit message</span>
+                            <input
+                              name="message"
+                              class="w-full rounded-[var(--radius-lg)] border border-border bg-background px-3 py-2"
+                              value="Accept generated app iteration"
+                            />
+                          </label>
+                          <Button type="submit" tone="outline" pending={pending()}>Commit and push</Button>
+                          <Show when={gitSubmission.result}>
+                            {result => <p class="text-sm text-muted-foreground">Git handoff recorded{result().repoFullName ? ` for ${result().repoFullName}` : " locally"}.</p>}
+                          </Show>
+                        </form>
                       </div>
                     }
                   />
@@ -275,6 +291,27 @@ export default function ProjectsIdRoute() {
                               <p class="font-medium text-foreground">{run.kind}</p>
                               <p>{run.summary}</p>
                               <p class="mt-1 text-xs">Artifacts: {run.artifact_path}</p>
+                            </div>
+                          )}
+                        </For>
+                      </Show>
+                    </div>
+                  }
+                />
+                <DetailPanel
+                  title="Git handoff"
+                  description="Accepted iterations become ordinary git commits; pushes happen automatically when GitHub credentials are configured."
+                  body={
+                    <div class="space-y-3 text-sm text-muted-foreground">
+                      <Show when={(timeline()?.gitEvents.length ?? 0) > 0} fallback={<p>No git handoff events yet.</p>}>
+                        <For each={timeline()?.gitEvents ?? []}>
+                          {event => (
+                            <div class="rounded-[var(--radius-lg)] border border-border/80 bg-background p-3">
+                              <p class="font-medium text-foreground">{event.kind}</p>
+                              <p>{event.summary}</p>
+                              <Show when={event.repo_full_name}>
+                                <p class="mt-1 text-xs">Repo: {event.repo_full_name}</p>
+                              </Show>
                             </div>
                           )}
                         </For>

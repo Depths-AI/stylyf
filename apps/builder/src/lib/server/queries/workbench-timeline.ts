@@ -19,6 +19,7 @@ export const getWorkbenchTimeline = query(async (projectId: string) => {
     { data: approvals, error: approvalsError },
     { data: commands, error: commandsError },
     { data: webknifeRuns, error: webknifeError },
+    { data: gitEvents, error: gitError },
   ] = await Promise.all([
     supabase
       .from("agent_events")
@@ -44,15 +45,23 @@ export const getWorkbenchTimeline = query(async (projectId: string) => {
       .eq("project_id", projectId)
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase
+      .from("git_events")
+      .select("id,kind,repo_full_name,branch,commit_sha,summary,payload_path,created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
   if (eventsError) throw eventsError;
   if (approvalsError) throw approvalsError;
   if (commandsError) throw commandsError;
   if (webknifeError) throw webknifeError;
+  if (gitError) throw gitError;
   return {
     events: events ?? [],
     approvals: approvals ?? [],
     commands: commands ?? [],
     webknifeRuns: webknifeRuns ?? [],
+    gitEvents: gitEvents ?? [],
   };
 }, "workbench.timeline");
