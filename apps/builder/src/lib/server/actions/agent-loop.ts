@@ -9,6 +9,7 @@ type ProjectRow = Record<string, unknown>;
 
 const operatorSystemPrompt = [
   "You are the Stylyf internal builder agent.",
+  "Your working directory is the project workspace root, where AGENTS.md is the controlling contract.",
   "Read `stylyf intro --topic operator` before making implementation decisions.",
   "Use Stylyf IR first, then edit generated source only when the IR cannot express the requested nuance.",
   "Keep changes visible, run checks before claiming completion, and use Webknife when UI changes need visual feedback.",
@@ -44,6 +45,53 @@ async function ensureWorkspace(project: ProjectRow) {
   });
   await createSupabaseServerClient().from("projects").update({ workspacePath: workspace.root }).eq("id", project.id);
   return workspace;
+}
+
+async function getActiveSpecContext(projectId: string) {
+  const supabase = createSupabaseServerClient();
+  const [{ data: specs }, { data: chunks }] = await Promise.all([
+    supabase
+      .from("stylyf_specs")
+      .select("version,spec")
+      .eq("project_id", projectId)
+      .eq("is_active", true)
+      .order("version", { ascending: false })
+      .limit(1),
+    supabase
+      .from("stylyf_spec_chunks")
+      .select("name,kind,spec_path,version")
+      .eq("project_id", projectId)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+  ]);
+  return {
+    activeSpecVersion: specs?.[0]?.version ?? null,
+    activeSpec: specs?.[0]?.spec ?? null,
+    chunks: chunks ?? [],
+  };
+}
+
+function buildTaskPacket(input: { prompt: string; project: ProjectRow; specContext: Awaited<ReturnType<typeof getActiveSpecContext>> }) {
+  return [
+    "Builder turn packet:",
+    "",
+    `Project: ${String(input.project.name ?? "Untitled project")}`,
+    `Status: ${String(input.project.status ?? "unknown")}`,
+    `Workspace path: ${String(input.project.workspacePath ?? "pending")}`,
+    `GitHub repo: ${String(input.project.githubRepoFullName ?? "not connected")}`,
+    `Active Stylyf spec version: ${String(input.specContext.activeSpecVersion ?? "none")}`,
+    `Active chunks: ${input.specContext.chunks.map(chunk => `${chunk.kind}:${chunk.name}`).join(", ") || "none"}`,
+    "",
+    "User request:",
+    input.prompt,
+    "",
+    "Mandatory operating order:",
+    "1. Inspect AGENTS.md.",
+    "2. Use Stylyf CLI and specs/ chunks before raw source edits.",
+    "3. If raw edits are required, write the reason into handoff.md.",
+    "4. Run checks and Webknife when UI changes are involved.",
+    "5. Commit and push only when explicitly asked by the builder workflow.",
+  ].join("\n");
 }
 
 function summarizeEvent(event: BuilderAgentEvent) {
@@ -97,13 +145,15 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
   const { userId } = await requireViewerIdentity();
   const project = await getProject(projectId, userId);
   const workspace = await ensureWorkspace(project);
+  const specContext = await getActiveSpecContext(projectId);
   const supabase = createSupabaseServerClient();
+  const adapter = createAgentAdapter();
 
   const { data: session, error: sessionError } = await supabase
     .from("agent_sessions")
     .insert({
       project_id: projectId,
-      provider: "manual",
+      provider: adapter.provider,
       status: "running",
       created_by: userId,
     })
@@ -111,15 +161,15 @@ export const sendAgentPrompt = action(async (projectId: string, formData: FormDa
     .single();
   if (sessionError) throw sessionError;
 
-  const adapter = createAgentAdapter();
   let adapterSessionId = "";
-  for await (const event of adapter.startSession({ workspacePath: workspace.app, systemPrompt: operatorSystemPrompt })) {
+  for await (const event of adapter.startSession({ workspacePath: workspace.root, systemPrompt: operatorSystemPrompt })) {
     if (event.type === "session.started") adapterSessionId = event.sessionId;
     await persistAgentEvent({ projectId, userId, sessionId: session.id, event });
   }
   await supabase.from("agent_sessions").update({ thread_id: adapterSessionId }).eq("id", session.id);
 
-  for await (const event of adapter.sendTurn({ sessionId: adapterSessionId, prompt })) {
+  const taskPacket = buildTaskPacket({ prompt, project, specContext });
+  for await (const event of adapter.sendTurn({ sessionId: adapterSessionId, prompt: taskPacket })) {
     await persistAgentEvent({ projectId, userId, sessionId: session.id, event });
   }
 
