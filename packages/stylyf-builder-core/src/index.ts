@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { basename, join, resolve, sep } from "node:path";
+export * from "./codex.js";
 
 export type BuilderPaths = {
   root: string;
@@ -43,11 +44,46 @@ export type ManagedProcess = {
   stop: () => Promise<void>;
 };
 
+export type BuilderCommandEvent =
+  | { type: "command.started"; command: string; args: string[]; cwd: string; startedAt: string }
+  | { type: "command.completed"; result: CommandResult; completedAt: string }
+  | { type: "workspace.created"; workspace: ProjectWorkspace; summary: string }
+  | { type: "git.initialized"; workspace: ProjectWorkspace; commit?: CommandResult }
+  | { type: "github.linked"; repoFullName: string; remote: string };
+
+export type BootstrapProjectInput = {
+  projectId: string;
+  name: string;
+  root?: string;
+  description?: string;
+  initialSpec?: unknown;
+  github?: {
+    enabled?: boolean;
+    org?: string;
+    repoName?: string;
+    private?: boolean;
+  };
+  git?: {
+    defaultBranch?: string;
+    userName?: string;
+    userEmail?: string;
+  };
+};
+
+export type BootstrapProjectResult = {
+  workspace: ProjectWorkspace;
+  repoFullName?: string;
+  remoteUrl?: string;
+  commands: CommandResult[];
+  events: BuilderCommandEvent[];
+};
+
 const defaultAllowedCommands = new Set([
   "stylyf",
   "npm",
   "npx",
   "git",
+  "gh",
   "node",
 ]);
 
@@ -165,8 +201,11 @@ export function assertAllowedCommand(command: string, args: string[]) {
   if (base === "npx" && args[0] !== "webknife" && args[0] !== "@depths/webknife") {
     throw new Error(`npx command is not allowlisted: ${args[0] ?? "<missing>"}`);
   }
-  if (base === "git" && !["status", "diff", "add", "commit", "push", "init", "remote", "branch", "config"].includes(args[0] ?? "")) {
+  if (base === "git" && !["status", "diff", "add", "commit", "push", "init", "remote", "branch", "config", "rev-parse"].includes(args[0] ?? "")) {
     throw new Error(`git subcommand is not allowlisted: ${args[0] ?? "<missing>"}`);
+  }
+  if (base === "gh" && !["auth", "repo"].includes(args[0] ?? "")) {
+    throw new Error(`gh subcommand is not allowlisted: ${args[0] ?? "<missing>"}`);
   }
 }
 
@@ -210,6 +249,197 @@ export async function runCommand(input: { command: string; args?: string[]; cwd:
     stdoutPath,
     stderrPath,
   } satisfies CommandResult;
+}
+
+async function runRequiredCommand(input: { command: string; args?: string[]; cwd: string; logsDir: string }) {
+  const result = await runCommand(input);
+  if (result.exitCode !== 0) {
+    throw new Error(`Command failed: ${result.command} ${result.args.join(" ")}. See ${result.stderrPath}`);
+  }
+  return result;
+}
+
+function defaultInitialSpec(name: string) {
+  return {
+    version: "1.0",
+    app: {
+      name,
+      kind: "generic",
+      description: "A Stylyf-generated SolidStart app draft.",
+    },
+    backend: {
+      mode: "portable",
+    },
+    media: {
+      mode: "none",
+    },
+    experience: {
+      theme: "opal",
+      mode: "light",
+      radius: "trim",
+      density: "comfortable",
+      spacing: "tight",
+    },
+    objects: [],
+    surfaces: [],
+    navigation: {
+      primary: [],
+      userMenu: [],
+    },
+    deployment: {
+      profile: "none",
+    },
+  };
+}
+
+export function renderProjectAgentsMarkdown(input: { projectName: string }) {
+  return `# AGENTS
+
+## Mission
+
+You are operating inside a Stylyf Builder project workspace for "${input.projectName}".
+
+The goal is to create a standalone SolidStart app in \`app/\` while keeping the app structure reproducible through explicit Stylyf IR in \`specs/\`.
+
+## Hard Rules
+
+- Use Stylyf CLI before raw source edits whenever the request can be expressed through app kind, backend, media, experience, objects, flows, surfaces, routes, sections, APIs, server modules, fixtures, or deployment metadata.
+- Prefer editing JSON spec chunks under \`specs/\`, then run \`stylyf compose\`, \`stylyf validate\`, \`stylyf plan\`, and \`stylyf generate\`.
+- Only hand-edit generated source when Stylyf cannot express the requested behavior, when the generated code is faulty, or when final product polish is needed after IR generation.
+- If you hand-edit source, record the reason in \`handoff.md\`.
+- Use Webknife for visual validation and interaction checks. Do not trust code edits without screenshot evidence when changing UI.
+- Run checks before claiming progress: \`npm run check\` and \`npm run build\` inside \`app/\` when an app exists.
+- Keep media assets in object storage via presigned URL flows. Do not store variable-sized blobs in Postgres.
+- Commit accepted progress and push immediately when the builder asks for a handoff commit.
+
+## Preferred Loop
+
+1. Inspect intent and current specs.
+2. Run \`stylyf intro --topic operator\` if you need refreshed operating context.
+3. Use \`stylyf search "<intent>"\` and \`stylyf inspect component <id>\` before choosing UI blocks.
+4. Edit or add explicit spec chunks under \`specs/\`.
+5. Compose and validate:
+
+\`\`\`bash
+stylyf compose --base specs/base.json --with specs/*.chunk.json --output stylyf.spec.json
+stylyf validate --spec stylyf.spec.json
+stylyf plan --spec stylyf.spec.json --resolved
+\`\`\`
+
+6. Generate or refresh the app:
+
+\`\`\`bash
+stylyf generate --spec stylyf.spec.json --target app
+\`\`\`
+
+7. Validate the app:
+
+\`\`\`bash
+cd app
+npm run check
+npm run build
+\`\`\`
+
+8. Use Webknife against the preview URL:
+
+\`\`\`bash
+webknife shot http://localhost:<port> --ci --json
+webknife interact http://localhost:<port> --steps ../specs/webknife.steps.yaml --ci --json
+webknife ui:review --url http://localhost:<port>
+\`\`\`
+
+## Workspace Map
+
+- \`AGENTS.md\`: this operating contract.
+- \`specs/\`: source-owned Stylyf IR chunks and interaction scripts.
+- \`stylyf.spec.json\`: composed active spec.
+- \`app/\`: generated standalone SolidStart app.
+- \`logs/\`: command logs.
+- \`screenshots/\`: selected visual artifacts.
+- \`.webknife/\`: Webknife artifacts.
+- \`handoff.md\`: decisions, hand-edit reasons, and human review notes.
+`;
+}
+
+export function renderProjectReadme(input: { projectName: string; description?: string }) {
+  return `# ${input.projectName}
+
+${input.description ?? "Generated by the internal Stylyf Builder."}
+
+This repository is a Stylyf Builder workspace. The generated app lives in \`app/\`; explicit Stylyf IR lives in \`specs/\`.
+
+## Agent Loop
+
+Use \`AGENTS.md\` as the operating contract. Prefer Stylyf IR and CLI regeneration before raw source edits.
+`;
+}
+
+export async function bootstrapProjectWorkspace(input: BootstrapProjectInput): Promise<BootstrapProjectResult> {
+  const workspace = await createProjectWorkspace({ projectId: input.projectId, name: input.name, root: input.root });
+  const commands: CommandResult[] = [];
+  const events: BuilderCommandEvent[] = [
+    {
+      type: "workspace.created",
+      workspace,
+      summary: `Created builder workspace for ${input.name}.`,
+    },
+  ];
+
+  await writeFile(join(workspace.root, "AGENTS.md"), renderProjectAgentsMarkdown({ projectName: input.name }), "utf8");
+  await writeFile(join(workspace.root, "README.md"), renderProjectReadme({ projectName: input.name, description: input.description }), "utf8");
+  await writeFile(
+    join(workspace.root, ".gitignore"),
+    ["node_modules/", "app/node_modules/", "app/.output/", "app/.vinxi/", "logs/", ".webknife/", "screenshots/", ".env", ".env.*", "!.env.example", ""].join("\n"),
+    "utf8",
+  );
+  await writeFile(join(workspace.root, "handoff.md"), `# Handoff\n\n- Project created: ${new Date().toISOString()}\n`, "utf8");
+  await writeJson(join(workspace.specs, "base.json"), input.initialSpec ?? defaultInitialSpec(input.name));
+  await writeJson(join(workspace.specs, "metadata.json"), {
+    projectId: input.projectId,
+    name: input.name,
+    slug: workspace.slug,
+    createdAt: new Date().toISOString(),
+  });
+
+  commands.push(await runRequiredCommand({ command: "git", args: ["init"], cwd: workspace.root, logsDir: workspace.logs }));
+  commands.push(await runRequiredCommand({ command: "git", args: ["branch", "-M", input.git?.defaultBranch ?? "main"], cwd: workspace.root, logsDir: workspace.logs }));
+  if (input.git?.userName) {
+    commands.push(await runRequiredCommand({ command: "git", args: ["config", "user.name", input.git.userName], cwd: workspace.root, logsDir: workspace.logs }));
+  }
+  if (input.git?.userEmail) {
+    commands.push(await runRequiredCommand({ command: "git", args: ["config", "user.email", input.git.userEmail], cwd: workspace.root, logsDir: workspace.logs }));
+  }
+  commands.push(await runRequiredCommand({ command: "git", args: ["add", "."], cwd: workspace.root, logsDir: workspace.logs }));
+  const commit = await runRequiredCommand({ command: "git", args: ["commit", "-m", "bootstrap stylyf builder workspace"], cwd: workspace.root, logsDir: workspace.logs });
+  commands.push(commit);
+  events.push({ type: "git.initialized", workspace, commit });
+
+  let repoFullName: string | undefined;
+  let remoteUrl: string | undefined;
+  if (input.github?.enabled) {
+    const org = input.github.org ?? process.env.STYLYF_GITHUB_ORG;
+    if (!org) throw new Error("GitHub bootstrap requires github.org or STYLYF_GITHUB_ORG.");
+    repoFullName = `${org}/${input.github.repoName ?? workspace.slug}`;
+    const visibility = input.github.private === false ? "--public" : "--private";
+    commands.push(await runRequiredCommand({
+      command: "gh",
+      args: ["repo", "create", repoFullName, visibility, "--source", workspace.root, "--remote", "origin"],
+      cwd: workspace.root,
+      logsDir: workspace.logs,
+    }));
+    remoteUrl = `git@github.com:${repoFullName}.git`;
+    commands.push(await runRequiredCommand({ command: "git", args: ["push", "-u", "origin", input.git?.defaultBranch ?? "main"], cwd: workspace.root, logsDir: workspace.logs }));
+    events.push({ type: "github.linked", repoFullName, remote: remoteUrl });
+  }
+
+  await writeJson(workspace.repo, {
+    repoFullName,
+    remoteUrl,
+    defaultBranch: input.git?.defaultBranch ?? "main",
+    createdAt: new Date().toISOString(),
+  });
+
+  return { workspace, repoFullName, remoteUrl, commands, events };
 }
 
 export async function allocatePort(start = 4100, end = 4999) {
