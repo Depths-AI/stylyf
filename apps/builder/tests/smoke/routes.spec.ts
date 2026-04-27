@@ -46,6 +46,8 @@ test.describe("authenticated builder routes", () => {
     await expect(page.locator("h1", { hasText: "ContentRank" })).toBeVisible();
     await expect(page.getByLabel("Next instruction")).toBeVisible();
     await expect(page.getByText("Preview").first()).toBeVisible();
+    await page.getByLabel("Toggle advanced controls").click();
+    await expect(page.locator(".control-details")).toHaveAttribute("open", "");
     await expect(page.getByText("Spec panes")).toBeVisible();
     await expect(page.getByRole("button", { name: "Build draft" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Screenshot review/i })).toBeVisible();

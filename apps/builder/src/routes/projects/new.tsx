@@ -1,6 +1,6 @@
 import { A, useSubmission } from "@solidjs/router";
 import { Meta, Title } from "@solidjs/meta";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-solid";
+import { ArrowLeft, ArrowRight } from "lucide-solid";
 import { Show } from "solid-js";
 import { createProject } from "~/lib/server/projects";
 
@@ -25,7 +25,7 @@ export default function NewProjectRoute() {
           <p class="eyebrow">Create</p>
           <label class="field-label">
             App name
-            <input class="input-field" name="name" value="Social Post Ratings" autocomplete="off" required />
+            <input class="input-field" name="name" placeholder="Name your app" autocomplete="off" required />
           </label>
           <Show when={submission.error}>
             {error => <p class="prompt-example" role="alert">{error().message}</p>}
@@ -35,12 +35,6 @@ export default function NewProjectRoute() {
               {submission.pending ? "Creating..." : "Create and open studio"} <ArrowRight size={18} />
             </button>
             <A href="/" class="button button--quiet"><ArrowLeft size={18} /> Cancel</A>
-          </div>
-
-          <div class="prompt-examples" aria-label="Good first prompts">
-            <span class="pill pill--coral"><Sparkles size={15} /> Example directions</span>
-            <p class="prompt-example">“Make this a public rating site for user-submitted TikToks and Instagram posts.”</p>
-            <p class="prompt-example">“Create an internal queue where designers submit visuals and reviewers leave notes.”</p>
           </div>
         </form>
       </section>

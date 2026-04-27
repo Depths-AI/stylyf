@@ -114,7 +114,6 @@ const specPaneDefaultText: Record<SpecChunkKind, string> = {
 
 export default function ProjectStudioRoute() {
   const params = useParams();
-  const [controlsVisible, setControlsVisible] = createSignal(true);
   const [referenceStatus, setReferenceStatus] = createSignal("");
   const [referencePending, setReferencePending] = createSignal(false);
   const [referenceAssets, setReferenceAssets] = createSignal<ReferenceAsset[]>([]);
@@ -274,7 +273,7 @@ export default function ProjectStudioRoute() {
     <main class="app-frame app-frame--studio">
       <Title>{projectName()} Studio</Title>
       <Meta name="robots" content="noindex" />
-      <section class="studio-shell" classList={{ "studio-shell--compact": !controlsVisible() }}>
+      <section class="studio-shell">
         <aside class="mini-rail" aria-label="Studio navigation">
           <span class="mini-rail__logo">s</span>
           <A href="/" class="mini-rail__button" aria-label="Home"><Home size={21} /></A>
@@ -338,7 +337,7 @@ export default function ProjectStudioRoute() {
               <textarea
                 class="input-field input-field--textarea"
                 name="prompt"
-                placeholder="Example: Make the leaderboard more editorial and add a clear submit-post button above the fold."
+                placeholder="Example: Make the opening screen warmer, add a clear main action, and simplify the next step."
                 required
               />
             </label>
@@ -416,28 +415,28 @@ export default function ProjectStudioRoute() {
                 <span class="browser-dot" />
                 <span class="browser-dot" />
                 <span class="browser-dot" />
-                <span class="browser-url">localhost:5173/social-post-ratings</span>
+                <span class="browser-url">localhost:5173/app-draft</span>
               </div>
               <Show
                 when={activeProject().previewUrl}
                 fallback={
                   <div class="preview-artboard">
                     <div class="mock-hero">
-                      <span class="pill pill--coral">Community ratings</span>
-                      <h3>The best social posts, ranked by people with taste.</h3>
+                      <span class="pill pill--coral">Draft preview</span>
+                      <h3>Your working app will appear here.</h3>
                       <p class="body-copy">
-                        Submit a TikTok, Instagram post, or tweet. The community rates originality, clarity, and cultural
-                        spark.
+                        Build the draft, install it, then open preview. The builder will keep each step visible in the
+                        review trail.
                       </p>
                       <div class="button-row">
-                        <span class="button">Submit a post</span>
-                        <span class="button button--quiet">View leaderboard</span>
+                        <span class="button">Build draft</span>
+                        <span class="button button--quiet">Open preview</span>
                       </div>
                     </div>
                     <div class="mock-grid">
-                      <div class="mock-card"><span class="pill">9.2</span></div>
-                      <div class="mock-card"><span class="pill">8.8</span></div>
-                      <div class="mock-card"><span class="pill">8.5</span></div>
+                      <div class="mock-card"><span class="pill">Home</span></div>
+                      <div class="mock-card"><span class="pill">Create</span></div>
+                      <div class="mock-card"><span class="pill">Review</span></div>
                     </div>
                   </div>
                 }
@@ -454,23 +453,19 @@ export default function ProjectStudioRoute() {
         </section>
 
         <aside class="studio-pane control-rail surface" aria-label="Project controls">
-          <header class="pane-header">
-            <div>
-              <p class="eyebrow">Controls</p>
-              <h2>Shape</h2>
-              <p>Optional details.</p>
-            </div>
-            <button
-              class="button button--quiet"
-              type="button"
-              onClick={() => setControlsVisible(value => !value)}
-              aria-pressed={!controlsVisible()}
-            >
-              <PanelRightClose size={17} />
-            </button>
-          </header>
+          <details class="control-details">
+            <summary class="pane-header control-summary" aria-label="Toggle advanced controls">
+              <div>
+                <p class="eyebrow">Controls</p>
+                <h2>Shape</h2>
+                <p>Optional details.</p>
+              </div>
+              <span class="button button--quiet control-summary-icon" aria-hidden="true">
+                <PanelRightClose size={17} />
+              </span>
+            </summary>
 
-          <div class="control-list">
+            <div class="control-list">
             <section class="control-card">
               <h3>Spec panes</h3>
               <div class="spec-tabs" role="tablist" aria-label="Stylyf spec panes">
@@ -567,7 +562,8 @@ export default function ProjectStudioRoute() {
                 </Show>
               </div>
             </section>
-          </div>
+            </div>
+          </details>
         </aside>
       </section>
     </main>
