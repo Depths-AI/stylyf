@@ -99,3 +99,11 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Added `packages/*/node_modules` to `.gitignore` and removed the staged/tracked package-local dependency tree in a follow-up commit.
 - **Likely source fix:** Keep monorepo ignore rules symmetric for all workspace directories before adding new workspaces.
 - **Status:** Repository hygiene fixed.
+
+### Builder production build can overwrite public Supabase env without Vite aliases
+
+- **Context:** `apps/builder` needs publishable Supabase values in browser-facing code, while the repo root `.env` stores them as `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+- **Symptom:** A plain production build without exporting `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` produced server output that crashed on start with `Missing required public env`.
+- **Local fix:** Added server-runtime fallback from `process.env` in `env.public.ts`, documented the deployment build exports, and rebuilt the live service with explicit `VITE_` aliases.
+- **Likely source fix:** Update the CLI hosted Supabase generator so generated apps either emit public aliases into `.env` examples or safely bridge publishable server/public names during production builds.
+- **Status:** Builder app locally hardened and deployment docs updated. CLI generator still needs hardening.

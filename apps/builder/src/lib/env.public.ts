@@ -1,4 +1,6 @@
-const publicSource = ((import.meta as { env?: Record<string, string | undefined> }).env ?? {}) as Record<string, string | undefined>;
+const importMetaSource = ((import.meta as { env?: Record<string, string | undefined> }).env ?? {}) as Record<string, string | undefined>;
+const processSource = typeof process !== "undefined" ? process.env : {};
+const publicSource = { ...processSource, ...importMetaSource };
 
 function requiredPublic(name: string, aliases: string[] = []) {
   const value = [name, ...aliases].map(key => publicSource[key]).find(Boolean);
