@@ -91,3 +91,11 @@ This file tracks issues discovered while dogfooding Stylyf against real app work
 - **Local fix:** Ran the same smoke from `apps/builder`, where the generated app dependencies are installed and resolvable.
 - **Likely source fix:** Generated smoke tooling should always live in or execute from the generated app root, and CLI docs should avoid examples that run app-dependent checks from arbitrary temp directories.
 - **Status:** Smoke passed when executed from the generated app context. CLI validation guidance still needs hardening.
+
+### Workspace package-local `node_modules` was not ignored
+
+- **Context:** Adding `packages/stylyf-builder-core` and running `npm install` created a package-local `node_modules` directory.
+- **Symptom:** Root `.gitignore` ignored `apps/*/node_modules` and root `node_modules`, but not `packages/*/node_modules`, making it possible to accidentally stage package-local dependency folders.
+- **Local fix:** Added `packages/*/node_modules` to `.gitignore` and removed the staged/tracked package-local dependency tree in a follow-up commit.
+- **Likely source fix:** Keep monorepo ignore rules symmetric for all workspace directories before adding new workspaces.
+- **Status:** Repository hygiene fixed.
